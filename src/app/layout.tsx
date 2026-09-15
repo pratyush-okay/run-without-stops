@@ -13,10 +13,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const appUrl = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
   title: "Run Without Stops",
   description: "Plan quieter running routes",
-  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
+  metadataBase: new URL(appUrl),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
