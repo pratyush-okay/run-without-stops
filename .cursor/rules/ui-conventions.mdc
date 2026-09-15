@@ -1,0 +1,13 @@
+---
+description: React / Next.js UI conventions
+globs: src/**/*.{tsx,jsx}
+alwaysApply: false
+---
+
+# UI conventions
+
+- Server Components by default; client components only for interactivity/state/browser APIs.
+- Keep components focused; extract hooks/helpers instead of growing files.
+- Use Tailwind utility classes already in the project; avoid new CSS frameworks.
+- Do not introduce shadcn or component libraries unless asked.
+- Colocate tests as `*.test.ts(x)` next to the unit under test when practical.

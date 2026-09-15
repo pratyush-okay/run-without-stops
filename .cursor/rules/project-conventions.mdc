@@ -1,0 +1,15 @@
+---
+description: Core project conventions for Run Without Stops
+alwaysApply: true
+---
+
+# Run Without Stops — project conventions
+
+- Single Next.js app: UI in `src/app`, backend in `src/app/api`.
+- Package manager is **pnpm** only (never npm/yarn lockfiles).
+- Use `@/` imports. Prefer small focused modules over large files.
+- Validate env via `src/env.ts` (`@t3-oss/env-nextjs` + Zod). Never read raw `process.env` in feature code.
+- Validate API request/response bodies with Zod schemas under `src/lib/schemas`.
+- Prefer Server Components by default; add `"use client"` only when needed.
+- Run `pnpm check` before considering work done (typecheck + lint + test + build).
+- Do not add shadcn, monorepos, or extra UI kits unless explicitly requested.

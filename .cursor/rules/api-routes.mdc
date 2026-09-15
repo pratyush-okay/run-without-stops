@@ -1,0 +1,13 @@
+---
+description: API route handler conventions
+globs: src/app/api/**/*.ts
+alwaysApply: false
+---
+
+# API routes
+
+- Keep handlers thin: parse → validate (Zod) → logic → typed response.
+- Return `NextResponse.json` with schema-validated payloads.
+- Prefer shared schemas from `src/lib/schemas` over inline object shapes.
+- Use explicit HTTP status codes for errors (`400`, `401`, `404`, `500`).
+- Do not log secrets. Avoid `console.log` in production paths.
