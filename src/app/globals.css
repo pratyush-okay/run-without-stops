@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "maplibre-gl/dist/maplibre-gl.css";
+@import "mapbox-gl/dist/mapbox-gl.css";
 
 :root {
   --background: #0a0d0b;
@@ -119,7 +119,8 @@ button:disabled {
   color: rgb(233 240 235 / 55%);
 }
 
-.maplibregl-popup-content {
+.mapboxgl-popup-content,
+.rws-map-popup .mapboxgl-popup-content {
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 0.75rem;
   background: #101512;
@@ -127,15 +128,15 @@ button:disabled {
   box-shadow: 0 14px 40px rgb(0 0 0 / 30%);
 }
 
-.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
   border-bottom-color: #101512;
 }
 
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+.mapboxgl-popup-anchor-bottom .mapboxgl-popup-tip {
   border-top-color: #101512;
 }
 
-.maplibregl-ctrl-group {
+.mapboxgl-ctrl-group {
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 0.75rem;
@@ -143,13 +144,17 @@ button:disabled {
   box-shadow: none;
 }
 
-.maplibregl-ctrl-group button {
+.mapboxgl-ctrl-group button {
   filter: invert(1);
 }
 
-html .maplibregl-ctrl-attrib,
-html .maplibregl-ctrl-attrib.maplibregl-compact,
-html .maplibregl-ctrl-attrib.maplibregl-compact-show {
+.mapboxgl-ctrl-group button + button {
+  border-top-color: rgb(255 255 255 / 10%);
+}
+
+html .mapboxgl-ctrl-attrib,
+html .mapboxgl-ctrl-attrib.mapboxgl-compact,
+html .mapboxgl-ctrl-attrib.mapboxgl-compact-show {
   margin: 0 10px 10px;
   border: 1px solid rgb(255 255 255 / 12%);
   background: rgb(16 21 18 / 94%);
@@ -157,19 +162,19 @@ html .maplibregl-ctrl-attrib.maplibregl-compact-show {
   box-shadow: none;
 }
 
-html .maplibregl-ctrl-attrib a,
-html .maplibregl-ctrl-attrib.maplibregl-compact a {
+html .mapboxgl-ctrl-attrib a,
+html .mapboxgl-ctrl-attrib.mapboxgl-compact a {
   color: rgb(236 242 238 / 92%);
 }
 
-html .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show) {
+html .mapboxgl-ctrl-attrib.mapboxgl-compact:not(.mapboxgl-compact-show) {
   width: 29px;
   min-height: 29px;
   padding: 0;
   border-radius: 0.75rem;
 }
 
-html .maplibregl-ctrl-attrib-button {
+html .mapboxgl-ctrl-attrib-button {
   display: block;
   width: 29px;
   height: 29px;
@@ -182,12 +187,16 @@ html .maplibregl-ctrl-attrib-button {
   opacity: 1;
 }
 
-html .maplibregl-ctrl-attrib-button:hover {
+html .mapboxgl-ctrl-attrib-button:hover {
   background-color: rgb(255 255 255 / 6%);
 }
 
-.maplibregl-ctrl-attrib-inner {
+.mapboxgl-ctrl-attrib-inner {
   color: rgb(226 232 228 / 86%);
+}
+
+.mapboxgl-ctrl-logo {
+  opacity: 0.72;
 }
 
 @keyframes rws-pulse {
@@ -205,12 +214,12 @@ html .maplibregl-ctrl-attrib-button:hover {
     border-bottom-right-radius: 0;
   }
 
-  .maplibregl-ctrl-bottom-right {
+  .mapboxgl-ctrl-bottom-right {
     right: 0.75rem;
     bottom: calc(9.5rem + env(safe-area-inset-bottom));
   }
 
-  .maplibregl-ctrl-bottom-left {
+  .mapboxgl-ctrl-bottom-left {
     left: 0.75rem;
     bottom: calc(9.5rem + env(safe-area-inset-bottom));
   }

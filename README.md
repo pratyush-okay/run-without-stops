@@ -2,8 +2,8 @@
 
 Single Next.js app (frontend + API routes) with **pnpm**, strict TypeScript, Biome, Vitest, Husky, and CI.
 
-The v1 dashboard is a Sydney-first running route planner with a MapLibre map, live OpenStreetMap
-signals/crossings/water data, place search, and direct or low-stop pedestrian routing.
+The v1 dashboard is a Sydney-first running route planner with a 2D Mapbox dark map, live
+OpenStreetMap signals/crossings/water data, place search, and direct or low-stop pedestrian routing.
 
 ## Setup
 
@@ -18,11 +18,10 @@ pnpm dev
 - App: [http://localhost:3000](http://localhost:3000)
 - API example: [http://localhost:3000/api/hello](http://localhost:3000/api/hello)
 
-The app works locally without provider keys using OpenStreetMap tiles, Nominatim search, and a
-public Valhalla development endpoint. For the complete low-stop model and production-ready maps,
-set the Stadia Maps and GraphHopper values documented in `.env.example`. Public OSM endpoints are
-for low-volume development only. Set `TRACESTRACK_API_KEY` to use the managed Overpass service for
-traffic lights, crossings, and drinking-water data.
+The map needs `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`. Search still falls back to Nominatim, and routing
+falls back to a public Valhalla development endpoint, when GraphHopper and Stadia keys are unset.
+Public OSM endpoints are for low-volume development only. Set `TRACESTRACK_API_KEY` to use the
+managed Overpass service for traffic lights, crossings, and drinking-water data.
 
 ## Scripts
 

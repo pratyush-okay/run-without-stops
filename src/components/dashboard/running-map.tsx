@@ -1,39 +1,28 @@
 "use client";
 
-import type {
-  GeoJSONSource,
-  MapGeoJSONFeature,
-  Map as MapLibreMap,
-  MapMouseEvent,
-  StyleSpecification,
-} from "maplibre-gl";
-import * as maplibregl from "maplibre-gl";
+import mapboxgl from "mapbox-gl";
 import { useEffect, useRef } from "react";
 import { featuresNearRoute } from "@/lib/geo";
-import { liftMutedColor } from "@/lib/maps/color";
 import {
   createCrossingIconImage,
   createTrafficLightIconImage,
   createWaterDropletIconImage,
 } from "@/lib/maps/feature-icons";
 import {
-  filterWithoutRoadClasses,
-  hiddenRoadClasses,
-  transportationLayerAction,
-} from "@/lib/maps/road-visibility";
+  BUSY_ROAD,
+  HIGHWAY_ALERT,
+  isParkBasemapLayer,
+  isQuietLabelLayer,
+  MAPBOX_DARK_STYLE,
+  type MapLayerVisibility,
+  ROUTE_LIME,
+} from "@/lib/maps/layers";
 import type { BoundingBox, GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 
-export type MapLayerVisibility = {
-  traffic_signal: boolean;
-  crossing: boolean;
-  drinking_water: boolean;
-  parks: boolean;
-  highways: boolean;
-  busy_roads: boolean;
-};
+export type { MapLayerVisibility };
 
 type RunningMapProps = {
-  mapStyleUrl: string;
+  accessToken: string | undefined;
   points: GeoPoint[];
   routeCoordinates: [number, number][];
   features: RunnerFeature[];
@@ -45,44 +34,11 @@ type RunningMapProps = {
   onBoundsChange: (bounds: BoundingBox) => void;
 };
 
-const PARK_PATTERN = /(park|grass|wood|forest|green)/i;
+const LABEL_FONT = ["DIN Offc Pro Medium", "Arial Unicode MS Regular"];
 
-const OSM_DEMO_STYLE: StyleSpecification = {
-  version: 8,
-  glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
-  sources: {
-    osm: {
-      type: "raster",
-      tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-      tileSize: 256,
-      attribution: "© OpenStreetMap contributors",
-      maxzoom: 19,
-    },
-  },
-  layers: [{ id: "osm-demo", type: "raster", source: "osm" }],
-};
-
-function resolveMapStyle(mapStyleUrl: string): string | StyleSpecification {
-  if (mapStyleUrl === "osm-demo") return OSM_DEMO_STYLE;
-  if (!mapStyleUrl.includes("{z}")) return mapStyleUrl;
-
-  return {
-    version: 8,
-    sources: {
-      stadia: {
-        type: "raster",
-        tiles: [mapStyleUrl],
-        tileSize: 256,
-        maxzoom: 20,
-        attribution: "© Stadia Maps © OpenMapTiles © OpenStreetMap contributors",
-      },
-    },
-    layers: [{ id: "stadia-basemap", type: "raster", source: "stadia" }],
-  };
-}
-
-function getViewportBounds(map: MapLibreMap): BoundingBox {
+function getViewportBounds(map: mapboxgl.Map): BoundingBox | undefined {
   const bounds = map.getBounds();
+  if (!bounds) return undefined;
   return {
     south: bounds.getSouth(),
     west: bounds.getWest(),
@@ -91,9 +47,17 @@ function getViewportBounds(map: MapLibreMap): BoundingBox {
   };
 }
 
-function updateRouteSource(map: MapLibreMap, coordinates: [number, number][]) {
-  const source = map.getSource("runner-route") as GeoJSONSource | undefined;
-  source?.setData(
+type MapFeature = {
+  geometry?: { type: string; coordinates?: unknown };
+  properties?: Record<string, unknown> | null;
+};
+
+function geojsonSource(map: mapboxgl.Map, id: string) {
+  return map.getSource(id) as mapboxgl.GeoJSONSource | undefined;
+}
+
+function updateRouteSource(map: mapboxgl.Map, coordinates: [number, number][]) {
+  geojsonSource(map, "runner-route")?.setData(
     coordinates.length >= 2
       ? {
           type: "Feature",
@@ -104,9 +68,8 @@ function updateRouteSource(map: MapLibreMap, coordinates: [number, number][]) {
   );
 }
 
-function updateWaypointSource(map: MapLibreMap, points: GeoPoint[]) {
-  const source = map.getSource("runner-waypoints") as GeoJSONSource | undefined;
-  source?.setData({
+function updateWaypointSource(map: mapboxgl.Map, points: GeoPoint[]) {
+  geojsonSource(map, "runner-waypoints")?.setData({
     type: "FeatureCollection",
     features: points.map((point, index) => ({
       type: "Feature",
@@ -116,9 +79,8 @@ function updateWaypointSource(map: MapLibreMap, points: GeoPoint[]) {
   });
 }
 
-function updateUserLocationSource(map: MapLibreMap, userLocation: GeoPoint | undefined) {
-  const source = map.getSource("user-location") as GeoJSONSource | undefined;
-  source?.setData({
+function updateUserLocationSource(map: mapboxgl.Map, userLocation: GeoPoint | undefined) {
+  geojsonSource(map, "user-location")?.setData({
     type: "FeatureCollection",
     features: userLocation
       ? [
@@ -137,18 +99,17 @@ function routePointsFromCoordinates(coordinates: [number, number][]): GeoPoint[]
 }
 
 function updateFeatureSource(
-  map: MapLibreMap,
+  map: mapboxgl.Map,
   features: RunnerFeature[],
   layers: MapLayerVisibility,
   routeCoordinates: [number, number][],
 ) {
-  const source = map.getSource("runner-features") as GeoJSONSource | undefined;
   const enabled = features.filter((feature) => layers[feature.kind]);
   const visible =
     routeCoordinates.length >= 2
       ? featuresNearRoute(enabled, routePointsFromCoordinates(routeCoordinates))
       : [];
-  source?.setData({
+  geojsonSource(map, "runner-features")?.setData({
     type: "FeatureCollection",
     features: visible.map((feature) => ({
       type: "Feature",
@@ -168,7 +129,7 @@ function updateFeatureSource(
   });
 }
 
-function addFeatureImages(map: MapLibreMap) {
+function addFeatureImages(map: mapboxgl.Map) {
   const images = {
     "runner-feature-crossing": createCrossingIconImage(),
     "runner-feature-traffic_signal": createTrafficLightIconImage(),
@@ -185,104 +146,17 @@ function addFeatureImages(map: MapLibreMap) {
   }
 }
 
-function addRoadHighlightLayers(map: MapLibreMap) {
-  if (!map.getSource("openmaptiles")) return;
-
-  map.addLayer({
-    id: "runner-busy-roads",
-    type: "line",
-    source: "openmaptiles",
-    "source-layer": "transportation",
-    filter: ["in", ["get", "class"], ["literal", ["primary", "secondary"]]],
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": "#f6c453",
-      "line-opacity": 0.4,
-      "line-blur": 0.8,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.2, 15, 3.2, 19, 7],
-    },
-  });
-  map.addLayer({
-    id: "runner-highways",
-    type: "line",
-    source: "openmaptiles",
-    "source-layer": "transportation",
-    filter: ["in", ["get", "class"], ["literal", ["motorway", "trunk"]]],
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: {
-      "line-color": "#ff7043",
-      "line-opacity": 0.42,
-      "line-blur": 1,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.6, 15, 4.2, 19, 8.5],
-    },
-  });
-}
-
-const originalRoadFilters = new Map<string, unknown>();
-const originalRoadVisibility = new Map<string, "visible" | "none">();
-
-function styleBaseMap(map: MapLibreMap, layers: MapLayerVisibility) {
-  const style = map.getStyle() as StyleSpecification | undefined;
-  if (!style) return;
-
-  for (const layer of style.layers ?? []) {
-    const isPark = PARK_PATTERN.test(layer.id);
-
-    if (isPark) {
-      map.setLayoutProperty(layer.id, "visibility", layers.parks ? "visible" : "none");
-      if (layer.type === "fill") {
-        map.setPaintProperty(layer.id, "fill-color", "#2f6a3c");
-        map.setPaintProperty(layer.id, "fill-opacity", 0.92);
-      }
-    }
-  }
-
-  const hidden = hiddenRoadClasses(layers);
-  for (const layer of style.layers ?? []) {
-    if (layer.id.startsWith("runner-")) continue;
-    if (layer.type !== "line" && layer.type !== "symbol" && layer.type !== "fill") continue;
-    const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
-    const rememberedFilter = originalRoadFilters.has(layer.id)
-      ? originalRoadFilters.get(layer.id)
-      : layer.filter;
-    const probe = transportationLayerAction(
-      sourceLayer,
-      layer.id,
-      rememberedFilter,
-      hiddenRoadClasses({ highways: false, busy_roads: false }),
-    );
-    if (probe === "keep") continue;
-
-    if (!originalRoadFilters.has(layer.id)) {
-      originalRoadFilters.set(layer.id, layer.filter);
-      const currentVisibility = map.getLayoutProperty(layer.id, "visibility");
-      originalRoadVisibility.set(layer.id, currentVisibility === "none" ? "none" : "visible");
-    }
-
-    const action = transportationLayerAction(sourceLayer, layer.id, rememberedFilter, hidden);
-    if (action === "hide") {
+function applyBasemap(map: mapboxgl.Map, layers: MapLayerVisibility) {
+  if (!map.isStyleLoaded()) return;
+  const styleLayers = map.getStyle()?.layers ?? [];
+  for (const layer of styleLayers) {
+    if (isQuietLabelLayer(layer.id)) {
       map.setLayoutProperty(layer.id, "visibility", "none");
       continue;
     }
-
-    map.setLayoutProperty(
-      layer.id,
-      "visibility",
-      originalRoadVisibility.get(layer.id) ?? "visible",
-    );
-    const nextFilter =
-      action === "filter"
-        ? filterWithoutRoadClasses(rememberedFilter, hidden)
-        : (rememberedFilter ?? null);
-    try {
-      map.setFilter(layer.id, (nextFilter ?? null) as never);
-    } catch {
-      // Leave the original style filter if a layer cannot accept the rewritten one.
+    if (isParkBasemapLayer(layer.id)) {
+      map.setLayoutProperty(layer.id, "visibility", layers.parks ? "visible" : "none");
     }
-  }
-
-  if (map.getLayer("runner-highways")) {
-    map.setLayoutProperty("runner-highways", "visibility", layers.highways ? "visible" : "none");
   }
   if (map.getLayer("runner-busy-roads")) {
     map.setLayoutProperty(
@@ -291,68 +165,177 @@ function styleBaseMap(map: MapLibreMap, layers: MapLayerVisibility) {
       layers.busy_roads ? "visible" : "none",
     );
   }
-
-  sharpenBaseMap(map);
-}
-
-function setPaintSafe(
-  map: MapLibreMap,
-  layerId: string,
-  property: Parameters<MapLibreMap["setPaintProperty"]>[1],
-  value: unknown,
-) {
-  try {
-    map.setPaintProperty(layerId, property, value as never);
-  } catch {
-    // Some style layers reject paint overrides.
+  if (map.getLayer("runner-highways")) {
+    map.setLayoutProperty("runner-highways", "visibility", layers.highways ? "visible" : "none");
   }
 }
 
-function sharpenBaseMap(map: MapLibreMap) {
-  const style = map.getStyle() as StyleSpecification | undefined;
-  if (!style) return;
+function addSourceOnce(map: mapboxgl.Map, id: string, source: mapboxgl.SourceSpecification) {
+  if (map.getSource(id)) return;
+  map.addSource(id, source);
+}
 
-  for (const layer of style.layers ?? []) {
-    if (layer.id.startsWith("runner-")) continue;
+function addLayerOnce(map: mapboxgl.Map, layer: mapboxgl.LayerSpecification) {
+  if (map.getLayer(layer.id)) return;
+  map.addLayer(layer);
+}
 
-    if (layer.type === "symbol") {
-      setPaintSafe(map, layer.id, "text-opacity", 1);
-      setPaintSafe(map, layer.id, "icon-opacity", 1);
-      const haloWidth = map.getPaintProperty(layer.id, "text-halo-width");
-      if (typeof haloWidth !== "object" || haloWidth == null) {
-        setPaintSafe(map, layer.id, "text-halo-width", Math.max(Number(haloWidth) || 0, 1.25));
-      }
-      setPaintSafe(map, layer.id, "text-halo-color", "rgba(6, 10, 8, 0.94)");
-      const textColor = map.getPaintProperty(layer.id, "text-color");
-      if (typeof textColor === "string") {
-        setPaintSafe(map, layer.id, "text-color", "#eef3ef");
-      }
-    }
+function addStreetOverlays(map: mapboxgl.Map) {
+  addSourceOnce(map, "mapbox-streets", {
+    type: "vector",
+    url: "mapbox://mapbox.mapbox-streets-v8",
+  });
 
-    if (layer.type === "line") {
-      const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
-      if (sourceLayer !== "transportation" && !/road|street|path/i.test(layer.id)) continue;
-      const opacity = map.getPaintProperty(layer.id, "line-opacity");
-      if (typeof opacity === "number") {
-        setPaintSafe(map, layer.id, "line-opacity", Math.min(1, Math.max(opacity, 0.92)));
-      } else if (opacity == null) {
-        setPaintSafe(map, layer.id, "line-opacity", 1);
-      }
-      const blur = map.getPaintProperty(layer.id, "line-blur");
-      if (typeof blur === "number" && blur > 0) {
-        setPaintSafe(map, layer.id, "line-blur", 0);
-      }
-      const color = map.getPaintProperty(layer.id, "line-color");
-      if (typeof color === "string") {
-        const lifted = liftMutedColor(color, 0.38);
-        if (lifted) setPaintSafe(map, layer.id, "line-color", lifted);
-      }
-    }
-  }
+  addLayerOnce(map, {
+    id: "runner-busy-roads",
+    type: "line",
+    source: "mapbox-streets",
+    "source-layer": "road",
+    filter: [
+      "in",
+      ["get", "class"],
+      ["literal", ["primary", "secondary", "primary_link", "secondary_link"]],
+    ],
+    layout: { "line-cap": "round", "line-join": "round", visibility: "none" },
+    paint: {
+      "line-color": BUSY_ROAD,
+      "line-opacity": 0.55,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.4, 15, 4, 19, 9],
+    },
+  });
+  addLayerOnce(map, {
+    id: "runner-highways",
+    type: "line",
+    source: "mapbox-streets",
+    "source-layer": "road",
+    filter: [
+      "in",
+      ["get", "class"],
+      ["literal", ["motorway", "motorway_link", "trunk", "trunk_link"]],
+    ],
+    layout: { "line-cap": "round", "line-join": "round", visibility: "none" },
+    paint: {
+      "line-color": HIGHWAY_ALERT,
+      "line-opacity": 0.5,
+      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.8, 15, 5, 19, 11],
+    },
+  });
+}
+
+function addRunnerLayers(map: mapboxgl.Map) {
+  addSourceOnce(map, "runner-route", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] },
+  });
+  addLayerOnce(map, {
+    id: "runner-route-glow",
+    type: "line",
+    source: "runner-route",
+    paint: {
+      "line-color": ROUTE_LIME,
+      "line-width": 18,
+      "line-opacity": 0.18,
+      "line-blur": 12,
+    },
+  });
+  addLayerOnce(map, {
+    id: "runner-route",
+    type: "line",
+    source: "runner-route",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": ROUTE_LIME,
+      "line-width": 5.5,
+    },
+  });
+
+  addSourceOnce(map, "runner-waypoints", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] },
+  });
+  addLayerOnce(map, {
+    id: "runner-waypoints-hit",
+    type: "circle",
+    source: "runner-waypoints",
+    paint: { "circle-radius": 18, "circle-opacity": 0 },
+  });
+  addLayerOnce(map, {
+    id: "runner-waypoints",
+    type: "circle",
+    source: "runner-waypoints",
+    paint: {
+      "circle-radius": 8,
+      "circle-color": "#0a0d0b",
+      "circle-stroke-color": ROUTE_LIME,
+      "circle-stroke-width": 2.4,
+    },
+  });
+  addLayerOnce(map, {
+    id: "runner-waypoint-labels",
+    type: "symbol",
+    source: "runner-waypoints",
+    layout: {
+      "text-field": ["get", "label"],
+      "text-size": 11,
+      "text-font": LABEL_FONT,
+      "text-allow-overlap": true,
+    },
+    paint: { "text-color": "#f4f7f5" },
+  });
+
+  addSourceOnce(map, "user-location", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] },
+  });
+  addLayerOnce(map, {
+    id: "user-location-halo",
+    type: "circle",
+    source: "user-location",
+    paint: {
+      "circle-radius": 22,
+      "circle-color": "#7ee8ff",
+      "circle-opacity": 0.16,
+    },
+  });
+  addLayerOnce(map, {
+    id: "user-location",
+    type: "circle",
+    source: "user-location",
+    paint: {
+      "circle-radius": 6.5,
+      "circle-color": "#9df0ff",
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 2.2,
+    },
+  });
+
+  addSourceOnce(map, "runner-features", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] },
+  });
+  addFeatureImages(map);
+  addLayerOnce(map, {
+    id: "runner-features-halo",
+    type: "circle",
+    source: "runner-features",
+    paint: { "circle-radius": 14, "circle-opacity": 0 },
+  });
+  addLayerOnce(map, {
+    id: "runner-features-unclustered",
+    type: "symbol",
+    source: "runner-features",
+    layout: {
+      "icon-image": ["concat", "runner-feature-", ["get", "kind"]],
+      "icon-size": 0.9,
+      "icon-padding": 0,
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+    },
+  });
 }
 
 export function RunningMap({
-  mapStyleUrl,
+  accessToken,
   points,
   routeCoordinates,
   features,
@@ -364,7 +347,7 @@ export function RunningMap({
   onBoundsChange,
 }: RunningMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
   const addPointRef = useRef(onAddPoint);
   const movePointRef = useRef(onMovePoint);
   const boundsChangeRef = useRef(onBoundsChange);
@@ -386,170 +369,40 @@ export function RunningMap({
   userLocationRef.current = userLocation;
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || !accessToken) return;
 
-    maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
+    mapboxgl.accessToken = accessToken;
     const start = userLocationRef.current;
-    const map = new maplibregl.Map({
+    const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: resolveMapStyle(mapStyleUrl),
+      style: MAPBOX_DARK_STYLE,
       center: start ? [start.lng, start.lat] : [151.2093, -33.8688],
-      zoom: start ? 15.2 : 14.6,
+      zoom: start ? 15.2 : 13.8,
+      pitch: 0,
+      bearing: 0,
       minZoom: 10,
-      maxZoom: 19,
+      maxZoom: 20,
+      maxPitch: 0,
+      dragRotate: false,
+      pitchWithRotate: false,
       fadeDuration: 0,
-      pixelRatio: Math.max(window.devicePixelRatio || 1, 2),
-      canvasContextAttributes: {
-        antialias: true,
-        powerPreference: "high-performance",
-      },
       attributionControl: false,
+      antialias: false,
     });
     mapRef.current = map;
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
 
     const emitBounds = () => {
-      if (map.getZoom() >= 12.2) boundsChangeRef.current(getViewportBounds(map));
+      if (map.getZoom() < 12.2) return;
+      const bounds = getViewportBounds(map);
+      if (bounds) boundsChangeRef.current(bounds);
     };
 
-    map.once("load", () => {
-      const here = userLocationRef.current;
-      if (here) map.jumpTo({ center: [here.lng, here.lat], zoom: 15.2 });
-    });
-
     map.on("style.load", () => {
-      originalRoadFilters.clear();
-      originalRoadVisibility.clear();
-      map.addSource("runner-route", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "runner-route-glow",
-        type: "line",
-        source: "runner-route",
-        paint: {
-          "line-color": "#b8ff3d",
-          "line-width": 12,
-          "line-opacity": 0.16,
-          "line-blur": 7,
-        },
-      });
-      map.addLayer({
-        id: "runner-route",
-        type: "line",
-        source: "runner-route",
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": "#c8ff52",
-          "line-width": 5,
-        },
-      });
-
-      map.addSource("runner-waypoints", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "runner-waypoints-hit",
-        type: "circle",
-        source: "runner-waypoints",
-        paint: { "circle-radius": 18, "circle-opacity": 0 },
-      });
-      map.addLayer({
-        id: "runner-waypoints",
-        type: "circle",
-        source: "runner-waypoints",
-        paint: {
-          "circle-radius": 8,
-          "circle-color": "#111713",
-          "circle-stroke-color": "#c8ff52",
-          "circle-stroke-width": 2,
-        },
-      });
-      map.addLayer({
-        id: "runner-waypoint-labels",
-        type: "symbol",
-        source: "runner-waypoints",
-        layout: {
-          "text-field": ["get", "label"],
-          "text-size": 10,
-          "text-font": ["Noto Sans Regular"],
-          "text-allow-overlap": true,
-        },
-        paint: { "text-color": "#ffffff" },
-      });
-
-      map.addSource("user-location", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "user-location-halo",
-        type: "circle",
-        source: "user-location",
-        paint: {
-          "circle-radius": 16,
-          "circle-color": "#5ad4ff",
-          "circle-opacity": 0.18,
-        },
-      });
-      map.addLayer({
-        id: "user-location",
-        type: "circle",
-        source: "user-location",
-        paint: {
-          "circle-radius": 6,
-          "circle-color": "#7ee8ff",
-          "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": 2,
-        },
-      });
-
-      map.addSource("runner-features", {
-        type: "geojson",
-        data: { type: "FeatureCollection", features: [] },
-      });
-      addFeatureImages(map);
-      map.addLayer({
-        id: "runner-features-halo",
-        type: "circle",
-        source: "runner-features",
-        paint: {
-          "circle-radius": 14,
-          "circle-opacity": 0,
-        },
-      });
-      map.addLayer({
-        id: "runner-features-unclustered",
-        type: "symbol",
-        source: "runner-features",
-        layout: {
-          "icon-image": ["concat", "runner-feature-", ["get", "kind"]],
-          "icon-size": 0.88,
-          "icon-padding": 0,
-          "icon-allow-overlap": true,
-          "icon-ignore-placement": true,
-        },
-      });
-
-      addRoadHighlightLayers(map);
-      styleBaseMap(map, layersRef.current);
-      for (const layerId of [
-        "runner-route-glow",
-        "runner-route",
-        "runner-features-halo",
-        "runner-features-unclustered",
-        "user-location-halo",
-        "user-location",
-        "runner-waypoints-hit",
-        "runner-waypoints",
-        "runner-waypoint-labels",
-      ]) {
-        if (map.getLayer(layerId)) map.moveLayer(layerId);
-      }
-
+      addStreetOverlays(map);
+      addRunnerLayers(map);
+      applyBasemap(map, layersRef.current);
       updateRouteSource(map, routeCoordinatesRef.current);
       updateWaypointSource(map, pointsRef.current);
       updateFeatureSource(map, featuresRef.current, layersRef.current, routeCoordinatesRef.current);
@@ -558,10 +411,12 @@ export function RunningMap({
     });
 
     map.on("moveend", emitBounds);
-    map.on("click", (event: MapMouseEvent) => {
-      const featureHits = map.queryRenderedFeatures(event.point, {
-        layers: ["runner-features-unclustered", "runner-features-halo"],
-      });
+    map.on("click", (event: mapboxgl.MapMouseEvent) => {
+      const hitLayers = ["runner-features-unclustered", "runner-features-halo"].filter((id) =>
+        map.getLayer(id),
+      );
+      const featureHits =
+        hitLayers.length > 0 ? map.queryRenderedFeatures(event.point, { layers: hitLayers }) : [];
       if (featureHits.length > 0 || didDragRef.current) {
         didDragRef.current = false;
         return;
@@ -569,49 +424,41 @@ export function RunningMap({
       addPointRef.current({ lat: event.lngLat.lat, lng: event.lngLat.lng });
     });
 
-    map.on(
-      "click",
-      "runner-features-unclustered",
-      (event: MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
-        const feature = event.features?.[0];
-        if (feature?.geometry.type !== "Point") return;
-        const wrapper = document.createElement("div");
-        wrapper.className = "rws-popup";
-        const title = document.createElement("strong");
-        title.textContent = String(feature.properties?.name ?? "Map detail");
-        wrapper.append(title);
-        if (feature.properties?.detail) {
-          const detail = document.createElement("span");
-          detail.textContent = String(feature.properties.detail);
-          wrapper.append(detail);
-        }
-        const [lng, lat] = feature.geometry.coordinates as [number, number];
-        if (String(feature.properties?.kind) === "drinking_water") {
-          addPointRef.current({ lat, lng }, String(feature.properties?.name ?? "Drinking water"));
-        }
-        new maplibregl.Popup({ offset: 10, closeButton: false })
-          .setLngLat([lng, lat])
-          .setDOMContent(wrapper)
-          .addTo(map);
-      },
-    );
+    map.on("click", "runner-features-unclustered", (event: mapboxgl.MapMouseEvent) => {
+      const feature = event.features?.[0] as MapFeature | undefined;
+      if (feature?.geometry?.type !== "Point") return;
+      const wrapper = document.createElement("div");
+      wrapper.className = "rws-popup";
+      const title = document.createElement("strong");
+      title.textContent = String(feature.properties?.name ?? "Map detail");
+      wrapper.append(title);
+      if (feature.properties?.detail) {
+        const detail = document.createElement("span");
+        detail.textContent = String(feature.properties.detail);
+        wrapper.append(detail);
+      }
+      const [lng, lat] = feature.geometry.coordinates as [number, number];
+      if (String(feature.properties?.kind) === "drinking_water") {
+        addPointRef.current({ lat, lng }, String(feature.properties?.name ?? "Drinking water"));
+      }
+      new mapboxgl.Popup({ offset: 12, closeButton: false, className: "rws-map-popup" })
+        .setLngLat([lng, lat])
+        .setDOMContent(wrapper)
+        .addTo(map);
+    });
 
-    map.on(
-      "mousedown",
-      "runner-waypoints-hit",
-      (event: MapMouseEvent & { features?: MapGeoJSONFeature[] }) => {
-        const feature = event.features?.[0];
-        const index = Number(feature?.properties?.index);
-        if (!Number.isInteger(index)) return;
-        draggedPointRef.current = index;
-        didDragRef.current = true;
-        map.dragPan.disable();
-        map.getCanvas().style.cursor = "grabbing";
-        event.preventDefault();
-      },
-    );
+    map.on("mousedown", "runner-waypoints-hit", (event: mapboxgl.MapMouseEvent) => {
+      const feature = event.features?.[0] as MapFeature | undefined;
+      const index = Number(feature?.properties?.index);
+      if (!Number.isInteger(index)) return;
+      draggedPointRef.current = index;
+      didDragRef.current = true;
+      map.dragPan.disable();
+      map.getCanvas().style.cursor = "grabbing";
+      event.preventDefault();
+    });
 
-    const onMouseMove = (event: MapMouseEvent) => {
+    const onMouseMove = (event: mapboxgl.MapMouseEvent) => {
       if (draggedPointRef.current === null) return;
       movePointRef.current(draggedPointRef.current, {
         lat: event.lngLat.lat,
@@ -632,36 +479,31 @@ export function RunningMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [mapStyleUrl]);
+  }, [accessToken]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map?.isStyleLoaded()) return;
     updateRouteSource(map, routeCoordinates);
     updateFeatureSource(map, featuresRef.current, layersRef.current, routeCoordinates);
   }, [routeCoordinates]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map?.isStyleLoaded()) return;
     updateWaypointSource(map, points);
   }, [points]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map?.isStyleLoaded()) return;
     updateFeatureSource(map, features, layers, routeCoordinatesRef.current);
+    applyBasemap(map, layers);
   }, [features, layers]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
-    styleBaseMap(map, layers);
-  }, [layers]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
+    if (!map?.isStyleLoaded()) return;
     updateUserLocationSource(map, userLocation);
   }, [userLocation]);
 
@@ -670,9 +512,16 @@ export function RunningMap({
     mapRef.current?.flyTo({
       center: [focusPoint.lng, focusPoint.lat],
       zoom: 15.2,
-      duration: 900,
+      pitch: 0,
+      bearing: 0,
+      duration: 700,
+      essential: true,
     });
   }, [focusPoint]);
+
+  if (!accessToken) {
+    return <section className="h-full w-full bg-[#0a0d0b]" aria-label="Sydney running map" />;
+  }
 
   return <section ref={containerRef} className="h-full w-full" aria-label="Sydney running map" />;
 }

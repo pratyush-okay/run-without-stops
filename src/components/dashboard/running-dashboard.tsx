@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthControls } from "@/components/auth/auth-controls";
 import { type AuthIntent, AuthModal } from "@/components/auth/auth-modal";
@@ -9,21 +10,26 @@ import { MetricsToggle } from "@/components/dashboard/metrics-toggle";
 import { PlaceSearch } from "@/components/dashboard/place-search";
 import { RouteComposer } from "@/components/dashboard/route-composer";
 import { RouteSummary } from "@/components/dashboard/route-summary";
-import { type MapLayerVisibility, RunningMap } from "@/components/dashboard/running-map";
 import { SaveRouteDialog } from "@/components/dashboard/save-route-dialog";
 import { SavedRoutesPanel } from "@/components/dashboard/saved-routes-panel";
 import { useRoutePlanner } from "@/hooks/use-route-planner";
 import { useRunEffort } from "@/hooks/use-run-effort";
 import { useRunnerFeatures } from "@/hooks/use-runner-features";
 import { useSavedRoutes } from "@/hooks/use-saved-routes";
+import type { MapLayerVisibility } from "@/lib/maps/layers";
 import { routeDraftKey } from "@/lib/routes/draft";
 import { shareUrlForSlug } from "@/lib/routes/slug";
 import type { MetricUnit } from "@/lib/routing/format";
 import type { GeoPoint } from "@/lib/schemas/features";
 import type { SavedRoute } from "@/lib/schemas/saved-route";
 
+const RunningMap = dynamic(
+  () => import("@/components/dashboard/running-map").then((mod) => mod.RunningMap),
+  { ssr: false, loading: () => <div className="h-full w-full bg-[#0a0d0b]" /> },
+);
+
 type RunningDashboardProps = {
-  mapStyleUrl: string;
+  mapboxToken: string | undefined;
   sharedRoute?: SavedRoute;
 };
 
@@ -36,7 +42,7 @@ const INITIAL_LAYERS: MapLayerVisibility = {
   busy_roads: false,
 };
 
-export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardProps) {
+export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardProps) {
   const [layers, setLayers] = useState(INITIAL_LAYERS);
   const [focusPoint, setFocusPoint] = useState<GeoPoint | undefined>(sharedRoute?.points[0]);
   const [userLocation, setUserLocation] = useState<GeoPoint>();
@@ -214,7 +220,7 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
     <main className="relative h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white">
       <div className="absolute inset-0">
         <RunningMap
-          mapStyleUrl={mapStyleUrl}
+          accessToken={mapboxToken}
           points={planner.points}
           routeCoordinates={planner.route?.coordinates ?? []}
           features={featureState.features}
@@ -329,6 +335,11 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
       {featureState.error || featureState.isPartial ? (
         <div className="pointer-events-none absolute bottom-24 left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-[#ffad91]/20 bg-[#261712]/90 px-3 py-1.5 text-center text-[10px] text-[#ffad91] backdrop-blur md:bottom-28">
           {featureState.error ?? "Some live OSM details are temporarily unavailable"}
+        </div>
+      ) : null}
+      {!mapboxToken ? (
+        <div className="pointer-events-none absolute bottom-24 left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[10px] text-white/70 backdrop-blur md:bottom-28">
+          Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to load the dark map
         </div>
       ) : null}
 
