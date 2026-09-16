@@ -4,13 +4,6 @@ import { env } from "@/env";
 import { shareSlugSchema } from "@/lib/schemas/saved-route";
 import { getSavedRouteBySlug } from "@/lib/supabase/saved-routes";
 
-function mapStyleUrl() {
-  const key = env.NEXT_PUBLIC_STADIA_MAPS_API_KEY;
-  return key
-    ? `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key=${encodeURIComponent(key)}`
-    : "osm-demo";
-}
-
 export async function generateMetadata({ params }: PageProps<"/r/[slug]">) {
   const { slug } = await params;
   const parsed = shareSlugSchema.safeParse(slug);
@@ -32,5 +25,5 @@ export default async function SharedRoutePage({ params }: PageProps<"/r/[slug]">
   const saved = await getSavedRouteBySlug(parsed.data);
   if (!saved) notFound();
 
-  return <RunningDashboard mapStyleUrl={mapStyleUrl()} sharedRoute={saved} />;
+  return <RunningDashboard mapboxToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN} sharedRoute={saved} />;
 }

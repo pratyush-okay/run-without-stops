@@ -10,6 +10,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.pnpm-store/
 
 # testing
 /coverage
@@ -17,7 +18,6 @@
 # next.js
 /.next/
 /out/
-/public/maplibre/
 
 # production
 /build

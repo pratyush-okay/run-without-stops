@@ -1,5 +1,10 @@
-const HIGHWAY_CLASSES = ["motorway", "motorway_link", "trunk", "trunk_link"] as const;
-const BUSY_ROAD_CLASSES = ["primary", "primary_link", "secondary", "secondary_link"] as const;
+export const HIGHWAY_CLASSES = ["motorway", "motorway_link", "trunk", "trunk_link"] as const;
+export const BUSY_ROAD_CLASSES = [
+  "primary",
+  "primary_link",
+  "secondary",
+  "secondary_link",
+] as const;
 
 export type RoadVisibility = {
   highways: boolean;
@@ -44,8 +49,16 @@ export function collectFilterClasses(filter: unknown): string[] {
     return classes;
   }
 
-  if (op === "all" || op === "any" || op === "none" || op === "!") {
+  if (op === "all" || op === "any" || op === "none" || op === "!" || op === "case") {
     return filter.slice(1).flatMap((part) => collectFilterClasses(part));
+  }
+
+  if (op === "step") {
+    const classes: string[] = [];
+    for (let index = 2; index < filter.length; index += 2) {
+      classes.push(...collectFilterClasses(filter[index]));
+    }
+    return classes;
   }
 
   return [];
@@ -92,6 +105,20 @@ export function filterWithoutRoadClasses(existing: unknown, hidden: string[]) {
   return ["all", toExpressionFilter(existing), exclusion];
 }
 
+export function isPathLikeRoadLayer(layerId: string) {
+  return /path|pedestrian|steps|rail/i.test(layerId);
+}
+
+export function isManagedRoadLayer(sourceLayer: string | undefined, layerId: string) {
+  if (isPathLikeRoadLayer(layerId)) return false;
+  return (
+    sourceLayer === "transportation" ||
+    sourceLayer === "transportation_name" ||
+    sourceLayer === "road" ||
+    /(motorway|trunk|primary|secondary|simple)/i.test(layerId)
+  );
+}
+
 export function transportationLayerAction(
   sourceLayer: string | undefined,
   layerId: string,
@@ -99,17 +126,34 @@ export function transportationLayerAction(
   hidden: string[],
 ): "keep" | "hide" | "filter" {
   if (hidden.length === 0) return "keep";
-  const isTransportation =
-    sourceLayer === "transportation" ||
-    sourceLayer === "transportation_name" ||
-    /(motorway|trunk|primary|secondary)/i.test(layerId);
-  if (!isTransportation) return "keep";
+  if (!isManagedRoadLayer(sourceLayer, layerId)) return "keep";
 
   const classes = collectFilterClasses(filter);
   if (classes.length === 0) return "filter";
   if (classes.every((roadClass) => hidden.includes(roadClass))) return "hide";
   if (classes.some((roadClass) => hidden.includes(roadClass))) return "filter";
   return "keep";
+}
+
+export function roadClassTintExpression(
+  original: unknown,
+  visibility: RoadVisibility,
+  highwayColor: string,
+  busyColor: string,
+) {
+  const rules = [
+    ...(visibility.highways ? [{ classes: HIGHWAY_CLASSES, color: highwayColor }] : []),
+    ...(visibility.busy_roads ? [{ classes: BUSY_ROAD_CLASSES, color: busyColor }] : []),
+  ];
+  if (rules.length === 0) return original;
+  return [
+    "case",
+    ...rules.flatMap((rule) => [
+      ["in", ["get", "class"], ["literal", [...rule.classes]]],
+      rule.color,
+    ]),
+    original,
+  ];
 }
 
 function isClassOperand(value: unknown) {

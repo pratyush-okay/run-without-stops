@@ -4,9 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.33.3",
   "scripts": {
-    "predev": "node scripts/prepare-maplibre-worker.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/prepare-maplibre-worker.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "biome check .",
@@ -16,7 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
-    "prepare": "node scripts/prepare-maplibre-worker.mjs && husky"
+    "prepare": "husky"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,md,mjs}": [
@@ -28,7 +26,7 @@
     "@sentry/nextjs": "^10.74.0",
     "@supabase/supabase-js": "^2.116.0",
     "@t3-oss/env-nextjs": "^0.13.11",
-    "maplibre-gl": "^6.10.0",
+    "mapbox-gl": "^3.30.0",
     "next": "16.3.5",
     "posthog-js": "^1.433.5",
     "posthog-node": "^5.52.4",

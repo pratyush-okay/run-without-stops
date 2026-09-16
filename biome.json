@@ -10,11 +10,11 @@
     "includes": [
       "**",
       "!node_modules",
-      "!.pnpm-store",
       "!.next",
       "!coverage",
       "!pnpm-lock.yaml",
-      "!public"
+      "!public",
+      "!.pnpm-store"
     ]
   },
   "css": {
