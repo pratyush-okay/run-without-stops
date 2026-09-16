@@ -1,3 +1,5 @@
+import { downloadText } from "@/lib/routing/download";
+
 export function routeToGpx(coordinates: [number, number][], name = "Run Without Stops") {
   const points = coordinates
     .map(([lng, lat]) => `      <trkpt lat="${lat.toFixed(6)}" lon="${lng.toFixed(6)}"></trkpt>`)
@@ -16,13 +18,7 @@ ${points}
 }
 
 export function downloadGpx(contents: string, filename = "run-without-stops.gpx") {
-  const blob = new Blob([contents], { type: "application/gpx+xml" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadText(contents, filename, "application/gpx+xml");
 }
 
 function escapeXml(value: string) {

@@ -1,8 +1,7 @@
 "use client";
 
 import { useClerk, useUser } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
-import { AuthModal } from "@/components/auth/auth-modal";
+import { useState } from "react";
 
 function AccountIcon() {
   return (
@@ -21,17 +20,18 @@ function AccountIcon() {
 
 type AuthControlsProps = {
   menuPlacement?: "up" | "down";
+  onSignIn: () => void;
+  onOpenSavedRoutes?: () => void;
 };
 
-export function AuthControls({ menuPlacement = "up" }: AuthControlsProps) {
+export function AuthControls({
+  menuPlacement = "up",
+  onSignIn,
+  onOpenSavedRoutes,
+}: AuthControlsProps) {
   const { isLoaded, isSignedIn, user } = useUser();
   const { signOut } = useClerk();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (isSignedIn) setIsModalOpen(false);
-  }, [isSignedIn]);
 
   if (!isLoaded) {
     return (
@@ -44,18 +44,15 @@ export function AuthControls({ menuPlacement = "up" }: AuthControlsProps) {
 
   if (!isSignedIn || !user) {
     return (
-      <>
-        <button
-          type="button"
-          className="grid size-10 place-items-center rounded-full border border-white/8 bg-[#101512]/70 text-white/40 backdrop-blur-xl transition hover:border-white/16 hover:text-white/80 md:size-8"
-          onClick={() => setIsModalOpen(true)}
-          aria-label="Sign in"
-          title="Sign in"
-        >
-          <AccountIcon />
-        </button>
-        {isModalOpen ? <AuthModal onClose={() => setIsModalOpen(false)} /> : null}
-      </>
+      <button
+        type="button"
+        className="grid size-10 place-items-center rounded-full border border-white/8 bg-[#101512]/70 text-white/40 backdrop-blur-xl transition hover:border-white/16 hover:text-white/80 md:size-8"
+        onClick={onSignIn}
+        aria-label="Sign in"
+        title="Sign in"
+      >
+        <AccountIcon />
+      </button>
     );
   }
 
@@ -89,6 +86,19 @@ export function AuthControls({ menuPlacement = "up" }: AuthControlsProps) {
           <p className="truncate px-2.5 py-2 text-[11px] text-white/45">
             {user.primaryEmailAddress?.emailAddress ?? username}
           </p>
+          {onOpenSavedRoutes ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="rws-button w-full text-left"
+              onClick={() => {
+                setIsMenuOpen(false);
+                onOpenSavedRoutes();
+              }}
+            >
+              Saved routes
+            </button>
+          ) : null}
           <button
             type="button"
             role="menuitem"

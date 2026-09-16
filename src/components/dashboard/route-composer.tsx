@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { pointLabelKey, usePointLabels } from "@/hooks/use-point-labels";
 import { featuresNearRoute } from "@/lib/geo";
+import { suggestedRouteName } from "@/lib/routes/name";
+import { fileSafeName } from "@/lib/routes/slug";
+import { downloadPngFromSvg, downloadText } from "@/lib/routing/download";
 import {
   formatDistance,
   formatEffortDuration,
@@ -10,7 +13,8 @@ import {
   type MetricUnit,
 } from "@/lib/routing/format";
 import { downloadGpx, routeToGpx } from "@/lib/routing/gpx";
-import { MAX_ROUTE_STOPS } from "@/lib/routing/points";
+import { routeToSvg, STORY_GRAPHIC_SIZE } from "@/lib/routing/graphic";
+import { isRouteLoop, MAX_ROUTE_STOPS } from "@/lib/routing/points";
 import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import type { RouteMode, RouteResponse } from "@/lib/schemas/route";
 
@@ -33,6 +37,12 @@ type RouteComposerProps = {
   onUseLocation: () => void;
   unit: MetricUnit;
   durationSeconds: number | undefined;
+  savedRouteName?: string | undefined;
+  shareReady?: boolean;
+  shareCopied?: boolean;
+  shareError?: string | undefined;
+  onRequestSave?: (suggestedName: string) => void;
+  onRequestShare?: (suggestedName: string) => void;
 };
 
 export function RouteComposer({
@@ -54,9 +64,17 @@ export function RouteComposer({
   onUseLocation,
   unit,
   durationSeconds,
+  savedRouteName,
+  shareReady = false,
+  shareCopied = false,
+  shareError,
+  onRequestSave,
+  onRequestShare,
 }: RouteComposerProps) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportError, setExportError] = useState<string>();
   const labels = usePointLabels(points, knownLabels);
   const routePoints = (route?.coordinates ?? []).map(([lng, lat]) => ({ lng, lat }));
   const nearbyWater =
@@ -84,9 +102,59 @@ export function RouteComposer({
     );
   }
 
+  const exportTitle =
+    savedRouteName ??
+    suggestedRouteName({
+      startLabel: labels[0],
+      finishLabel: labels.at(-1),
+      isLoop: isRouteLoop(points),
+    });
+  const exportBase = fileSafeName(exportTitle);
+  const exportSubtitle = route
+    ? durationSeconds
+      ? `${formatDistance(route.metrics.distanceMeters, unit)} · ${formatEffortDuration(durationSeconds)}`
+      : formatDistance(route.metrics.distanceMeters, unit)
+    : undefined;
+
   function exportGpx() {
     if (!route) return;
-    downloadGpx(routeToGpx(route.coordinates, "Run Without Stops"));
+    setExportOpen(false);
+    downloadGpx(routeToGpx(route.coordinates, exportTitle), `${exportBase}.gpx`);
+  }
+
+  function exportSvg() {
+    if (!route) return;
+    setExportOpen(false);
+    downloadText(
+      routeToSvg({
+        coordinates: route.coordinates,
+        name: exportTitle,
+        subtitle: exportSubtitle,
+      }),
+      `${exportBase}.svg`,
+      "image/svg+xml",
+    );
+  }
+
+  async function exportImage() {
+    if (!route) return;
+    setExportOpen(false);
+    setExportError(undefined);
+    try {
+      await downloadPngFromSvg(
+        routeToSvg({
+          coordinates: route.coordinates,
+          name: exportTitle,
+          subtitle: exportSubtitle,
+          background: "#0a0d0b",
+        }),
+        `${exportBase}.png`,
+        STORY_GRAPHIC_SIZE.width,
+        STORY_GRAPHIC_SIZE.height,
+      );
+    } catch {
+      setExportError("Image export needs a browser canvas. Try SVG instead.");
+    }
   }
 
   const headline =
@@ -268,13 +336,76 @@ export function RouteComposer({
       </div>
 
       {route ? (
-        <div className="mt-2 grid shrink-0 grid-cols-2 gap-2">
-          <button type="button" className="rws-button min-h-10" onClick={copySummary}>
-            {copied ? "Copied" : "Copy summary"}
-          </button>
-          <button type="button" className="rws-button min-h-10" onClick={exportGpx}>
-            Download GPX
-          </button>
+        <div className="mt-2 shrink-0 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className="rws-button min-h-10" onClick={copySummary}>
+              {copied ? "Copied" : "Copy summary"}
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                className="rws-button min-h-10 w-full"
+                aria-expanded={exportOpen}
+                onClick={() => setExportOpen((open) => !open)}
+              >
+                Export
+              </button>
+              {exportOpen ? (
+                <div
+                  role="menu"
+                  className="rws-panel absolute right-0 bottom-full z-20 mb-1.5 w-full overflow-hidden p-1.5"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="rws-button w-full text-left"
+                    onClick={exportGpx}
+                  >
+                    GPX
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="rws-button w-full text-left"
+                    onClick={() => void exportImage()}
+                  >
+                    Image
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="rws-button w-full text-left"
+                    onClick={exportSvg}
+                  >
+                    SVG overlay
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="rws-button min-h-10"
+              onClick={() => onRequestSave?.(exportTitle)}
+            >
+              {savedRouteName ? "Save again" : "Save route"}
+            </button>
+            <button
+              type="button"
+              className="rws-button min-h-10"
+              onClick={() => onRequestShare?.(exportTitle)}
+            >
+              {shareCopied ? "Link copied" : shareReady ? "Copy share link" : "Share link"}
+            </button>
+          </div>
+          {savedRouteName ? (
+            <p className="text-[10px] text-white/35">Saved as {savedRouteName}</p>
+          ) : (
+            <p className="text-[10px] text-white/30">
+              Export files anytime. Shareable links need a saved account route.
+            </p>
+          )}
+          {exportError ? <p className="text-[10px] text-[#ffad91]">{exportError}</p> : null}
+          {shareError ? <p className="text-[10px] text-[#ffad91]">{shareError}</p> : null}
         </div>
       ) : points.length === 0 ? null : (
         <button

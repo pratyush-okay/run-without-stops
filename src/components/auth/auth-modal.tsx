@@ -5,16 +5,18 @@ import { useEffect, useId, useState } from "react";
 import { usernameSchema } from "@/lib/schemas/profile";
 
 type AuthMode = "sign-in" | "sign-up";
+export type AuthIntent = "save" | "share";
 
 type AuthModalProps = {
   onClose: () => void;
+  intent?: AuthIntent | undefined;
 };
 
 function fieldError(error: { message?: string } | null | undefined) {
   return error?.message;
 }
 
-export function AuthModal({ onClose }: AuthModalProps) {
+export function AuthModal({ onClose, intent }: AuthModalProps) {
   const titleId = useId();
   const { isSignedIn } = useUser();
   const { signIn, errors: signInErrors, fetchStatus: signInStatus } = useSignIn();
@@ -241,8 +243,11 @@ export function AuthModal({ onClose }: AuthModalProps) {
         )}
 
         <p className="mt-4 text-[11px] leading-5 text-white/35">
-          You can keep planning routes without an account. Sign in only when you want saved features
-          later.
+          {intent === "share"
+            ? "Shareable links open in the app for anyone. That needs an account and a saved named route. You can still export GPX, images, and SVG without signing in."
+            : intent === "save"
+              ? "Saving lets you keep multiple named routes and share them as links. Exporting files does not need an account."
+              : "You can keep planning and exporting routes without an account. Sign in to save routes and create shareable links."}
         </p>
       </section>
     </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { pointLabelKey } from "@/hooks/use-point-labels";
 import { distanceMeters } from "@/lib/geo";
+import { routeDraftKey } from "@/lib/routes/draft";
 import {
   addRoutePoint,
   closeRouteLoop,
@@ -15,13 +16,25 @@ import {
 import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import { type RouteMode, type RouteResponse, routeResponseSchema } from "@/lib/schemas/route";
 
-export function useRoutePlanner(features: RunnerFeature[]) {
-  const [points, setPoints] = useState<GeoPoint[]>([]);
-  const [knownLabels, setKnownLabels] = useState<Record<string, string>>({});
-  const [mode, setMode] = useState<RouteMode>("low_stops");
-  const [route, setRoute] = useState<RouteResponse>();
+export type RouteSeed = {
+  points: GeoPoint[];
+  knownLabels?: Record<string, string>;
+  mode?: RouteMode;
+  route?: RouteResponse;
+};
+
+export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
+  const [points, setPoints] = useState<GeoPoint[]>(seed?.points ?? []);
+  const [knownLabels, setKnownLabels] = useState<Record<string, string>>(seed?.knownLabels ?? {});
+  const [mode, setMode] = useState<RouteMode>(seed?.mode ?? "low_stops");
+  const [route, setRoute] = useState<RouteResponse | undefined>(seed?.route);
   const [isRouting, setIsRouting] = useState(false);
   const [error, setError] = useState<string>();
+  const frozenDraftKeyRef = useRef(
+    seed?.route && seed.points.length >= 2
+      ? routeDraftKey(seed.points, seed.mode ?? "low_stops")
+      : undefined,
+  );
 
   const rememberLabel = useCallback((point: GeoPoint, label?: string) => {
     if (!label) return;
@@ -67,13 +80,31 @@ export function useRoutePlanner(features: RunnerFeature[]) {
   }, []);
 
   const clear = useCallback(() => {
+    frozenDraftKeyRef.current = undefined;
     setPoints([]);
     setKnownLabels({});
     setRoute(undefined);
     setError(undefined);
   }, []);
 
+  const loadRoute = useCallback((next: RouteSeed) => {
+    const nextMode = next.mode ?? "low_stops";
+    frozenDraftKeyRef.current =
+      next.route && next.points.length >= 2 ? routeDraftKey(next.points, nextMode) : undefined;
+    setPoints(next.points);
+    setKnownLabels(next.knownLabels ?? {});
+    setMode(nextMode);
+    setRoute(next.route);
+    setError(undefined);
+  }, []);
+
   useEffect(() => {
+    const draftKey = routeDraftKey(points, mode);
+    if (frozenDraftKeyRef.current && frozenDraftKeyRef.current === draftKey) {
+      return;
+    }
+    frozenDraftKeyRef.current = undefined;
+
     if (points.length < 2) {
       setRoute(undefined);
       setError(undefined);
@@ -132,6 +163,7 @@ export function useRoutePlanner(features: RunnerFeature[]) {
     closeLoop,
     undo,
     clear,
+    loadRoute,
     setMode,
   };
 }
