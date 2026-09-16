@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { analyticsHeaders, captureEvent } from "@/lib/analytics/client";
+import { analyticsEvents } from "@/lib/analytics/events";
 import { shortPlaceLabel } from "@/lib/maps/place-label";
 import type { GeoPoint } from "@/lib/schemas/features";
 import { type SearchResult, searchResponseSchema } from "@/lib/schemas/search";
@@ -30,11 +32,17 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
     if (query.trim().length < 2) return;
     setIsSearching(true);
     try {
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`, {
+        headers: analyticsHeaders(),
+      });
       if (!response.ok) throw new Error("Search failed");
       const payload = searchResponseSchema.parse(await response.json());
       setResults(payload.results);
       setIsOpen(true);
+      captureEvent(analyticsEvents.placeSearched, {
+        query_length: query.trim().length,
+        result_count: payload.results.length,
+      });
     } catch {
       setResults([]);
       setIsOpen(true);

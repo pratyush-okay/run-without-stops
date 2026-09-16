@@ -1,6 +1,9 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { analyticsEvents } from "@/lib/analytics/events";
+import { captureRequestEvent } from "@/lib/analytics/server";
 import { profileFromClerkUser } from "@/lib/auth/profile";
+import { reportError } from "@/lib/observability/report-error";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
 import { savedRouteListResponseSchema, saveRouteRequestSchema } from "@/lib/schemas/saved-route";
 import { upsertProfile } from "@/lib/supabase/profiles";
@@ -24,7 +27,8 @@ export async function GET() {
     const routes = await listSavedRoutes(user.id);
     if (!routes) return unavailable();
     return NextResponse.json(savedRouteListResponseSchema.parse({ routes }));
-  } catch {
+  } catch (error) {
+    reportError(error, { route: "/api/routes" });
     return NextResponse.json(apiErrorSchema.parse({ error: "Saved routes could not be loaded" }), {
       status: 500,
     });
@@ -50,8 +54,19 @@ export async function POST(request: Request) {
     await upsertProfile(profileFromClerkUser(user));
     const saved = await createSavedRoute(user.id, parsed.data);
     if (!saved) return unavailable();
+    await captureRequestEvent(
+      request,
+      analyticsEvents.routeSaved,
+      {
+        mode: saved.mode,
+        distance_meters: saved.distanceMeters,
+        point_count: saved.points.length,
+      },
+      user.id,
+    );
     return NextResponse.json(saved, { status: 201 });
-  } catch {
+  } catch (error) {
+    reportError(error, { route: "/api/routes" });
     return NextResponse.json(apiErrorSchema.parse({ error: "Route could not be saved" }), {
       status: 500,
     });

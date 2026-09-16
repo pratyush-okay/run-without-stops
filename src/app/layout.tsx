@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { IdentifyUser } from "@/components/analytics/identify-user";
 import { env } from "@/env";
 import { clerkAppearance } from "@/lib/auth/appearance";
 import "./globals.css";
@@ -34,7 +35,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
-        <ClerkProvider appearance={clerkAppearance}>{children}</ClerkProvider>
+        <ClerkProvider appearance={clerkAppearance}>
+          <IdentifyUser />
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );

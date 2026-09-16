@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { analyticsHeaders } from "@/lib/analytics/client";
 import type { BoundingBox, RunnerFeature } from "@/lib/schemas/features";
 import { featuresResponseSchema } from "@/lib/schemas/features";
 
@@ -24,7 +25,10 @@ export function useRunnerFeatures() {
         const params = new URLSearchParams(
           Object.entries(bounds).map(([key, value]) => [key, String(value)]),
         );
-        const response = await fetch(`/api/features?${params}`, { signal: controller.signal });
+        const response = await fetch(`/api/features?${params}`, {
+          signal: controller.signal,
+          headers: analyticsHeaders(),
+        });
         if (!response.ok) {
           const payload = (await response.json()) as { error?: string };
           throw new Error(payload.error ?? "Map details could not be loaded");

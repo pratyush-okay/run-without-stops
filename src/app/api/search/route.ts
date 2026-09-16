@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { analyticsEvents } from "@/lib/analytics/events";
+import { captureRequestEvent } from "@/lib/analytics/server";
 import { searchSydney } from "@/lib/maps/stadia";
+import { reportError } from "@/lib/observability/report-error";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
 import { searchResponseSchema } from "@/lib/schemas/search";
 
@@ -14,12 +17,17 @@ export async function GET(request: Request) {
 
   try {
     const body = searchResponseSchema.parse({ results: await searchSydney(query) });
+    await captureRequestEvent(request, analyticsEvents.placeSearched, {
+      query_length: query.length,
+      result_count: body.results.length,
+    });
     return NextResponse.json(body, {
       headers: {
         "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
       },
     });
-  } catch {
+  } catch (error) {
+    reportError(error, { route: "/api/search" });
     return NextResponse.json(apiErrorSchema.parse({ error: "Search is temporarily unavailable" }), {
       status: 502,
     });

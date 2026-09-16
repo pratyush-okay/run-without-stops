@@ -16,6 +16,8 @@ import { useRoutePlanner } from "@/hooks/use-route-planner";
 import { useRunEffort } from "@/hooks/use-run-effort";
 import { useRunnerFeatures } from "@/hooks/use-runner-features";
 import { useSavedRoutes } from "@/hooks/use-saved-routes";
+import { analyticsHeaders, captureEvent } from "@/lib/analytics/client";
+import { analyticsEvents } from "@/lib/analytics/events";
 import { routeDraftKey } from "@/lib/routes/draft";
 import { shareUrlForSlug } from "@/lib/routes/slug";
 import type { MetricUnit } from "@/lib/routing/format";
@@ -69,6 +71,18 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
   const { isSignedIn } = useUser();
   const savedRoutes = useSavedRoutes(Boolean(isSignedIn));
 
+  useEffect(() => {
+    captureEvent(analyticsEvents.dashboardOpened, {
+      shared: Boolean(sharedRoute),
+    });
+    if (!sharedRoute) return;
+    captureEvent(analyticsEvents.sharedRouteViewed, {
+      share_slug: sharedRoute.shareSlug,
+      mode: sharedRoute.mode,
+      distance_meters: sharedRoute.distanceMeters,
+    });
+  }, [sharedRoute]);
+
   const currentDraftKey = useMemo(
     () => routeDraftKey(planner.points, planner.mode),
     [planner.mode, planner.points],
@@ -80,7 +94,7 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
 
   useEffect(() => {
     if (!isSignedIn) return;
-    void fetch("/api/me", { method: "POST" });
+    void fetch("/api/me", { method: "POST", headers: analyticsHeaders() });
     setIsAuthOpen(false);
     const pending = pendingAuthRef.current;
     pendingAuthRef.current = undefined;
@@ -106,7 +120,11 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
   }, [sharedRoute]);
 
   function toggleLayer(layer: keyof MapLayerVisibility) {
-    setLayers((current) => ({ ...current, [layer]: !current[layer] }));
+    setLayers((current) => {
+      const enabled = !current[layer];
+      captureEvent(analyticsEvents.mapLayerToggled, { layer, enabled });
+      return { ...current, [layer]: enabled };
+    });
   }
 
   function useMyLocation() {
@@ -117,6 +135,7 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
         setFocusPoint(point);
         setUserLocation(point);
         planner.addPoint(point, "My location");
+        captureEvent(analyticsEvents.myLocationUsed, { source: "geolocation" });
       },
       () => undefined,
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 15_000 },
@@ -127,6 +146,7 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
     pendingAuthRef.current = intent;
     setAuthIntent(intent);
     setIsAuthOpen(true);
+    captureEvent(analyticsEvents.signInOpened, { intent: intent ?? "account" });
   }
 
   function requestSave(name: string) {
@@ -148,6 +168,7 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
       await navigator.clipboard.writeText(url);
       setShareError(undefined);
       setShareCopied(true);
+      captureEvent(analyticsEvents.routeShared, { share_slug: route.shareSlug });
       window.setTimeout(() => setShareCopied(false), 1800);
     } catch {
       setShareCopied(false);
@@ -186,6 +207,11 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
       });
       setCurrentSaved(saved);
       setIsSaveOpen(false);
+      captureEvent(analyticsEvents.routeSaved, {
+        mode: saved.mode,
+        distance_meters: saved.distanceMeters,
+        for_share: saveForShare,
+      });
       if (saveForShare) await copyShareLink(saved);
     } catch (caught) {
       setSaveError(caught instanceof Error ? caught.message : "Route could not be saved");
@@ -205,6 +231,7 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
       });
       setCurrentSaved(saved);
       setFocusPoint(saved.points[0]);
+      captureEvent(analyticsEvents.savedRouteLoaded, { route_id: saved.id, mode: saved.mode });
     } catch (caught) {
       setSaveError(caught instanceof Error ? caught.message : "Route could not be loaded");
     }
@@ -233,22 +260,33 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
             onSelect={(point, label) => {
               setFocusPoint(point);
               planner.addPoint(point, label);
+              captureEvent(analyticsEvents.placeSelected, { source: "search" });
             }}
             onLocate={(point) => {
               setFocusPoint(point);
               setUserLocation(point);
               planner.addPoint(point, "My location");
+              captureEvent(analyticsEvents.myLocationUsed, { source: "search" });
             }}
           />
         </div>
         <div className="pointer-events-auto shrink-0">
-          <MetricsToggle unit={unit} onChange={setUnit} />
+          <MetricsToggle
+            unit={unit}
+            onChange={(next) => {
+              setUnit(next);
+              captureEvent(analyticsEvents.metricUnitChanged, { unit: next });
+            }}
+          />
         </div>
         <div className="pointer-events-auto shrink-0 md:hidden">
           <AuthControls
             menuPlacement="down"
             onSignIn={() => openAuth()}
-            onOpenSavedRoutes={() => setIsRoutesOpen(true)}
+            onOpenSavedRoutes={() => {
+              setIsRoutesOpen(true);
+              captureEvent(analyticsEvents.savedRoutesOpened);
+            }}
           />
         </div>
       </div>
@@ -305,7 +343,10 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
           <div className="hidden md:block">
             <AuthControls
               onSignIn={() => openAuth()}
-              onOpenSavedRoutes={() => setIsRoutesOpen(true)}
+              onOpenSavedRoutes={() => {
+                setIsRoutesOpen(true);
+                captureEvent(analyticsEvents.savedRoutesOpened);
+              }}
             />
           </div>
         </div>
@@ -368,10 +409,12 @@ export function RunningDashboard({ mapStyleUrl, sharedRoute }: RunningDashboardP
           onDelete={(id) => {
             void savedRoutes.remove(id);
             if (currentSaved?.id === id) setCurrentSaved(undefined);
+            captureEvent(analyticsEvents.savedRouteDeleted, { route_id: id });
           }}
           onRename={(id, name) => {
             void savedRoutes.rename(id, name).then((saved) => {
               if (currentSaved?.id === id) setCurrentSaved(saved);
+              captureEvent(analyticsEvents.savedRouteRenamed, { route_id: id });
             });
           }}
         />

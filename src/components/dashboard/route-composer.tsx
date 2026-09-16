@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { pointLabelKey, usePointLabels } from "@/hooks/use-point-labels";
+import { captureEvent } from "@/lib/analytics/client";
+import { analyticsEvents } from "@/lib/analytics/events";
 import { featuresNearRoute } from "@/lib/geo";
 import { suggestedRouteName } from "@/lib/routes/name";
 import { fileSafeName } from "@/lib/routes/slug";
@@ -96,6 +98,7 @@ export function RouteComposer({
     void navigator.clipboard.writeText(text).then(
       () => {
         setCopied(true);
+        captureEvent(analyticsEvents.routeSummaryCopied, { mode, unit });
         window.setTimeout(() => setCopied(false), 1600);
       },
       () => undefined,
@@ -120,6 +123,7 @@ export function RouteComposer({
     if (!route) return;
     setExportOpen(false);
     downloadGpx(routeToGpx(route.coordinates, exportTitle), `${exportBase}.gpx`);
+    captureEvent(analyticsEvents.routeExported, { format: "gpx", mode });
   }
 
   function exportSvg() {
@@ -134,6 +138,7 @@ export function RouteComposer({
       `${exportBase}.svg`,
       "image/svg+xml",
     );
+    captureEvent(analyticsEvents.routeExported, { format: "svg", mode });
   }
 
   async function exportImage() {
@@ -152,6 +157,7 @@ export function RouteComposer({
         STORY_GRAPHIC_SIZE.width,
         STORY_GRAPHIC_SIZE.height,
       );
+      captureEvent(analyticsEvents.routeExported, { format: "png", mode });
     } catch {
       setExportError("Image export needs a browser canvas. Try SVG instead.");
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { analyticsHeaders } from "@/lib/analytics/client";
 import type { GeoPoint } from "@/lib/schemas/features";
 import { reverseResponseSchema } from "@/lib/schemas/search";
 
@@ -29,7 +30,10 @@ export function usePointLabels(points: GeoPoint[], known: Record<string, string>
           lng: String(point.lng),
         });
         try {
-          const response = await fetch(`/api/reverse?${params}`, { signal: controller.signal });
+          const response = await fetch(`/api/reverse?${params}`, {
+            signal: controller.signal,
+            headers: analyticsHeaders(),
+          });
           if (!response.ok) return [key, "Pinned place"] as const;
           const payload = reverseResponseSchema.parse(await response.json());
           return [key, payload.label] as const;

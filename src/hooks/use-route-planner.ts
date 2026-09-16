@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { pointLabelKey } from "@/hooks/use-point-labels";
+import { analyticsHeaders, captureEvent } from "@/lib/analytics/client";
+import { analyticsEvents } from "@/lib/analytics/events";
 import { distanceMeters } from "@/lib/geo";
 import { routeDraftKey } from "@/lib/routes/draft";
 import {
@@ -69,11 +71,13 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
 
   const reversePoints = useCallback(() => {
     setPoints((current) => reverseRoutePoints(current));
-  }, []);
+    captureEvent(analyticsEvents.routeReversed, { point_count: points.length });
+  }, [points.length]);
 
   const closeLoop = useCallback(() => {
     setPoints((current) => closeRouteLoop(current));
-  }, []);
+    captureEvent(analyticsEvents.routeLoopClosed, { point_count: points.length });
+  }, [points.length]);
 
   const undo = useCallback(() => {
     setPoints((current) => current.slice(0, -1));
@@ -85,6 +89,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     setKnownLabels({});
     setRoute(undefined);
     setError(undefined);
+    captureEvent(analyticsEvents.routeCleared);
   }, []);
 
   const loadRoute = useCallback((next: RouteSeed) => {
@@ -117,7 +122,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
       try {
         const response = await fetch("/api/route", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...analyticsHeaders() },
           body: JSON.stringify({
             points,
             mode,
@@ -132,11 +137,21 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
           const payload = (await response.json()) as { error?: string };
           throw new Error(payload.error ?? "Route could not be calculated");
         }
-        setRoute(routeResponseSchema.parse(await response.json()));
+        const computed = routeResponseSchema.parse(await response.json());
+        setRoute(computed);
         setError(undefined);
+        captureEvent(analyticsEvents.routeComputed, {
+          mode,
+          point_count: points.length,
+          provider: computed.provider,
+          distance_meters: computed.metrics.distanceMeters,
+          traffic_signals: computed.metrics.trafficSignals,
+          crossings: computed.metrics.crossings,
+        });
       } catch (caught) {
         if (caught instanceof DOMException && caught.name === "AbortError") return;
         setError(caught instanceof Error ? caught.message : "Route could not be calculated");
+        captureEvent(analyticsEvents.routeComputeFailed, { mode, point_count: points.length });
       } finally {
         if (!controller.signal.aborted) setIsRouting(false);
       }
@@ -147,6 +162,11 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
       controller.abort();
     };
   }, [features, mode, points]);
+
+  const setRouteMode = useCallback((next: RouteMode) => {
+    setMode(next);
+    captureEvent(analyticsEvents.routeModeChanged, { mode: next });
+  }, []);
 
   return {
     points,
@@ -164,6 +184,6 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     undo,
     clear,
     loadRoute,
-    setMode,
+    setMode: setRouteMode,
   };
 }

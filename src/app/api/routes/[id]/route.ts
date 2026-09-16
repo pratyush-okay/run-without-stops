@@ -1,5 +1,8 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { analyticsEvents } from "@/lib/analytics/events";
+import { captureRequestEvent, captureServerEvent } from "@/lib/analytics/server";
+import { reportError } from "@/lib/observability/report-error";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
 import { renameRouteRequestSchema, savedRouteSchema } from "@/lib/schemas/saved-route";
 import {
@@ -32,8 +35,14 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!saved) {
       return NextResponse.json(apiErrorSchema.parse({ error: "Route not found" }), { status: 404 });
     }
+    await captureServerEvent({
+      distinctId: user.id,
+      event: analyticsEvents.savedRouteLoaded,
+      properties: { route_id: saved.id, mode: saved.mode },
+    });
     return NextResponse.json(savedRouteSchema.parse(saved));
-  } catch {
+  } catch (error) {
+    reportError(error, { route: "/api/routes/[id]" });
     return NextResponse.json(apiErrorSchema.parse({ error: "Route could not be loaded" }), {
       status: 500,
     });
@@ -63,8 +72,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!saved) {
       return NextResponse.json(apiErrorSchema.parse({ error: "Route not found" }), { status: 404 });
     }
+    await captureRequestEvent(
+      request,
+      analyticsEvents.savedRouteRenamed,
+      { route_id: saved.id },
+      user.id,
+    );
     return NextResponse.json(savedRouteSchema.parse(saved));
-  } catch {
+  } catch (error) {
+    reportError(error, { route: "/api/routes/[id]" });
     return NextResponse.json(apiErrorSchema.parse({ error: "Route could not be renamed" }), {
       status: 500,
     });
@@ -87,8 +103,14 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (!deleted) {
       return NextResponse.json(apiErrorSchema.parse({ error: "Route not found" }), { status: 404 });
     }
+    await captureServerEvent({
+      distinctId: user.id,
+      event: analyticsEvents.savedRouteDeleted,
+      properties: { route_id: id },
+    });
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    reportError(error, { route: "/api/routes/[id]" });
     return NextResponse.json(apiErrorSchema.parse({ error: "Route could not be deleted" }), {
       status: 500,
     });

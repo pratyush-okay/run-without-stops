@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { analyticsHeaders } from "@/lib/analytics/client";
 import {
   type SavedRoute,
   type SavedRouteSummary,
@@ -29,7 +30,7 @@ export function useSavedRoutes(enabled: boolean) {
     }
     setIsLoading(true);
     try {
-      const response = await fetch("/api/routes");
+      const response = await fetch("/api/routes", { headers: analyticsHeaders() });
       if (!response.ok)
         throw new Error(await readError(response, "Saved routes could not be loaded"));
       const payload = savedRouteListResponseSchema.parse(await response.json());
@@ -47,7 +48,7 @@ export function useSavedRoutes(enabled: boolean) {
   }, [refresh]);
 
   const load = useCallback(async (id: string): Promise<SavedRoute> => {
-    const response = await fetch(`/api/routes/${id}`);
+    const response = await fetch(`/api/routes/${id}`, { headers: analyticsHeaders() });
     if (!response.ok) throw new Error(await readError(response, "Route could not be loaded"));
     return savedRouteSchema.parse(await response.json());
   }, []);
@@ -62,7 +63,7 @@ export function useSavedRoutes(enabled: boolean) {
     }) => {
       const response = await fetch("/api/routes", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...analyticsHeaders() },
         body: JSON.stringify(input),
       });
       if (!response.ok) throw new Error(await readError(response, "Route could not be saved"));
@@ -76,7 +77,7 @@ export function useSavedRoutes(enabled: boolean) {
   const rename = useCallback(async (id: string, name: string) => {
     const response = await fetch(`/api/routes/${id}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...analyticsHeaders() },
       body: JSON.stringify({ name }),
     });
     if (!response.ok) throw new Error(await readError(response, "Route could not be renamed"));
@@ -86,7 +87,10 @@ export function useSavedRoutes(enabled: boolean) {
   }, []);
 
   const remove = useCallback(async (id: string) => {
-    const response = await fetch(`/api/routes/${id}`, { method: "DELETE" });
+    const response = await fetch(`/api/routes/${id}`, {
+      method: "DELETE",
+      headers: analyticsHeaders(),
+    });
     if (!response.ok) throw new Error(await readError(response, "Route could not be deleted"));
     setRoutes((current) => current.filter((route) => route.id !== id));
   }, []);

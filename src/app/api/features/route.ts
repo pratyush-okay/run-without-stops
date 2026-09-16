@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { analyticsEvents } from "@/lib/analytics/events";
+import { captureRequestEvent } from "@/lib/analytics/server";
 import { boundingBoxDiagonalMeters, isWithinSydney, quantizeBoundingBox } from "@/lib/geo";
+import { reportError } from "@/lib/observability/report-error";
 import { fetchRunnerFeatures } from "@/lib/osm/overpass";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
 import { boundingBoxSchema, featuresResponseSchema } from "@/lib/schemas/features";
@@ -33,12 +36,17 @@ export async function GET(request: Request) {
       attribution: "© OpenStreetMap contributors",
       partial: result.partial,
     });
+    await captureRequestEvent(request, analyticsEvents.featuresLoaded, {
+      feature_count: body.features.length,
+      partial: body.partial,
+    });
     return NextResponse.json(body, {
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
       },
     });
-  } catch {
+  } catch (error) {
+    reportError(error, { route: "/api/features" });
     return NextResponse.json(
       apiErrorSchema.parse({ error: "Runner map data is temporarily unavailable" }),
       { status: 502 },
