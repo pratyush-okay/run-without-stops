@@ -11,19 +11,22 @@ import {
 import {
   BUSY_ROAD,
   HIGHWAY_ALERT,
-  isBusyRoadBasemapLayer,
-  isHighwayBasemapLayer,
-  isParkBasemapLayer,
+  isExclusiveParkLayer,
+  isMixedParkLayer,
   isQuietLabelLayer,
   isRunnerOverlayLayer,
   MAPBOX_DARK_STYLE,
   type MapLayerVisibility,
+  PARK_CLASSES,
   PARK_FILL,
+  parkFillExpression,
   ROUTE_LIME,
 } from "@/lib/maps/layers";
 import {
   filterWithoutRoadClasses,
   hiddenRoadClasses,
+  isManagedRoadLayer,
+  roadClassTintExpression,
   transportationLayerAction,
 } from "@/lib/maps/road-visibility";
 import type { BoundingBox, GeoPoint, RunnerFeature } from "@/lib/schemas/features";
@@ -155,12 +158,32 @@ function addFeatureImages(map: mapboxgl.Map) {
   }
 }
 
-const originalLineColor = new Map<string, mapboxgl.DataDrivenPropertyValueSpecification<string>>();
-const originalFillColor = new Map<string, mapboxgl.DataDrivenPropertyValueSpecification<string>>();
-const originalFilter = new Map<string, mapboxgl.FilterSpecification | undefined>();
+type StyleMemory = {
+  lineColor: Map<string, mapboxgl.DataDrivenPropertyValueSpecification<string>>;
+  fillColor: Map<string, mapboxgl.DataDrivenPropertyValueSpecification<string>>;
+  filter: Map<string, mapboxgl.FilterSpecification | undefined>;
+};
+
+const styleMemory = new WeakMap<mapboxgl.Map, StyleMemory>();
+
+function memoryFor(map: mapboxgl.Map) {
+  const existing = styleMemory.get(map);
+  if (existing) return existing;
+  const created: StyleMemory = {
+    lineColor: new Map(),
+    fillColor: new Map(),
+    filter: new Map(),
+  };
+  styleMemory.set(map, created);
+  return created;
+}
+
+function resetStyleMemory(map: mapboxgl.Map) {
+  styleMemory.delete(map);
+}
 
 function rememberPaint(map: mapboxgl.Map, id: string, property: "line-color" | "fill-color") {
-  const store = property === "line-color" ? originalLineColor : originalFillColor;
+  const store = property === "line-color" ? memoryFor(map).lineColor : memoryFor(map).fillColor;
   if (store.has(id)) return;
   try {
     store.set(
@@ -173,35 +196,38 @@ function rememberPaint(map: mapboxgl.Map, id: string, property: "line-color" | "
 }
 
 function rememberFilter(map: mapboxgl.Map, id: string) {
-  if (originalFilter.has(id)) return;
+  const store = memoryFor(map).filter;
+  if (store.has(id)) return;
   try {
-    originalFilter.set(id, map.getFilter(id) ?? undefined);
+    store.set(id, map.getFilter(id) ?? undefined);
   } catch {
-    originalFilter.set(id, undefined);
+    store.set(id, undefined);
   }
 }
 
-function tintLayer(map: mapboxgl.Map, id: string, type: string, color: string, on: boolean) {
-  if (type === "line") {
-    rememberPaint(map, id, "line-color");
-    const restored = originalLineColor.get(id);
-    try {
-      if (on) map.setPaintProperty(id, "line-color", color);
-      else if (restored !== undefined) map.setPaintProperty(id, "line-color", restored);
-    } catch {
-      // Symbol/case layers without line-color stay as-is.
-    }
-    return;
+function setPaint(
+  map: mapboxgl.Map,
+  id: string,
+  property: "line-color" | "fill-color",
+  value: unknown,
+) {
+  if (value == null) return;
+  try {
+    map.setPaintProperty(
+      id,
+      property,
+      value as mapboxgl.DataDrivenPropertyValueSpecification<string>,
+    );
+  } catch {
+    // Symbol/case layers without this paint property stay as-is.
   }
-  if (type === "fill") {
-    rememberPaint(map, id, "fill-color");
-    const restored = originalFillColor.get(id);
-    try {
-      if (on) map.setPaintProperty(id, "fill-color", color);
-      else if (restored !== undefined) map.setPaintProperty(id, "fill-color", restored);
-    } catch {
-      // Outline-only fills stay as-is.
-    }
+}
+
+function applyLayerFilter(map: mapboxgl.Map, id: string, nextFilter: unknown) {
+  try {
+    map.setFilter(id, (nextFilter as mapboxgl.FilterSpecification | undefined) ?? null);
+  } catch {
+    // Keep the previous filter if Mapbox rejects the expression.
   }
 }
 
@@ -211,57 +237,80 @@ function applyBasemap(map: mapboxgl.Map, layers: MapLayerVisibility) {
     highways: layers.highways,
     busy_roads: layers.busy_roads,
   });
-  const styleLayers = map.getStyle()?.layers ?? [];
-  for (const layer of styleLayers) {
+  const originals = memoryFor(map);
+  const roadVisibility = { highways: layers.highways, busy_roads: layers.busy_roads };
+
+  for (const layer of map.getStyle()?.layers ?? []) {
     if (isRunnerOverlayLayer(layer.id)) continue;
     if (isQuietLabelLayer(layer.id)) {
       map.setLayoutProperty(layer.id, "visibility", "none");
       continue;
     }
-    if (isParkBasemapLayer(layer.id)) {
+
+    if (isExclusiveParkLayer(layer.id)) {
       map.setLayoutProperty(layer.id, "visibility", layers.parks ? "visible" : "none");
-      tintLayer(map, layer.id, layer.type, PARK_FILL, layers.parks);
+      if (layer.type === "fill") {
+        rememberPaint(map, layer.id, "fill-color");
+        setPaint(
+          map,
+          layer.id,
+          "fill-color",
+          layers.parks ? PARK_FILL : originals.fillColor.get(layer.id),
+        );
+      }
+      continue;
+    }
+
+    if (isMixedParkLayer(layer.id) && layer.type === "fill") {
+      rememberFilter(map, layer.id);
+      rememberPaint(map, layer.id, "fill-color");
+      const originalFilter = originals.filter.get(layer.id);
+      const originalFill = originals.fillColor.get(layer.id);
+      applyLayerFilter(
+        map,
+        layer.id,
+        layers.parks ? originalFilter : filterWithoutRoadClasses(originalFilter, [...PARK_CLASSES]),
+      );
+      setPaint(
+        map,
+        layer.id,
+        "fill-color",
+        layers.parks && originalFill !== undefined
+          ? parkFillExpression(originalFill, PARK_FILL)
+          : originalFill,
+      );
       continue;
     }
 
     const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
+    if (!isManagedRoadLayer(sourceLayer, layer.id)) continue;
+
     rememberFilter(map, layer.id);
-    const action = transportationLayerAction(
-      sourceLayer,
-      layer.id,
-      originalFilter.get(layer.id),
-      hiddenRoads,
-    );
+    const originalFilter = originals.filter.get(layer.id);
+    const action = transportationLayerAction(sourceLayer, layer.id, originalFilter, hiddenRoads);
     if (action === "hide") {
       map.setLayoutProperty(layer.id, "visibility", "none");
       continue;
     }
-    if (action === "filter") {
-      map.setLayoutProperty(layer.id, "visibility", "visible");
-      const nextFilter = filterWithoutRoadClasses(originalFilter.get(layer.id), hiddenRoads);
-      try {
-        map.setFilter(layer.id, (nextFilter as mapboxgl.FilterSpecification | undefined) ?? null);
-      } catch {
-        map.setLayoutProperty(
-          layer.id,
-          "visibility",
-          layers.highways || layers.busy_roads ? "visible" : "none",
-        );
-      }
-    } else {
-      const original = originalFilter.get(layer.id);
-      try {
-        map.setFilter(layer.id, original ?? null);
-      } catch {
-        // Layers without filters stay as-is.
-      }
-    }
 
-    if (isHighwayBasemapLayer(layer.id)) {
-      tintLayer(map, layer.id, layer.type, HIGHWAY_ALERT, layers.highways);
-    } else if (isBusyRoadBasemapLayer(layer.id)) {
-      tintLayer(map, layer.id, layer.type, BUSY_ROAD, layers.busy_roads);
-    }
+    map.setLayoutProperty(layer.id, "visibility", "visible");
+    applyLayerFilter(
+      map,
+      layer.id,
+      action === "filter" ? filterWithoutRoadClasses(originalFilter, hiddenRoads) : originalFilter,
+    );
+
+    if (layer.type !== "line") continue;
+    rememberPaint(map, layer.id, "line-color");
+    const originalLine = originals.lineColor.get(layer.id);
+    setPaint(
+      map,
+      layer.id,
+      "line-color",
+      originalLine === undefined
+        ? undefined
+        : roadClassTintExpression(originalLine, roadVisibility, HIGHWAY_ALERT, BUSY_ROAD),
+    );
   }
 }
 
@@ -453,6 +502,7 @@ export function RunningMap({
     };
 
     map.on("style.load", () => {
+      resetStyleMemory(map);
       addRunnerLayers(map);
       applyBasemap(map, layersRef.current);
       updateRouteSource(map, routeCoordinatesRef.current);
@@ -550,8 +600,13 @@ export function RunningMap({
     const map = mapRef.current;
     if (!map?.isStyleLoaded()) return;
     updateFeatureSource(map, features, layers, routeCoordinatesRef.current);
-    applyBasemap(map, layers);
   }, [features, layers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    applyBasemap(map, layers);
+  }, [layers]);
 
   useEffect(() => {
     const map = mapRef.current;

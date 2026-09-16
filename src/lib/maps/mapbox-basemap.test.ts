@@ -5,6 +5,7 @@ import {
   isQuietLabelLayer,
   isRunnerOverlayLayer,
   MAPBOX_DARK_STYLE,
+  parkFillExpression,
 } from "@/lib/maps/layers";
 
 describe("Mapbox 2D dark basemap", () => {
@@ -20,11 +21,18 @@ describe("Mapbox 2D dark basemap", () => {
     expect(isQuietLabelLayer("settlement-major-label")).toBe(false);
   });
 
-  it("targets park landcover layers for the parks toggle", () => {
+  it("targets dedicated park layers and mixed landuse, not all vegetation", () => {
     expect(isParkBasemapLayer("national-park")).toBe(true);
     expect(isParkBasemapLayer("landuse")).toBe(true);
+    expect(isParkBasemapLayer("landcover")).toBe(false);
     expect(isParkBasemapLayer("road-motorway-trunk")).toBe(false);
     expect(isParkBasemapLayer("poi-label")).toBe(false);
+    expect(parkFillExpression("#111", "#2f6a3c")).toEqual([
+      "case",
+      ["in", ["get", "class"], ["literal", ["park", "pitch"]]],
+      "#2f6a3c",
+      "#111",
+    ]);
   });
 
   it("hides motorways and major links with the highways toggle", () => {
