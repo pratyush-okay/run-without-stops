@@ -22,6 +22,19 @@ describe("road visibility helpers", () => {
     expect(hiddenRoadClasses({ highways: true, busy_roads: false })).toContain("primary");
   });
 
+  it("filters Mapbox secondary-tertiary layers instead of hiding tertiary streets", () => {
+    expect(
+      transportationLayerAction(
+        "road",
+        "road-secondary-tertiary",
+        ["match", ["get", "class"], ["secondary", "tertiary"], true, false],
+        ["primary", "secondary", "primary_link", "secondary_link"],
+      ),
+    ).toBe("filter");
+    expect(
+      transportationLayerAction("road", "road-street", undefined, ["motorway", "primary"]),
+    ).toBe("keep");
+  });
   it("hides a motorway-only layer when highways are off", () => {
     expect(
       transportationLayerAction(

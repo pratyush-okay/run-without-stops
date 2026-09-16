@@ -11,12 +11,21 @@ import {
 import {
   BUSY_ROAD,
   HIGHWAY_ALERT,
+  isBusyRoadBasemapLayer,
+  isHighwayBasemapLayer,
   isParkBasemapLayer,
   isQuietLabelLayer,
+  isRunnerOverlayLayer,
   MAPBOX_DARK_STYLE,
   type MapLayerVisibility,
+  PARK_FILL,
   ROUTE_LIME,
 } from "@/lib/maps/layers";
+import {
+  filterWithoutRoadClasses,
+  hiddenRoadClasses,
+  transportationLayerAction,
+} from "@/lib/maps/road-visibility";
 import type { BoundingBox, GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 
 export type { MapLayerVisibility };
@@ -146,27 +155,113 @@ function addFeatureImages(map: mapboxgl.Map) {
   }
 }
 
+const originalLineColor = new Map<string, mapboxgl.DataDrivenPropertyValueSpecification<string>>();
+const originalFillColor = new Map<string, mapboxgl.DataDrivenPropertyValueSpecification<string>>();
+const originalFilter = new Map<string, mapboxgl.FilterSpecification | undefined>();
+
+function rememberPaint(map: mapboxgl.Map, id: string, property: "line-color" | "fill-color") {
+  const store = property === "line-color" ? originalLineColor : originalFillColor;
+  if (store.has(id)) return;
+  try {
+    store.set(
+      id,
+      map.getPaintProperty(id, property) as mapboxgl.DataDrivenPropertyValueSpecification<string>,
+    );
+  } catch {
+    // Layer has no color paint property.
+  }
+}
+
+function rememberFilter(map: mapboxgl.Map, id: string) {
+  if (originalFilter.has(id)) return;
+  try {
+    originalFilter.set(id, map.getFilter(id) ?? undefined);
+  } catch {
+    originalFilter.set(id, undefined);
+  }
+}
+
+function tintLayer(map: mapboxgl.Map, id: string, type: string, color: string, on: boolean) {
+  if (type === "line") {
+    rememberPaint(map, id, "line-color");
+    const restored = originalLineColor.get(id);
+    try {
+      if (on) map.setPaintProperty(id, "line-color", color);
+      else if (restored !== undefined) map.setPaintProperty(id, "line-color", restored);
+    } catch {
+      // Symbol/case layers without line-color stay as-is.
+    }
+    return;
+  }
+  if (type === "fill") {
+    rememberPaint(map, id, "fill-color");
+    const restored = originalFillColor.get(id);
+    try {
+      if (on) map.setPaintProperty(id, "fill-color", color);
+      else if (restored !== undefined) map.setPaintProperty(id, "fill-color", restored);
+    } catch {
+      // Outline-only fills stay as-is.
+    }
+  }
+}
+
 function applyBasemap(map: mapboxgl.Map, layers: MapLayerVisibility) {
   if (!map.isStyleLoaded()) return;
+  const hiddenRoads = hiddenRoadClasses({
+    highways: layers.highways,
+    busy_roads: layers.busy_roads,
+  });
   const styleLayers = map.getStyle()?.layers ?? [];
   for (const layer of styleLayers) {
+    if (isRunnerOverlayLayer(layer.id)) continue;
     if (isQuietLabelLayer(layer.id)) {
       map.setLayoutProperty(layer.id, "visibility", "none");
       continue;
     }
     if (isParkBasemapLayer(layer.id)) {
       map.setLayoutProperty(layer.id, "visibility", layers.parks ? "visible" : "none");
+      tintLayer(map, layer.id, layer.type, PARK_FILL, layers.parks);
+      continue;
     }
-  }
-  if (map.getLayer("runner-busy-roads")) {
-    map.setLayoutProperty(
-      "runner-busy-roads",
-      "visibility",
-      layers.busy_roads ? "visible" : "none",
+
+    const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
+    rememberFilter(map, layer.id);
+    const action = transportationLayerAction(
+      sourceLayer,
+      layer.id,
+      originalFilter.get(layer.id),
+      hiddenRoads,
     );
-  }
-  if (map.getLayer("runner-highways")) {
-    map.setLayoutProperty("runner-highways", "visibility", layers.highways ? "visible" : "none");
+    if (action === "hide") {
+      map.setLayoutProperty(layer.id, "visibility", "none");
+      continue;
+    }
+    if (action === "filter") {
+      map.setLayoutProperty(layer.id, "visibility", "visible");
+      const nextFilter = filterWithoutRoadClasses(originalFilter.get(layer.id), hiddenRoads);
+      try {
+        map.setFilter(layer.id, (nextFilter as mapboxgl.FilterSpecification | undefined) ?? null);
+      } catch {
+        map.setLayoutProperty(
+          layer.id,
+          "visibility",
+          layers.highways || layers.busy_roads ? "visible" : "none",
+        );
+      }
+    } else {
+      const original = originalFilter.get(layer.id);
+      try {
+        map.setFilter(layer.id, original ?? null);
+      } catch {
+        // Layers without filters stay as-is.
+      }
+    }
+
+    if (isHighwayBasemapLayer(layer.id)) {
+      tintLayer(map, layer.id, layer.type, HIGHWAY_ALERT, layers.highways);
+    } else if (isBusyRoadBasemapLayer(layer.id)) {
+      tintLayer(map, layer.id, layer.type, BUSY_ROAD, layers.busy_roads);
+    }
   }
 }
 
@@ -178,48 +273,6 @@ function addSourceOnce(map: mapboxgl.Map, id: string, source: mapboxgl.SourceSpe
 function addLayerOnce(map: mapboxgl.Map, layer: mapboxgl.LayerSpecification) {
   if (map.getLayer(layer.id)) return;
   map.addLayer(layer);
-}
-
-function addStreetOverlays(map: mapboxgl.Map) {
-  addSourceOnce(map, "mapbox-streets", {
-    type: "vector",
-    url: "mapbox://mapbox.mapbox-streets-v8",
-  });
-
-  addLayerOnce(map, {
-    id: "runner-busy-roads",
-    type: "line",
-    source: "mapbox-streets",
-    "source-layer": "road",
-    filter: [
-      "in",
-      ["get", "class"],
-      ["literal", ["primary", "secondary", "primary_link", "secondary_link"]],
-    ],
-    layout: { "line-cap": "round", "line-join": "round", visibility: "none" },
-    paint: {
-      "line-color": BUSY_ROAD,
-      "line-opacity": 0.55,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.4, 15, 4, 19, 9],
-    },
-  });
-  addLayerOnce(map, {
-    id: "runner-highways",
-    type: "line",
-    source: "mapbox-streets",
-    "source-layer": "road",
-    filter: [
-      "in",
-      ["get", "class"],
-      ["literal", ["motorway", "motorway_link", "trunk", "trunk_link"]],
-    ],
-    layout: { "line-cap": "round", "line-join": "round", visibility: "none" },
-    paint: {
-      "line-color": HIGHWAY_ALERT,
-      "line-opacity": 0.5,
-      "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.8, 15, 5, 19, 11],
-    },
-  });
 }
 
 function addRunnerLayers(map: mapboxgl.Map) {
@@ -394,13 +447,12 @@ export function RunningMap({
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
 
     const emitBounds = () => {
-      if (map.getZoom() < 12.2) return;
+      if (map.getZoom() < 13) return;
       const bounds = getViewportBounds(map);
       if (bounds) boundsChangeRef.current(bounds);
     };
 
     map.on("style.load", () => {
-      addStreetOverlays(map);
       addRunnerLayers(map);
       applyBasemap(map, layersRef.current);
       updateRouteSource(map, routeCoordinatesRef.current);

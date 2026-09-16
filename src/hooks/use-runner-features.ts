@@ -41,7 +41,7 @@ export function useRunnerFeatures() {
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
-    }, 450);
+    }, 750);
   }, []);
 
   return { features, isLoading, error, isPartial, loadForBounds };

@@ -102,11 +102,17 @@ export function transportationLayerAction(
   const isTransportation =
     sourceLayer === "transportation" ||
     sourceLayer === "transportation_name" ||
+    sourceLayer === "road" ||
     /(motorway|trunk|primary|secondary)/i.test(layerId);
   if (!isTransportation) return "keep";
 
   const classes = collectFilterClasses(filter);
-  if (classes.length === 0) return "filter";
+  if (classes.length === 0) {
+    if (sourceLayer === "road" && !/(motorway|trunk|primary|secondary)/i.test(layerId)) {
+      return "keep";
+    }
+    return "filter";
+  }
   if (classes.every((roadClass) => hidden.includes(roadClass))) return "hide";
   if (classes.some((roadClass) => hidden.includes(roadClass))) return "filter";
   return "keep";
