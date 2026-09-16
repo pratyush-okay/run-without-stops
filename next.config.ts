@@ -1,8 +1,14 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
+const projectRoot = import.meta.dirname;
+
 const nextConfig: NextConfig = {
+  agentRules: false,
   turbopack: {
-    root: process.cwd(),
+    resolveAlias: {
+      tailwindcss: path.join(projectRoot, "node_modules/tailwindcss"),
+    },
   },
 };
 
