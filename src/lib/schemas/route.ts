@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { MAX_ROUTE_POINTS } from "@/lib/routing/points";
 import { geoPointSchema, runnerFeatureSchema } from "@/lib/schemas/features";
 
 export const routeModeSchema = z.enum(["direct", "low_stops"]);
 
 export const routeRequestSchema = z.object({
-  points: z.array(geoPointSchema).min(2).max(10),
+  points: z.array(geoPointSchema).min(2).max(MAX_ROUTE_POINTS),
   mode: routeModeSchema,
   features: z.array(runnerFeatureSchema).max(100).default([]),
 });

@@ -1,6 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import {
+  ClearGlyph,
+  CopyGlyph,
+  ExportGlyph,
+  LocationGlyph,
+  LoopGlyph,
+  ReverseGlyph,
+  SaveGlyph,
+  ShareGlyph,
+  UndoGlyph,
+} from "@/components/dashboard/panel-marks";
+import { WaypointBadge } from "@/components/dashboard/waypoint-marks";
 import { pointLabelKey, usePointLabels } from "@/hooks/use-point-labels";
 import { captureEvent } from "@/lib/analytics/client";
 import { analyticsEvents } from "@/lib/analytics/events";
@@ -8,15 +20,11 @@ import { featuresNearRoute } from "@/lib/geo";
 import { suggestedRouteName } from "@/lib/routes/name";
 import { fileSafeName } from "@/lib/routes/slug";
 import { downloadPngFromSvg, downloadText } from "@/lib/routing/download";
-import {
-  formatDistance,
-  formatEffortDuration,
-  formatRouteProvider,
-  type MetricUnit,
-} from "@/lib/routing/format";
+import { formatDistance, formatEffortDuration, type MetricUnit } from "@/lib/routing/format";
 import { downloadGpx, routeToGpx } from "@/lib/routing/gpx";
 import { routeToSvg, STORY_GRAPHIC_SIZE } from "@/lib/routing/graphic";
 import { isRouteLoop, MAX_ROUTE_STOPS } from "@/lib/routing/points";
+import { visibleWaypoints } from "@/lib/routing/waypoints";
 import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import type { RouteMode, RouteResponse } from "@/lib/schemas/route";
 
@@ -78,6 +86,7 @@ export function RouteComposer({
   const [exportOpen, setExportOpen] = useState(false);
   const [exportError, setExportError] = useState<string>();
   const labels = usePointLabels(points, knownLabels);
+  const marks = visibleWaypoints(points);
   const routePoints = (route?.coordinates ?? []).map(([lng, lat]) => ({ lng, lat }));
   const nearbyWater =
     routePoints.length >= 2
@@ -165,7 +174,7 @@ export function RouteComposer({
 
   const headline =
     points.length === 0
-      ? "Tap the map or search a place."
+      ? undefined
       : points.length === 1
         ? "Start set. Add a finish."
         : isRouting
@@ -185,7 +194,7 @@ export function RouteComposer({
           <h1 className="mt-1 text-lg font-semibold tracking-[-0.04em] text-white md:text-xl">
             Run without the noise.
           </h1>
-          <p className="mt-1 text-sm text-white/60">{headline}</p>
+          {headline ? <p className="mt-1 text-sm text-white/60">{headline}</p> : null}
         </div>
         <div className="flex items-center gap-2">
           {isRouting ? (
@@ -245,55 +254,51 @@ export function RouteComposer({
             </p>
             <button
               type="button"
-              className="rws-button mt-3 min-h-10 w-full"
+              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8ff52]/10 text-[13px] font-medium text-[#c8ff52] ring-1 ring-[#c8ff52]/30 transition hover:bg-[#c8ff52]/16"
               onClick={onUseLocation}
             >
+              <LocationGlyph />
               Use my location
             </button>
           </div>
         ) : (
           <ol className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain pr-0.5 max-h-[min(16.5rem,calc(100dvh-26rem))] md:max-h-[min(20rem,calc(100dvh-24rem))]">
-            {points.map((point, index) => {
-              const role = index === 0 ? "start" : index === points.length - 1 ? "finish" : "via";
-              return (
-                <li key={`${role}:${pointLabelKey(point)}`}>
-                  <div className="flex items-center gap-2 rounded-xl bg-white/[0.045] py-1.5 pr-1.5 pl-2.5">
-                    <button
-                      type="button"
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                      onClick={() => onFocusPoint(point)}
-                    >
-                      <span className="grid size-6 shrink-0 place-items-center rounded-full border border-[#c8ff52]/50 bg-[#c8ff52]/10 font-mono text-[10px] text-[#c8ff52]">
-                        {index + 1}
+            {marks.map((mark) => (
+              <li key={`${mark.role}:${pointLabelKey(mark.point)}:${mark.index}`}>
+                <div className="flex items-center gap-2 rounded-xl bg-white/[0.045] py-1.5 pr-1.5 pl-2.5">
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    onClick={() => onFocusPoint(mark.point)}
+                  >
+                    <WaypointBadge role={mark.role} label={mark.label} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-white/85">
+                        {labels[mark.index] ?? "Pinned place"}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-white/85">
-                          {labels[index] ?? "Pinned place"}
-                        </span>
-                        <span className="text-[10px] uppercase tracking-widest text-white/30">
-                          {index === 0 ? "Start" : index === points.length - 1 ? "Finish" : "Via"}
-                        </span>
+                      <span className="text-[10px] uppercase tracking-widest text-white/30">
+                        {mark.title}
                       </span>
-                    </button>
-                    <button
-                      type="button"
-                      className="grid size-8 shrink-0 place-items-center rounded-lg text-white/35 hover:bg-white/8 hover:text-white"
-                      onClick={() => onRemovePoint(index)}
-                      aria-label={`Remove ${index === 0 ? "start" : index === points.length - 1 ? "finish" : "via"}`}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="grid size-8 shrink-0 place-items-center rounded-lg text-white/35 hover:bg-white/8 hover:text-white"
+                    onClick={() => onRemovePoint(mark.index)}
+                    aria-label={`Remove ${mark.title}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              </li>
+            ))}
           </ol>
         )}
 
-        {points.length > 0 && points.length < MAX_ROUTE_STOPS ? (
+        {marks.length > 0 && marks.length < MAX_ROUTE_STOPS ? (
           <p className="mt-2 shrink-0 text-[11px] text-white/35">
-            Click the map or search to add a {points.length === 1 ? "finish" : "via"}. Drag pins to
-            reshape.
+            Click the map or search to add a {points.length === 1 ? "finish" : "via"}. Click a pin
+            to delete it, or drag to move.
           </p>
         ) : null}
 
@@ -313,6 +318,7 @@ export function RouteComposer({
           onClick={onReverse}
           disabled={points.length < 2}
         >
+          <ReverseGlyph />
           Reverse
         </button>
         <button
@@ -320,7 +326,9 @@ export function RouteComposer({
           className="rws-button min-h-10"
           onClick={onCloseLoop}
           disabled={!canCloseLoop}
+          title="Draw the route back to the start pin"
         >
+          <LoopGlyph />
           Loop back
         </button>
         <button
@@ -329,6 +337,7 @@ export function RouteComposer({
           onClick={onUndo}
           disabled={points.length === 0}
         >
+          <UndoGlyph />
           Undo
         </button>
         <button
@@ -337,6 +346,7 @@ export function RouteComposer({
           onClick={onClear}
           disabled={points.length === 0}
         >
+          <ClearGlyph />
           Clear
         </button>
       </div>
@@ -345,6 +355,7 @@ export function RouteComposer({
         <div className="mt-2 shrink-0 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <button type="button" className="rws-button min-h-10" onClick={copySummary}>
+              <CopyGlyph />
               {copied ? "Copied" : "Copy summary"}
             </button>
             <div className="relative">
@@ -354,6 +365,7 @@ export function RouteComposer({
                 aria-expanded={exportOpen}
                 onClick={() => setExportOpen((open) => !open)}
               >
+                <ExportGlyph />
                 Export
               </button>
               {exportOpen ? (
@@ -393,6 +405,7 @@ export function RouteComposer({
               className="rws-button min-h-10"
               onClick={() => onRequestSave?.(exportTitle)}
             >
+              <SaveGlyph />
               {savedRouteName ? "Save again" : "Save route"}
             </button>
             <button
@@ -400,34 +413,26 @@ export function RouteComposer({
               className="rws-button min-h-10"
               onClick={() => onRequestShare?.(exportTitle)}
             >
+              <ShareGlyph />
               {shareCopied ? "Link copied" : shareReady ? "Copy share link" : "Share link"}
             </button>
           </div>
           {savedRouteName ? (
             <p className="text-[10px] text-white/35">Saved as {savedRouteName}</p>
-          ) : (
-            <p className="text-[10px] text-white/30">
-              Export files anytime. Shareable links need a saved account route.
-            </p>
-          )}
+          ) : null}
           {exportError ? <p className="text-[10px] text-[#ffad91]">{exportError}</p> : null}
           {shareError ? <p className="text-[10px] text-[#ffad91]">{shareError}</p> : null}
         </div>
       ) : points.length === 0 ? null : (
         <button
           type="button"
-          className="rws-button mt-2 min-h-10 w-full shrink-0"
+          className="mt-2 flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#c8ff52]/10 text-[13px] font-medium text-[#c8ff52] ring-1 ring-[#c8ff52]/30 transition hover:bg-[#c8ff52]/16"
           onClick={onUseLocation}
         >
+          <LocationGlyph />
           Use my location
         </button>
       )}
-
-      {route ? (
-        <p className="mt-2 shrink-0 text-[10px] text-white/30">
-          {formatRouteProvider(route.provider)}
-        </p>
-      ) : null}
     </section>
   );
 }

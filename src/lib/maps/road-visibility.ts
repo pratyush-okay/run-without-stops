@@ -135,6 +135,11 @@ export function transportationLayerAction(
   return "keep";
 }
 
+export function classOpacityExpression(original: unknown, hidden: string[]) {
+  if (hidden.length === 0) return original ?? 1;
+  return ["case", ["in", ["get", "class"], ["literal", hidden]], 0, original ?? 1];
+}
+
 export function roadClassTintExpression(
   original: unknown,
   visibility: RoadVisibility,

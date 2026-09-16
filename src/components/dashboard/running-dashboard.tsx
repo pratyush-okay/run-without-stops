@@ -22,6 +22,7 @@ import type { MapLayerVisibility } from "@/lib/maps/layers";
 import { routeDraftKey } from "@/lib/routes/draft";
 import { shareUrlForSlug } from "@/lib/routes/slug";
 import type { MetricUnit } from "@/lib/routing/format";
+import { linePreviewCoordinates } from "@/lib/routing/waypoints";
 import type { GeoPoint } from "@/lib/schemas/features";
 import type { SavedRoute } from "@/lib/schemas/saved-route";
 
@@ -39,7 +40,7 @@ const INITIAL_LAYERS: MapLayerVisibility = {
   traffic_signal: true,
   crossing: true,
   drinking_water: true,
-  parks: true,
+  parks: false,
   highways: false,
   busy_roads: false,
 };
@@ -249,13 +250,19 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
         <RunningMap
           accessToken={mapboxToken}
           points={planner.points}
-          routeCoordinates={planner.route?.coordinates ?? []}
+          routeCoordinates={
+            planner.route && !planner.isRouting
+              ? planner.route.coordinates
+              : linePreviewCoordinates(planner.points)
+          }
+          isRoutePreview={!planner.route || planner.isRouting}
           features={featureState.features}
           layers={layers}
           focusPoint={focusPoint}
           userLocation={userLocation}
           onAddPoint={planner.addPoint}
           onMovePoint={planner.movePoint}
+          onRemovePoint={planner.removePoint}
           onBoundsChange={featureState.loadForBounds}
         />
       </div>

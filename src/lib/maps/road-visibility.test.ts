@@ -1,4 +1,5 @@
 import {
+  classOpacityExpression,
   collectFilterClasses,
   filterWithoutRoadClasses,
   hiddenRoadClasses,
@@ -85,6 +86,16 @@ describe("road visibility helpers", () => {
     expect(isManagedRoadLayer("road", "road-path")).toBe(false);
     expect(isManagedRoadLayer("road", "road-simple")).toBe(true);
     expect(isManagedRoadLayer("road", "bridge-simple")).toBe(true);
+  });
+
+  it("dims hidden highway and busy-road classes without rewriting filters", () => {
+    expect(classOpacityExpression(1, ["motorway", "trunk"])).toEqual([
+      "case",
+      ["in", ["get", "class"], ["literal", ["motorway", "trunk"]]],
+      0,
+      1,
+    ]);
+    expect(classOpacityExpression(0.8, [])).toBe(0.8);
   });
 
   it("tints highway and busy-road classes independently", () => {

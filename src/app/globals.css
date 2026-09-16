@@ -52,12 +52,12 @@ button:disabled {
 .rws-search {
   display: flex;
   min-height: 2.5rem;
-  align-items: center;
-  gap: 0.35rem;
+  align-items: stretch;
+  overflow: hidden;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 0.85rem;
   background: rgb(16 21 18 / 82%);
-  padding: 0 0.3rem 0 0.35rem;
+  padding: 0;
   backdrop-filter: blur(18px) saturate(130%);
 }
 
@@ -72,6 +72,10 @@ button:disabled {
 }
 
 .rws-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 0.75rem;
   background: rgb(255 255 255 / 4%);
@@ -117,6 +121,20 @@ button:disabled {
 .rws-popup span {
   font-size: 0.65rem;
   color: rgb(233 240 235 / 55%);
+}
+
+.rws-popup-delete {
+  margin-top: 0.35rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.55rem;
+  background: rgb(255 90 42 / 12%);
+  padding: 0.4rem 0.55rem;
+  font-size: 0.7rem;
+  color: #ffad91;
+}
+
+.rws-popup-delete:hover {
+  background: rgb(255 90 42 / 22%);
 }
 
 .mapboxgl-popup-content,
@@ -167,28 +185,49 @@ html .mapboxgl-ctrl-attrib.mapboxgl-compact a {
   color: rgb(236 242 238 / 92%);
 }
 
-html .mapboxgl-ctrl-attrib.mapboxgl-compact:not(.mapboxgl-compact-show) {
-  width: 29px;
-  min-height: 29px;
+html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact {
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
   padding: 0;
+  overflow: hidden;
   border-radius: 0.75rem;
 }
 
-html .mapboxgl-ctrl-attrib-button {
+html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show {
+  display: flex;
+  width: auto;
+  height: 32px;
+  min-height: 32px;
+  align-items: center;
+  padding: 0 36px 0 10px;
+}
+
+html .mapboxgl-ctrl-attrib.mapboxgl-compact::after {
+  display: none;
+}
+
+html .mapboxgl-ctrl.mapboxgl-ctrl-attrib .mapboxgl-ctrl-attrib-button {
+  top: 0;
+  right: 0;
   display: block;
-  width: 29px;
-  height: 29px;
+  width: 32px;
+  height: 32px;
+  border-radius: 0;
   background-color: transparent;
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.2' stroke='%23e8eee9' stroke-width='1.6'/%3E%3Cpath stroke='%23e8eee9' stroke-linecap='round' stroke-width='1.7' d='M12 11.1v5'/%3E%3Ccircle cx='12' cy='8.2' r='1' fill='%23e8eee9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.2' stroke='%23c8ff52' stroke-width='1.7'/%3E%3Cpath d='M12 11.05v5.1' stroke='%23c8ff52' stroke-linecap='round' stroke-width='1.9'/%3E%3Ccircle cx='12' cy='8.15' r='1.1' fill='%23c8ff52'/%3E%3C/svg%3E");
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 18px 18px;
+  background-size: 16px 16px;
   filter: none;
   opacity: 1;
 }
 
-html .mapboxgl-ctrl-attrib-button:hover {
-  background-color: rgb(255 255 255 / 6%);
+html .mapboxgl-ctrl.mapboxgl-ctrl-attrib button.mapboxgl-ctrl-attrib-button:not(:disabled):hover,
+html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-attrib-button {
+  background-color: rgb(200 255 82 / 14%);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.2' stroke='%23f4f7f5' stroke-width='1.7'/%3E%3Cpath d='M12 11.05v5.1' stroke='%23c8ff52' stroke-linecap='round' stroke-width='1.9'/%3E%3Ccircle cx='12' cy='8.15' r='1.1' fill='%23c8ff52'/%3E%3C/svg%3E");
 }
 
 .mapboxgl-ctrl-attrib-inner {

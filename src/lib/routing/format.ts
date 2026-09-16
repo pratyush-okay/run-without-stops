@@ -68,7 +68,3 @@ export function paceFromDuration(meters: number, durationSeconds: number) {
   if (meters <= 0) return DEFAULT_PACE_SECONDS_PER_KM;
   return storePaceSeconds(durationSeconds / (meters / METERS_PER_KM), "metric");
 }
-
-export function formatRouteProvider(provider: "graphhopper" | "valhalla") {
-  return provider === "graphhopper" ? "GraphHopper" : "Valhalla";
-}

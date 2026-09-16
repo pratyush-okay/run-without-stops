@@ -1,12 +1,20 @@
 "use client";
 
+import type { ReactNode } from "react";
+import {
+  CrossingsGlyph,
+  DistanceGlyph,
+  MajorRoadGlyph,
+  PaceGlyph,
+  SignalsGlyph,
+  TimeGlyph,
+} from "@/components/dashboard/panel-marks";
 import {
   displayPaceSeconds,
   distanceParts,
   durationFromPace,
   formatEffortDuration,
   formatPace,
-  formatRouteProvider,
   type MetricUnit,
   paceUnitLabel,
 } from "@/lib/routing/format";
@@ -23,8 +31,18 @@ type RouteSummaryProps = {
   onNudgeTime: (deltaSeconds: number) => void;
 };
 
+function Heading({ icon, children }: { icon: ReactNode; children: string }) {
+  return (
+    <p className="flex items-center gap-1.5 text-[9px] tracking-[0.16em] text-white/35 uppercase">
+      {icon}
+      {children}
+    </p>
+  );
+}
+
 function Stepper({
   label,
+  icon,
   value,
   onDecrease,
   onIncrease,
@@ -32,6 +50,7 @@ function Stepper({
   increaseLabel,
 }: {
   label: string;
+  icon: ReactNode;
   value: string;
   onDecrease: () => void;
   onIncrease: () => void;
@@ -40,7 +59,7 @@ function Stepper({
 }) {
   return (
     <div className="min-w-0 px-1.5 md:border-r md:border-white/8 md:px-3">
-      <p className="text-[9px] tracking-[0.16em] text-white/35 uppercase">{label}</p>
+      <Heading icon={icon}>{label}</Heading>
       <div className="mt-1 flex items-center gap-1">
         <button
           type="button"
@@ -104,7 +123,7 @@ export function RouteSummary({
       aria-label="Route metrics"
     >
       <div className="min-w-0 px-1.5 md:min-w-[10.5rem] md:border-r md:border-white/8 md:px-4">
-        <p className="text-[9px] tracking-[0.18em] text-white/35 uppercase">Distance</p>
+        <Heading icon={<DistanceGlyph />}>Distance</Heading>
         <p className="mt-0.5 flex items-baseline gap-1.5" aria-live="polite">
           <span className="font-mono text-[2.15rem] leading-none font-semibold tracking-tight text-[#c8ff52] md:text-[2.7rem]">
             {distance.amount}
@@ -116,6 +135,7 @@ export function RouteSummary({
       <div className="grid grid-cols-2 gap-y-2 md:flex md:flex-1 md:items-stretch">
         <Stepper
           label="Pace"
+          icon={<PaceGlyph />}
           value={pace}
           onDecrease={() => onNudgePace(-5)}
           onIncrease={() => onNudgePace(5)}
@@ -124,36 +144,38 @@ export function RouteSummary({
         />
         <Stepper
           label="Run time"
+          icon={<TimeGlyph />}
           value={time}
           onDecrease={() => onNudgeTime(-15)}
           onIncrease={() => onNudgeTime(15)}
           decreaseLabel="Shorter run time"
           increaseLabel="Longer run time"
         />
-        <Metric label="Signals" value={String(route.metrics.trafficSignals)} />
-        <Metric label="Crossings" value={String(route.metrics.crossings)} />
-        <Metric label="Major road" value={`${major.amount} ${major.unit}`} />
-        <Metric label="Engine" value={formatRouteProvider(route.provider)} muted />
+        <Metric
+          label="Signals"
+          icon={<SignalsGlyph />}
+          value={String(route.metrics.trafficSignals)}
+        />
+        <Metric
+          label="Crossings"
+          icon={<CrossingsGlyph />}
+          value={String(route.metrics.crossings)}
+        />
+        <Metric
+          label="Major road"
+          icon={<MajorRoadGlyph />}
+          value={`${major.amount} ${major.unit}`}
+        />
       </div>
     </section>
   );
 }
 
-function Metric({
-  label,
-  value,
-  muted = false,
-}: {
-  label: string;
-  value: string;
-  muted?: boolean;
-}) {
+function Metric({ label, icon, value }: { label: string; icon: ReactNode; value: string }) {
   return (
     <div className="min-w-0 px-1.5 md:min-w-[6.2rem] md:border-r md:border-white/8 md:px-3 md:last:border-0">
-      <p className="text-[9px] tracking-[0.16em] text-white/35 uppercase">{label}</p>
-      <p className={`mt-1 truncate font-mono text-sm ${muted ? "text-white/45" : "text-white"}`}>
-        {value}
-      </p>
+      <Heading icon={icon}>{label}</Heading>
+      <p className="mt-1 truncate font-mono text-sm text-white">{value}</p>
     </div>
   );
 }

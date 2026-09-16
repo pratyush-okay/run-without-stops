@@ -4,14 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { pointLabelKey } from "@/hooks/use-point-labels";
 import { analyticsHeaders, captureEvent } from "@/lib/analytics/client";
 import { analyticsEvents } from "@/lib/analytics/events";
-import { distanceMeters } from "@/lib/geo";
 import { routeDraftKey } from "@/lib/routes/draft";
 import {
   addRoutePoint,
   closeRouteLoop,
   isRouteLoop,
   MAX_ROUTE_STOPS,
-  MINIMUM_STOP_SPACING_METERS,
+  moveRoutePoint,
   removeRoutePoint,
   reverseRoutePoints,
 } from "@/lib/routing/points";
@@ -52,17 +51,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
   );
 
   const movePoint = useCallback((index: number, point: GeoPoint) => {
-    setPoints((current) => {
-      const overlapsAnotherPoint = current.some(
-        (currentPoint, currentIndex) =>
-          currentIndex !== index &&
-          distanceMeters(currentPoint, point) < MINIMUM_STOP_SPACING_METERS,
-      );
-      if (overlapsAnotherPoint) return current;
-      return current.map((currentPoint, currentIndex) =>
-        currentIndex === index ? point : currentPoint,
-      );
-    });
+    setPoints((current) => moveRoutePoint(current, index, point));
   }, []);
 
   const removePoint = useCallback((index: number) => {
@@ -103,6 +92,12 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     setError(undefined);
   }, []);
 
+  const featuresRef = useRef(features);
+  featuresRef.current = features;
+  const hasSignalData = features.some(
+    (feature) => feature.kind === "traffic_signal" || feature.kind === "crossing",
+  );
+
   useEffect(() => {
     const draftKey = routeDraftKey(points, mode);
     if (frozenDraftKeyRef.current && frozenDraftKeyRef.current === draftKey) {
@@ -120,6 +115,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     const timer = setTimeout(async () => {
       setIsRouting(true);
       try {
+        const latestFeatures = hasSignalData ? featuresRef.current : [];
         const response = await fetch("/api/route", {
           method: "POST",
           headers: { "Content-Type": "application/json", ...analyticsHeaders() },
@@ -127,8 +123,8 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
             points,
             mode,
             features: [
-              ...features.filter((feature) => feature.kind === "traffic_signal").slice(0, 60),
-              ...features.filter((feature) => feature.kind === "crossing").slice(0, 40),
+              ...latestFeatures.filter((feature) => feature.kind === "traffic_signal").slice(0, 60),
+              ...latestFeatures.filter((feature) => feature.kind === "crossing").slice(0, 40),
             ],
           }),
           signal: controller.signal,
@@ -155,13 +151,13 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
       } finally {
         if (!controller.signal.aborted) setIsRouting(false);
       }
-    }, 280);
+    }, 80);
 
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [features, mode, points]);
+  }, [hasSignalData, mode, points]);
 
   const setRouteMode = useCallback((next: RouteMode) => {
     setMode(next);
@@ -175,7 +171,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     route,
     isRouting,
     error,
-    canCloseLoop: points.length >= 2 && !isRouteLoop(points) && points.length < MAX_ROUTE_STOPS,
+    canCloseLoop: points.length >= 2 && !isRouteLoop(points) && points.length <= MAX_ROUTE_STOPS,
     addPoint,
     movePoint,
     removePoint,

@@ -1,11 +1,18 @@
 import {
+  BUSY_ROAD,
+  CONTEXT_OVERLAY_BEFORE,
+  contextOverlayLayers,
+  HIGHWAY_ALERT,
   isBusyRoadBasemapLayer,
   isHighwayBasemapLayer,
   isParkBasemapLayer,
   isQuietLabelLayer,
   isRunnerOverlayLayer,
   MAPBOX_DARK_STYLE,
+  overlayVisibility,
+  PARK_FILL,
   parkFillExpression,
+  parkOpacityExpression,
 } from "@/lib/maps/layers";
 
 describe("Mapbox 2D dark basemap", () => {
@@ -19,6 +26,8 @@ describe("Mapbox 2D dark basemap", () => {
     expect(isQuietLabelLayer("airport-label")).toBe(true);
     expect(isQuietLabelLayer("road-label")).toBe(false);
     expect(isQuietLabelLayer("settlement-major-label")).toBe(false);
+    expect(isQuietLabelLayer("runner-waypoints")).toBe(false);
+    expect(isQuietLabelLayer("runner-waypoint-labels")).toBe(false);
   });
 
   it("targets dedicated park layers and mixed landuse, not all vegetation", () => {
@@ -27,11 +36,23 @@ describe("Mapbox 2D dark basemap", () => {
     expect(isParkBasemapLayer("landcover")).toBe(false);
     expect(isParkBasemapLayer("road-motorway-trunk")).toBe(false);
     expect(isParkBasemapLayer("poi-label")).toBe(false);
-    expect(parkFillExpression("#111", "#2f6a3c")).toEqual([
+    expect(parkFillExpression("#111", "#3f9a52")).toEqual([
       "case",
       ["in", ["get", "class"], ["literal", ["park", "pitch"]]],
-      "#2f6a3c",
+      "#3f9a52",
       "#111",
+    ]);
+    expect(parkOpacityExpression(0.2, false)).toEqual([
+      "case",
+      ["in", ["get", "class"], ["literal", ["park", "pitch"]]],
+      0,
+      0.2,
+    ]);
+    expect(parkOpacityExpression(0.2, true)).toEqual([
+      "case",
+      ["in", ["get", "class"], ["literal", ["park", "pitch"]]],
+      0.92,
+      0.2,
     ]);
   });
 
@@ -51,5 +72,43 @@ describe("Mapbox 2D dark basemap", () => {
     expect(isBusyRoadBasemapLayer("road-secondary-tertiary-case")).toBe(false);
     expect(isBusyRoadBasemapLayer("road-motorway-trunk")).toBe(false);
     expect(isBusyRoadBasemapLayer("road-street")).toBe(false);
+  });
+
+  it("paints parks, highways, and busy roads as overlays on top of the basemap", () => {
+    const overlays = contextOverlayLayers();
+    expect(CONTEXT_OVERLAY_BEFORE).toBe("runner-route-glow");
+    expect(overlays.map((layer) => layer.id)).toEqual([
+      "runner-parks",
+      "runner-parks-national",
+      "runner-busy-roads",
+      "runner-highways",
+    ]);
+    expect(overlays.every((layer) => layer.layout?.visibility === "none")).toBe(true);
+    const parks = overlays.find((layer) => layer.id === "runner-parks");
+    const highways = overlays.find((layer) => layer.id === "runner-highways");
+    const busy = overlays.find((layer) => layer.id === "runner-busy-roads");
+    expect(parks?.type).toBe("fill");
+    expect(highways?.type).toBe("line");
+    expect(busy?.type).toBe("line");
+    if (parks?.type === "fill") expect(parks.paint?.["fill-color"]).toBe(PARK_FILL);
+    if (highways?.type === "line") expect(highways.paint?.["line-color"]).toBe(HIGHWAY_ALERT);
+    if (busy?.type === "line") expect(busy.paint?.["line-color"]).toBe(BUSY_ROAD);
+  });
+
+  it("enables each overlay independently", () => {
+    const off = {
+      traffic_signal: true,
+      crossing: true,
+      drinking_water: true,
+      parks: false,
+      highways: false,
+      busy_roads: false,
+    };
+    expect(overlayVisibility("runner-parks", off)).toBe("none");
+    expect(overlayVisibility("runner-highways", off)).toBe("none");
+    expect(overlayVisibility("runner-busy-roads", off)).toBe("none");
+    expect(overlayVisibility("runner-parks", { ...off, parks: true })).toBe("visible");
+    expect(overlayVisibility("runner-highways", { ...off, highways: true })).toBe("visible");
+    expect(overlayVisibility("runner-busy-roads", { ...off, busy_roads: true })).toBe("visible");
   });
 });

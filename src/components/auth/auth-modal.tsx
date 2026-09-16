@@ -1,7 +1,10 @@
 "use client";
 
 import { useSignIn, useSignUp, useUser } from "@clerk/nextjs";
+import type { OAuthStrategy } from "@clerk/nextjs/types";
 import { useEffect, useId, useState } from "react";
+import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
+import { SSO_CALLBACK_PATH, SSO_COMPLETE_PATH, ssoErrorMessage } from "@/lib/auth/oauth";
 import { usernameSchema } from "@/lib/schemas/profile";
 
 type AuthMode = "sign-in" | "sign-up";
@@ -46,6 +49,16 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+
+  async function startSso(strategy: OAuthStrategy) {
+    setFormError(undefined);
+    const { error } = await signIn.sso({
+      strategy,
+      redirectUrl: SSO_COMPLETE_PATH,
+      redirectCallbackUrl: SSO_CALLBACK_PATH,
+    });
+    if (error) setFormError(ssoErrorMessage(error.message));
+  }
 
   async function submitSignIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -188,6 +201,13 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
               >
                 Sign up
               </button>
+            </div>
+
+            <SocialAuthButtons disabled={isBusy} onSelect={(strategy) => void startSso(strategy)} />
+            <div className="my-4 flex items-center gap-3 text-[11px] text-white/35">
+              <span className="h-px flex-1 bg-white/10" />
+              or use email
+              <span className="h-px flex-1 bg-white/10" />
             </div>
 
             <form

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_ROUTE_POINTS } from "@/lib/routing/points";
 import { geoPointSchema } from "@/lib/schemas/features";
 import { routeModeSchema, routeResponseSchema } from "@/lib/schemas/route";
 
@@ -29,7 +30,7 @@ const persistableRouteSchema = routeResponseSchema.extend({
 
 export const saveRouteRequestSchema = z.object({
   name: savedRouteNameSchema,
-  points: z.array(geoPointSchema).min(2).max(10),
+  points: z.array(geoPointSchema).min(2).max(MAX_ROUTE_POINTS),
   knownLabels: knownLabelsSchema.default({}),
   mode: routeModeSchema,
   route: persistableRouteSchema,
@@ -51,7 +52,7 @@ export const savedRouteSummarySchema = z.object({
 });
 
 export const savedRouteSchema = savedRouteSummarySchema.extend({
-  points: z.array(geoPointSchema).min(2).max(10),
+  points: z.array(geoPointSchema).min(2).max(MAX_ROUTE_POINTS),
   knownLabels: knownLabelsSchema,
   route: persistableRouteSchema,
 });
