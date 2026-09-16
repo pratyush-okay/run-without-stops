@@ -1,8 +1,9 @@
 @import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0d0b;
+  --foreground: #f4f7f5;
 }
 
 @theme inline {
@@ -12,15 +13,205 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  margin: 0;
+  overscroll-behavior: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.rws-panel {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 1rem;
+  background: rgb(16 21 18 / 90%);
+  box-shadow:
+    0 24px 70px rgb(0 0 0 / 34%),
+    inset 0 1px 0 rgb(255 255 255 / 4%);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+
+.rws-search {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.85rem;
+  background: rgb(16 21 18 / 82%);
+  padding: 0 0.3rem 0 0.35rem;
+  backdrop-filter: blur(18px) saturate(130%);
+}
+
+.rws-kicker {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  line-height: 1rem;
+  text-transform: uppercase;
+  color: rgb(200 255 82 / 72%);
+}
+
+.rws-button {
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 4%);
+  padding: 0.58rem 0.75rem;
+  font-size: 0.7rem;
+  color: rgb(255 255 255 / 62%);
+  transition:
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.rws-button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 9%);
+  color: white;
+}
+
+.rws-button:disabled {
+  opacity: 0.34;
+}
+
+.rws-pulse {
+  display: block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #c8ff52;
+  box-shadow: 0 0 0 0 rgb(200 255 82 / 45%);
+  animation: rws-pulse 1.4s infinite;
+}
+
+.rws-popup {
+  display: flex;
+  min-width: 8rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: #e9f0eb;
+}
+
+.rws-popup strong {
+  font-size: 0.75rem;
+}
+
+.rws-popup span {
+  font-size: 0.65rem;
+  color: rgb(233 240 235 / 55%);
+}
+
+.maplibregl-popup-content {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.75rem;
+  background: #101512;
+  padding: 0.7rem 0.8rem;
+  box-shadow: 0 14px 40px rgb(0 0 0 / 30%);
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: #101512;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: #101512;
+}
+
+.maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.75rem;
+  background: rgb(16 21 18 / 92%);
+  box-shadow: none;
+}
+
+.maplibregl-ctrl-group button {
+  filter: invert(1);
+}
+
+html .maplibregl-ctrl-attrib,
+html .maplibregl-ctrl-attrib.maplibregl-compact,
+html .maplibregl-ctrl-attrib.maplibregl-compact-show {
+  margin: 0 10px 10px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: rgb(16 21 18 / 94%);
+  color: rgb(226 232 228 / 86%);
+  box-shadow: none;
+}
+
+html .maplibregl-ctrl-attrib a,
+html .maplibregl-ctrl-attrib.maplibregl-compact a {
+  color: rgb(236 242 238 / 92%);
+}
+
+html .maplibregl-ctrl-attrib.maplibregl-compact:not(.maplibregl-compact-show) {
+  width: 29px;
+  min-height: 29px;
+  padding: 0;
+  border-radius: 0.75rem;
+}
+
+html .maplibregl-ctrl-attrib-button {
+  display: block;
+  width: 29px;
+  height: 29px;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='8.2' stroke='%23e8eee9' stroke-width='1.6'/%3E%3Cpath stroke='%23e8eee9' stroke-linecap='round' stroke-width='1.7' d='M12 11.1v5'/%3E%3Ccircle cx='12' cy='8.2' r='1' fill='%23e8eee9'/%3E%3C/svg%3E");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  filter: none;
+  opacity: 1;
+}
+
+html .maplibregl-ctrl-attrib-button:hover {
+  background-color: rgb(255 255 255 / 6%);
+}
+
+.maplibregl-ctrl-attrib-inner {
+  color: rgb(226 232 228 / 86%);
+}
+
+@keyframes rws-pulse {
+  70% {
+    box-shadow: 0 0 0 0.5rem rgb(200 255 82 / 0%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(200 255 82 / 0%);
+  }
+}
+
+@media (max-width: 767px) {
+  .rws-sheet {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .maplibregl-ctrl-bottom-right {
+    right: 0.75rem;
+    bottom: calc(9.5rem + env(safe-area-inset-bottom));
+  }
+
+  .maplibregl-ctrl-bottom-left {
+    left: 0.75rem;
+    bottom: calc(9.5rem + env(safe-area-inset-bottom));
+  }
 }
