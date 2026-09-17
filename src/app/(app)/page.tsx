@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RunningDashboard } from "@/components/dashboard/running-dashboard";
+import { HomeDetails } from "@/components/seo/home-details";
 import { HomeIntro } from "@/components/seo/home-intro";
 import { env } from "@/env";
 import { JsonLd } from "@/lib/seo/json-ld";
@@ -14,35 +15,45 @@ export const metadata: Metadata = {
 export default function Home() {
   const origin = siteOrigin();
   return (
-    <div className="relative h-dvh min-h-dvh overflow-hidden">
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@graph": [
-            {
-              "@type": "WebSite",
-              name: SITE_NAME,
-              url: origin,
-              description: SITE_DESCRIPTION,
-            },
-            {
-              "@type": "SoftwareApplication",
-              name: SITE_NAME,
-              applicationCategory: "HealthApplication",
-              operatingSystem: "Web",
-              url: origin,
-              description: SITE_DESCRIPTION,
-              offers: {
-                "@type": "Offer",
-                price: "0",
-                priceCurrency: "AUD",
+    <div className="bg-[#0a0d0b]">
+      <div className="relative h-dvh min-h-dvh overflow-hidden">
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "Organization",
+                name: SITE_NAME,
+                url: origin,
+                description: SITE_DESCRIPTION,
+                logo: absoluteUrl("/icon-512.png", origin),
               },
-            },
-          ],
-        }}
-      />
-      <HomeIntro />
-      <RunningDashboard mapboxToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN} />
+              {
+                "@type": "WebSite",
+                name: SITE_NAME,
+                url: origin,
+                description: SITE_DESCRIPTION,
+              },
+              {
+                "@type": "SoftwareApplication",
+                name: SITE_NAME,
+                applicationCategory: "HealthApplication",
+                operatingSystem: "Web",
+                url: origin,
+                description: SITE_DESCRIPTION,
+                offers: {
+                  "@type": "Offer",
+                  price: "0",
+                  priceCurrency: "AUD",
+                },
+              },
+            ],
+          }}
+        />
+        <HomeIntro />
+        <RunningDashboard mapboxToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN} />
+      </div>
+      <HomeDetails />
     </div>
   );
 }

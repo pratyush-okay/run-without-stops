@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BlogBreadcrumbs } from "@/components/blog/blog-breadcrumbs";
 import { BlogShell } from "@/components/blog/blog-shell";
 import { listPublishedPosts } from "@/lib/blog/posts";
+import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
 import { JsonLd } from "@/lib/seo/json-ld";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo/site";
 
@@ -15,35 +17,43 @@ export const metadata: Metadata = {
 export default function BlogIndexPage() {
   const posts = listPublishedPosts();
   const blogUrl = absoluteUrl("/blog");
+  const crumbs = [
+    { name: "Map", path: "/" },
+    { name: "Quieter route notes", path: "/blog" },
+  ];
 
   return (
     <BlogShell>
       <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "CollectionPage",
-          name: "Quieter running route notes",
-          description:
-            "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
-          url: blogUrl,
-          isPartOf: {
-            "@type": "WebSite",
-            name: SITE_NAME,
-            url: absoluteUrl("/"),
-            description: SITE_DESCRIPTION,
+        data={[
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Quieter running route notes",
+            description:
+              "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
+            url: blogUrl,
+            isPartOf: {
+              "@type": "WebSite",
+              name: SITE_NAME,
+              url: absoluteUrl("/"),
+              description: SITE_DESCRIPTION,
+            },
+            mainEntity: {
+              "@type": "ItemList",
+              itemListElement: posts.map((post, index) => ({
+                "@type": "ListItem",
+                position: index + 1,
+                url: absoluteUrl(`/blog/${post.slug}`),
+                name: post.title,
+              })),
+            },
           },
-          mainEntity: {
-            "@type": "ItemList",
-            itemListElement: posts.map((post, index) => ({
-              "@type": "ListItem",
-              position: index + 1,
-              url: absoluteUrl(`/blog/${post.slug}`),
-              name: post.title,
-            })),
-          },
-        }}
+          breadcrumbListJsonLd(crumbs),
+        ]}
       />
-      <p className="rws-kicker">Blog</p>
+      <BlogBreadcrumbs items={crumbs} />
+      <p className="rws-kicker mt-3">Blog</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Quieter running route notes</h1>
       <div className="mt-3 max-w-2xl space-y-4 text-sm leading-6 text-white/65">
         <p>

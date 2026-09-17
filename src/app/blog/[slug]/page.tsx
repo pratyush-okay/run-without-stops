@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BlogBreadcrumbs } from "@/components/blog/blog-breadcrumbs";
 import { BlogMarkdown } from "@/components/blog/blog-markdown";
 import { BlogShell } from "@/components/blog/blog-shell";
 import { getPostBySlug, listPublishedPosts } from "@/lib/blog/posts";
+import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
 import { JsonLd } from "@/lib/seo/json-ld";
 import { absoluteUrl, defaultSocialImages, OG_IMAGE_PATH, SITE_NAME } from "@/lib/seo/site";
 
@@ -49,6 +51,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const url = absoluteUrl(`/blog/${post.slug}`);
   const related = listPublishedPosts().filter((item) => item.slug !== post.slug);
+  const crumbs = [
+    { name: "Map", path: "/" },
+    { name: "Quieter route notes", path: "/blog" },
+    { name: post.title, path: `/blog/${post.slug}` },
+  ];
   const jsonLd: Record<string, unknown>[] = [
     {
       "@context": "https://schema.org",
@@ -80,10 +87,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     });
   }
 
+  jsonLd.push(breadcrumbListJsonLd(crumbs));
+
   return (
     <BlogShell>
       <JsonLd data={jsonLd} />
-      <p className="rws-kicker">{post.date}</p>
+      <BlogBreadcrumbs items={crumbs} />
+      <p className="rws-kicker mt-3">{post.date}</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">{post.title}</h1>
       <p className="mt-3 text-sm leading-6 text-white/65">{post.description}</p>
       <article className="mt-8">
