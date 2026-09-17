@@ -42,6 +42,13 @@ export function HomeDetails() {
             >
               how to build a low-stop line
             </Link>
+            ,{" "}
+            <Link
+              className="text-[#c8ff52] underline-offset-2 hover:underline"
+              href="/blog/how-to-use-the-run-without-stops-route-builder"
+            >
+              how to use the Route builder
+            </Link>
             , and{" "}
             <Link
               className="text-[#c8ff52] underline-offset-2 hover:underline"

@@ -106,6 +106,8 @@ Direct still draws a pedestrian route, not a crow-flies polyline across building
 
 Use direct to stitch low-stop segments you already like. Example: low-stop from home to a park entry, then direct around the park loop you always run, then low-stop home on a different street so you do not repeat the same lights. That is still one saved route. Save it under a name you will recognise at 6 a.m., not “Sydney run” unless you want a pile of identical names.
 
+For the click-by-click Direct build on the Route builder panel, including start, finish, and loops, read [how to use the Run Without Stops route builder](/blog/how-to-use-the-run-without-stops-route-builder).
+
 ## Understanding running route intelligence
 
 The intelligence on this map is visible. It is not a hidden score.

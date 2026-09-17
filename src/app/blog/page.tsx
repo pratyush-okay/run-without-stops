@@ -115,7 +115,14 @@ export default function BlogIndexPage() {
           >
             how to build low-stop running routes
           </Link>{" "}
-          for the click sequence after you already know what the layers mean.
+          for the quieter-street click sequence, or{" "}
+          <Link
+            className="text-[#c8ff52] underline-offset-2 hover:underline"
+            href="/blog/how-to-use-the-run-without-stops-route-builder"
+          >
+            how to use the Route builder
+          </Link>{" "}
+          when Direct, start, and finish are the job.
         </p>
         <p>
           Open the map when you finish a note. Drop a start, turn on the layers the page named, and

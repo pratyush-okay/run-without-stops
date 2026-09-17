@@ -137,4 +137,4 @@ Use low-stop for streets you do not already know. Use direct for a park loop or 
 
 The grid may be built that way, or the two clicks skipped a park or parallel street. Add a waypoint behind the arterial and route again. Then read the [complete guide](/blog/the-complete-guide-to-building-a-run-without-stops) if you also need hills, water, save, and share.
 
-Open the [map](/), drop two points in a neighbourhood you actually run, choose low-stop, and leave the traffic-light layer on while the line draws. If it still looks like a bus route, move a point.
+Open the [map](/), drop two points in a neighbourhood you actually run, choose low-stop, and leave the traffic-light layer on while the line draws. If it still looks like a bus route, move a point. If the streets are already yours and you want Direct instead, use [how to use the Route builder](/blog/how-to-use-the-run-without-stops-route-builder).

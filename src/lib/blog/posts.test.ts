@@ -79,6 +79,9 @@ describe("listPublishedPosts", () => {
         (post) => post.slug === "how-to-build-low-stop-running-routes-with-run-without-stops",
       ),
     ).toBe(true);
+    expect(
+      posts.some((post) => post.slug === "how-to-use-the-run-without-stops-route-builder"),
+    ).toBe(true);
     expect(posts.every((post) => !post.slug.startsWith("sso-"))).toBe(true);
     expect(
       posts.every((post) => `${postDocumentTitle(post)} | Run Without Stops`.length <= 60),
