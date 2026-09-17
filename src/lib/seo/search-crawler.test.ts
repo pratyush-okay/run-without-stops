@@ -1,0 +1,20 @@
+import { isSearchCrawler } from "@/lib/seo/search-crawler";
+
+describe("search crawler detection", () => {
+  it("treats Googlebot and the Search Console inspector as crawlers", () => {
+    expect(
+      isSearchCrawler("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"),
+    ).toBe(true);
+    expect(isSearchCrawler("Mozilla/5.0 (compatible; Google-InspectionTool/1.0)")).toBe(true);
+  });
+
+  it("does not treat browsers as crawlers", () => {
+    expect(
+      isSearchCrawler(
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      ),
+    ).toBe(false);
+    expect(isSearchCrawler("")).toBe(false);
+    expect(isSearchCrawler(undefined)).toBe(false);
+  });
+});

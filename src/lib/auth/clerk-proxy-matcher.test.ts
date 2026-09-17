@@ -3,8 +3,15 @@ import path from "node:path";
 import { CLERK_PROXY_MATCHER, isClerkProxyPath } from "@/lib/auth/clerk-proxy-matcher";
 
 describe("clerk proxy matcher", () => {
-  it("skips the homepage, blog, and crawler files so Googlebot avoids the Clerk handshake", () => {
-    expect(isClerkProxyPath("/")).toBe(false);
+  it("runs Clerk on the homepage, SSO, APIs, and share links", () => {
+    expect(isClerkProxyPath("/")).toBe(true);
+    expect(isClerkProxyPath("/sso-callback")).toBe(true);
+    expect(isClerkProxyPath("/sso-continue")).toBe(true);
+    expect(isClerkProxyPath("/api/route")).toBe(true);
+    expect(isClerkProxyPath("/r/some-share")).toBe(true);
+  });
+
+  it("skips the blog and crawler files", () => {
     expect(isClerkProxyPath("/blog")).toBe(false);
     expect(isClerkProxyPath("/blog/the-complete-guide-to-building-a-run-without-stops")).toBe(
       false,
@@ -13,13 +20,6 @@ describe("clerk proxy matcher", () => {
     expect(isClerkProxyPath("/robots.txt")).toBe(false);
     expect(isClerkProxyPath("/llms.txt")).toBe(false);
     expect(isClerkProxyPath("/.well-known/okf/index.md")).toBe(false);
-  });
-
-  it("still runs on SSO, APIs, and share links", () => {
-    expect(isClerkProxyPath("/sso-callback")).toBe(true);
-    expect(isClerkProxyPath("/sso-continue")).toBe(true);
-    expect(isClerkProxyPath("/api/route")).toBe(true);
-    expect(isClerkProxyPath("/r/some-share")).toBe(true);
   });
 
   it("keeps proxy.ts matcher strings identical to the helper", () => {
