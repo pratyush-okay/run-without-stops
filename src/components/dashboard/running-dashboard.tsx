@@ -8,6 +8,7 @@ import { type AuthIntent, AuthModal } from "@/components/auth/auth-modal";
 import { LayerControls } from "@/components/dashboard/layer-controls";
 import { MetricsToggle } from "@/components/dashboard/metrics-toggle";
 import { PlaceSearch } from "@/components/dashboard/place-search";
+import { RouteActions } from "@/components/dashboard/route-actions";
 import { RouteComposer } from "@/components/dashboard/route-composer";
 import { RouteSummary } from "@/components/dashboard/route-summary";
 import { SaveRouteDialog } from "@/components/dashboard/save-route-dialog";
@@ -254,7 +255,9 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
   return (
     <main
       className={`relative h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white ${
-        metricsExpanded ? "md:[--rws-metrics-clearance:11rem]" : ""
+        metricsExpanded
+          ? "[--rws-metrics-clearance:10.25rem] md:[--rws-metrics-clearance:11rem]"
+          : "[--rws-metrics-clearance:10.25rem] md:[--rws-metrics-clearance:6.25rem]"
       }`}
     >
       <div className="absolute inset-0">
@@ -374,43 +377,68 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex justify-center pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div
-          className={`pointer-events-auto min-w-0 w-full overflow-hidden overscroll-none transition-[width] duration-200 ease-out md:mx-auto ${
+          className={`flex min-w-0 w-full flex-col gap-1 md:gap-1.5 transition-[width] duration-200 ease-out md:mx-auto ${
             metricsExpanded
               ? "md:w-[min(68rem,calc(100vw-2rem))]"
               : "md:w-max md:max-w-[min(56rem,calc(100vw-3rem))]"
           }`}
         >
-          <RouteSummary
-            route={planner.route}
-            error={planner.error}
-            isRouting={planner.isRouting}
-            unit={unit}
-            paceSecondsPerKm={effort.secondsPerKm}
-            durationSeconds={effort.durationSeconds}
-            expanded={metricsExpanded}
-            onExpandedChange={setMetricsExpanded}
-            onNudgePace={(delta) => effort.nudgePace(delta, unit)}
-            onNudgeTime={effort.nudgeTime}
-            scrub={scrub}
-            onScrubChange={updateScrub}
-          />
+          <div className="pointer-events-auto min-w-0 w-full overflow-hidden overscroll-none">
+            <RouteSummary
+              route={planner.route}
+              error={planner.error}
+              isRouting={planner.isRouting}
+              unit={unit}
+              paceSecondsPerKm={effort.secondsPerKm}
+              durationSeconds={effort.durationSeconds}
+              expanded={metricsExpanded}
+              onExpandedChange={setMetricsExpanded}
+              onNudgePace={(delta) => effort.nudgePace(delta, unit)}
+              onNudgeTime={effort.nudgeTime}
+              scrub={scrub}
+              onScrubChange={updateScrub}
+            />
+          </div>
+          <div className="pointer-events-auto w-full md:hidden">
+            <RouteActions
+              variant="bar"
+              points={planner.points}
+              knownLabels={planner.knownLabels}
+              mode={planner.mode}
+              route={planner.route}
+              features={featureState.features}
+              canCloseLoop={planner.canCloseLoop}
+              onUndo={planner.undo}
+              onClear={() => {
+                planner.clear();
+                setCurrentSaved(undefined);
+              }}
+              onReverse={planner.reversePoints}
+              onCloseLoop={planner.closeLoop}
+              onUseLocation={useMyLocation}
+              unit={unit}
+              durationSeconds={effort.durationSeconds}
+              savedRouteName={activeSaved?.name}
+              shareReady={Boolean(activeSaved)}
+              shareCopied={shareCopied}
+              shareError={shareError}
+              onRequestSave={requestSave}
+              onRequestShare={requestShare}
+            />
+          </div>
         </div>
       </div>
 
       {featureState.error || featureState.isPartial ? (
         <div
-          className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-[#ffad91]/20 bg-[#261712]/90 px-3 py-1.5 text-center text-[10px] text-[#ffad91] backdrop-blur ${
-            metricsExpanded ? "bottom-16 md:bottom-48" : "bottom-16 md:bottom-24"
-          }`}
+          className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-[#ffad91]/20 bg-[#261712]/90 px-3 py-1.5 text-center text-[10px] text-[#ffad91] backdrop-blur ${"bottom-[calc(var(--rws-metrics-clearance)+0.35rem)]"}`}
         >
           {featureState.error ?? "Some live OSM details are temporarily unavailable"}
         </div>
       ) : null}
       {!mapboxToken ? (
         <div
-          className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[10px] text-white/70 backdrop-blur ${
-            metricsExpanded ? "bottom-16 md:bottom-48" : "bottom-16 md:bottom-24"
-          }`}
+          className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[10px] text-white/70 backdrop-blur ${"bottom-[calc(var(--rws-metrics-clearance)+0.35rem)]"}`}
         >
           Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to load the dark map
         </div>

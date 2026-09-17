@@ -4,7 +4,7 @@
 :root {
   --background: #0a0d0b;
   --foreground: #f4f7f5;
-  --rws-metrics-clearance: 4.6rem;
+  --rws-metrics-clearance: 10.25rem;
 }
 
 @theme inline {

@@ -185,126 +185,134 @@ export function RouteSummary({
     durationSeconds ?? durationFromPace(route.metrics.distanceMeters, paceSecondsPerKm),
   );
 
+  const distanceBlock = (
+    <p className="flex shrink-0 items-baseline gap-1.5" aria-live="polite">
+      <span
+        className={`font-mono leading-none font-semibold tracking-tight text-[#c8ff52] text-[3.5rem] ${
+          expanded ? "md:text-[3.5rem]" : "md:text-[3.25rem]"
+        }`}
+      >
+        {distance.amount}
+      </span>
+      <span className="text-base font-medium text-white/55">{distance.unit}</span>
+    </p>
+  );
+
   return (
-    <section
-      className={`rws-panel w-full overscroll-none select-none ${
-        expanded
-          ? "flex flex-col gap-2 px-2.5 py-2 md:gap-3 md:px-3.5 md:py-3"
-          : "flex items-center gap-2 px-2.5 py-2 md:gap-3 md:px-3.5 md:py-2.5"
-      }`}
-      aria-label="Route metrics"
-    >
-      <div className="flex min-w-0 items-center gap-2 md:gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden overscroll-none md:gap-3">
-          <p className="flex shrink-0 items-baseline gap-1" aria-live="polite">
-            <span
-              className={`font-mono leading-none font-semibold tracking-tight text-[#c8ff52] ${
-                expanded ? "text-[2.35rem] md:text-[3.5rem]" : "text-[2.35rem] md:text-[3.25rem]"
-              }`}
-            >
-              {distance.amount}
-            </span>
-            <span className="text-sm font-medium text-white/50 md:text-base">{distance.unit}</span>
-          </p>
-
-          <div className="h-6 w-px shrink-0 bg-white/8 md:h-7" />
-
-          <Stepper
-            label={`Pace ${paceUnitLabel(unit)}`}
-            icon={<PaceGlyph />}
-            value={pace}
-            showLabel={expanded}
-            onDecrease={() => onNudgePace(-5)}
-            onIncrease={() => onNudgePace(5)}
-            decreaseLabel="Faster pace"
-            increaseLabel="Slower pace"
-          />
-          <Stepper
-            label="Run time"
-            icon={<TimeGlyph />}
-            value={time}
-            showLabel={expanded}
-            onDecrease={() => onNudgeTime(-15)}
-            onIncrease={() => onNudgeTime(15)}
-            decreaseLabel="Shorter run time"
-            increaseLabel="Longer run time"
-          />
-
-          <div className="h-6 w-px shrink-0 bg-white/8 md:h-7" />
-
-          <Stat
-            label="Gain"
-            icon={<ClimbGlyph />}
-            showLabel={expanded}
-            value={route.metrics.ascentMeters === undefined ? "—" : `${gain.amount} ${gain.unit}`}
-          />
-          <Stat
-            label="Loss"
-            icon={<DescentGlyph />}
-            showLabel={expanded}
-            value={route.metrics.descentMeters === undefined ? "—" : `${loss.amount} ${loss.unit}`}
-          />
-          <Stat
-            label="Signals"
-            icon={<SignalsGlyph />}
-            showLabel={expanded}
-            value={String(route.metrics.trafficSignals)}
-          />
-          <Stat
-            label="Crossings"
-            icon={<CrossingsGlyph />}
-            showLabel={expanded}
-            value={String(route.metrics.crossings)}
-          />
-          <Stat
-            label="Major road"
-            icon={<MajorRoadGlyph />}
-            showLabel={expanded}
-            value={`${major.amount} ${major.unit}`}
-          />
-
-          {route.elevation && !expanded ? (
-            <>
-              <div className="hidden h-7 w-px shrink-0 bg-white/8 md:block" />
-              <div className="hidden md:block">
-                <ElevationChart
-                  elevation={route.elevation}
-                  unit={unit}
-                  size="comfortable"
-                  coordinates={route.coordinates}
-                  scrub={scrub}
-                  onScrubChange={onScrubChange}
-                />
-              </div>
-              <div className="md:hidden">
-                <ElevationChart
-                  elevation={route.elevation}
-                  unit={unit}
-                  size="compact"
-                  coordinates={route.coordinates}
-                  scrub={scrub}
-                  onScrubChange={onScrubChange}
-                />
-              </div>
-            </>
-          ) : null}
-        </div>
-
-        <ExpandButton expanded={expanded} onToggle={() => onExpandedChange(!expanded)} />
+    <section className="flex w-full flex-col gap-1 md:block" aria-label="Route metrics">
+      <div className="px-0.5 drop-shadow-[0_2px_10px_rgba(0,0,0,0.72)] md:hidden">
+        {distanceBlock}
       </div>
+      <div
+        className={`rws-panel w-full overscroll-none select-none ${
+          expanded
+            ? "flex flex-col gap-2 px-2.5 py-2 md:gap-3 md:px-3.5 md:py-3"
+            : "flex items-center gap-2 px-2 py-1.5 md:gap-3 md:px-3.5 md:py-2.5"
+        }`}
+      >
+        <div className="flex min-w-0 items-center gap-2 md:gap-3">
+          <div className="hidden md:flex">{distanceBlock}</div>
+          <div className="hidden h-7 w-px shrink-0 bg-white/8 md:block" />
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-x-auto overscroll-x-contain [scrollbar-width:none] md:gap-3 md:overflow-hidden md:overscroll-none [&::-webkit-scrollbar]:hidden">
+            <Stepper
+              label={`Pace ${paceUnitLabel(unit)}`}
+              icon={<PaceGlyph />}
+              value={pace}
+              showLabel={expanded}
+              onDecrease={() => onNudgePace(-5)}
+              onIncrease={() => onNudgePace(5)}
+              decreaseLabel="Faster pace"
+              increaseLabel="Slower pace"
+            />
+            <Stepper
+              label="Run time"
+              icon={<TimeGlyph />}
+              value={time}
+              showLabel={expanded}
+              onDecrease={() => onNudgeTime(-15)}
+              onIncrease={() => onNudgeTime(15)}
+              decreaseLabel="Shorter run time"
+              increaseLabel="Longer run time"
+            />
 
-      {route.elevation && expanded ? (
-        <div className="hidden md:block">
-          <ElevationChart
-            elevation={route.elevation}
-            unit={unit}
-            size="expanded"
-            coordinates={route.coordinates}
-            scrub={scrub}
-            onScrubChange={onScrubChange}
-          />
+            <div className="h-6 w-px shrink-0 bg-white/8 md:h-7" />
+
+            <Stat
+              label="Gain"
+              icon={<ClimbGlyph />}
+              showLabel={expanded}
+              value={route.metrics.ascentMeters === undefined ? "—" : `${gain.amount} ${gain.unit}`}
+            />
+            <Stat
+              label="Loss"
+              icon={<DescentGlyph />}
+              showLabel={expanded}
+              value={
+                route.metrics.descentMeters === undefined ? "—" : `${loss.amount} ${loss.unit}`
+              }
+            />
+            <Stat
+              label="Signals"
+              icon={<SignalsGlyph />}
+              showLabel={expanded}
+              value={String(route.metrics.trafficSignals)}
+            />
+            <Stat
+              label="Crossings"
+              icon={<CrossingsGlyph />}
+              showLabel={expanded}
+              value={String(route.metrics.crossings)}
+            />
+            <Stat
+              label="Major road"
+              icon={<MajorRoadGlyph />}
+              showLabel={expanded}
+              value={`${major.amount} ${major.unit}`}
+            />
+
+            {route.elevation && !expanded ? (
+              <>
+                <div className="hidden h-7 w-px shrink-0 bg-white/8 md:block" />
+                <div className="hidden md:block">
+                  <ElevationChart
+                    elevation={route.elevation}
+                    unit={unit}
+                    size="comfortable"
+                    coordinates={route.coordinates}
+                    scrub={scrub}
+                    onScrubChange={onScrubChange}
+                  />
+                </div>
+                <div className="shrink-0 md:hidden">
+                  <ElevationChart
+                    elevation={route.elevation}
+                    unit={unit}
+                    size="compact"
+                    coordinates={route.coordinates}
+                    scrub={scrub}
+                    onScrubChange={onScrubChange}
+                  />
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          <ExpandButton expanded={expanded} onToggle={() => onExpandedChange(!expanded)} />
         </div>
-      ) : null}
+
+        {route.elevation && expanded ? (
+          <div className="hidden md:block">
+            <ElevationChart
+              elevation={route.elevation}
+              unit={unit}
+              size="expanded"
+              coordinates={route.coordinates}
+              scrub={scrub}
+              onScrubChange={onScrubChange}
+            />
+          </div>
+        ) : null}
+      </div>
     </section>
   );
 }

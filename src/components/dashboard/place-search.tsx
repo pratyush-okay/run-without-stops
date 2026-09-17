@@ -129,14 +129,15 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
 
   const fieldClass = mobileExpanded ? "block" : "hidden md:block";
   const goClass = mobileExpanded ? "inline-flex" : "hidden md:inline-flex";
+  const compact = !mobileExpanded;
 
   return (
     <div
       ref={rootRef}
-      className={`relative ${mobileExpanded ? "min-w-0 w-full" : "w-auto shrink-0"} md:min-w-0 md:w-full`}
+      className={`relative ${compact ? "w-max" : "min-w-0 w-full"} md:min-w-0 md:w-full`}
     >
       <form
-        className="rws-search"
+        className={`rws-search h-10 ${compact ? "w-max md:w-full" : "w-full"}`}
         onSubmit={(event) => {
           event.preventDefault();
           if (results[0]) selectResult(results[0]);
@@ -160,7 +161,7 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
         <button
           type="button"
           className={`w-10 shrink-0 place-items-center text-[#c8ff52] transition hover:bg-white/[0.05] ${
-            mobileExpanded ? "hidden" : "grid md:hidden"
+            compact ? "grid md:hidden" : "hidden"
           }`}
           onClick={expandSearch}
           aria-label="Search Sydney"
@@ -180,7 +181,7 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
           aria-controls={listId}
           aria-expanded={isOpen}
           role="combobox"
-          className={`min-w-0 flex-1 bg-transparent py-2 pr-1 text-sm text-white outline-none placeholder:text-white/35 ${fieldClass}`}
+          className={`min-w-0 flex-1 bg-transparent py-0 pr-1 text-sm text-white outline-none placeholder:text-white/35 ${fieldClass}`}
         />
         <button
           type="submit"

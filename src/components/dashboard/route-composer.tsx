@@ -1,35 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  ClearGlyph,
-  CopyGlyph,
-  ExportGlyph,
-  LocationGlyph,
-  LoopGlyph,
-  MetricsExpandGlyph,
-  ReverseGlyph,
-  SaveGlyph,
-  ShareGlyph,
-  UndoGlyph,
-} from "@/components/dashboard/panel-marks";
+import { LocationGlyph, MetricsExpandGlyph } from "@/components/dashboard/panel-marks";
+import { RouteActions } from "@/components/dashboard/route-actions";
 import { WaypointBadge } from "@/components/dashboard/waypoint-marks";
 import { pointLabelKey, usePointLabels } from "@/hooks/use-point-labels";
-import { captureEvent } from "@/lib/analytics/client";
-import { analyticsEvents } from "@/lib/analytics/events";
 import { featuresNearRoute } from "@/lib/geo";
-import { suggestedRouteName } from "@/lib/routes/name";
-import { fileSafeName } from "@/lib/routes/slug";
-import { downloadPngFromSvg, downloadText } from "@/lib/routing/download";
-import {
-  formatDistance,
-  formatEffortDuration,
-  formatElevation,
-  type MetricUnit,
-} from "@/lib/routing/format";
-import { downloadGpx, routeToGpx } from "@/lib/routing/gpx";
-import { routeToSvg, STORY_GRAPHIC_SIZE } from "@/lib/routing/graphic";
-import { isRouteLoop, MAX_ROUTE_STOPS } from "@/lib/routing/points";
+import { formatDistance, type MetricUnit } from "@/lib/routing/format";
+import { MAX_ROUTE_STOPS } from "@/lib/routing/points";
 import { visibleWaypoints } from "@/lib/routing/waypoints";
 import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import type { RouteMode, RouteResponse } from "@/lib/schemas/route";
@@ -93,9 +71,6 @@ export function RouteComposer({
 }: RouteComposerProps) {
   const [expanded, setExpanded] = useState(false);
   const detailsRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
-  const [exportError, setExportError] = useState<string>();
   const labels = usePointLabels(points, knownLabels);
   const marks = visibleWaypoints(points);
   const routePoints = (route?.coordinates ?? []).map(([lng, lat]) => ({ lng, lat }));
@@ -105,88 +80,6 @@ export function RouteComposer({
           (feature) => feature.kind === "drinking_water",
         ).length
       : 0;
-
-  function copySummary() {
-    if (!route) return;
-    const text = [
-      durationSeconds
-        ? `${formatDistance(route.metrics.distanceMeters, unit)} · ${formatEffortDuration(durationSeconds)}`
-        : formatDistance(route.metrics.distanceMeters, unit),
-      `${route.metrics.trafficSignals} lights · ${route.metrics.crossings} crossings · ${nearbyWater} water`,
-      route.metrics.ascentMeters === undefined
-        ? undefined
-        : `${formatElevation(route.metrics.ascentMeters, unit)} gain`,
-      mode === "low_stops" ? "Low stops" : "Direct",
-    ]
-      .filter(Boolean)
-      .join(" · ");
-    void navigator.clipboard.writeText(text).then(
-      () => {
-        setCopied(true);
-        captureEvent(analyticsEvents.routeSummaryCopied, { mode, unit });
-        window.setTimeout(() => setCopied(false), 1600);
-      },
-      () => undefined,
-    );
-  }
-
-  const exportTitle =
-    savedRouteName ??
-    suggestedRouteName({
-      startLabel: labels[0],
-      finishLabel: labels.at(-1),
-      isLoop: isRouteLoop(points),
-    });
-  const exportBase = fileSafeName(exportTitle);
-  const exportSubtitle = route
-    ? durationSeconds
-      ? `${formatDistance(route.metrics.distanceMeters, unit)} · ${formatEffortDuration(durationSeconds)}`
-      : formatDistance(route.metrics.distanceMeters, unit)
-    : undefined;
-
-  function exportGpx() {
-    if (!route) return;
-    setExportOpen(false);
-    downloadGpx(routeToGpx(route.coordinates, exportTitle), `${exportBase}.gpx`);
-    captureEvent(analyticsEvents.routeExported, { format: "gpx", mode });
-  }
-
-  function exportSvg() {
-    if (!route) return;
-    setExportOpen(false);
-    downloadText(
-      routeToSvg({
-        coordinates: route.coordinates,
-        name: exportTitle,
-        subtitle: exportSubtitle,
-      }),
-      `${exportBase}.svg`,
-      "image/svg+xml",
-    );
-    captureEvent(analyticsEvents.routeExported, { format: "svg", mode });
-  }
-
-  async function exportImage() {
-    if (!route) return;
-    setExportOpen(false);
-    setExportError(undefined);
-    try {
-      await downloadPngFromSvg(
-        routeToSvg({
-          coordinates: route.coordinates,
-          name: exportTitle,
-          subtitle: exportSubtitle,
-          background: "#0a0d0b",
-        }),
-        `${exportBase}.png`,
-        STORY_GRAPHIC_SIZE.width,
-        STORY_GRAPHIC_SIZE.height,
-      );
-      captureEvent(analyticsEvents.routeExported, { format: "png", mode });
-    } catch {
-      setExportError("Image export needs a browser canvas. Try SVG instead.");
-    }
-  }
 
   const headline =
     points.length === 0
@@ -258,8 +151,8 @@ export function RouteComposer({
         id="route-builder-details"
         className={
           expanded
-            ? "mt-3 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain md:overflow-hidden"
-            : "mt-3 hidden min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain md:flex md:overflow-hidden"
+            ? "mt-3 flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain md:overflow-hidden"
+            : "mt-3 hidden min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain md:flex md:overflow-hidden"
         }
       >
         <div className="grid shrink-0 grid-cols-2 gap-1 rounded-xl bg-black/30 p-1">
@@ -278,7 +171,7 @@ export function RouteComposer({
             </button>
           ))}
         </div>
-        <p className="mt-2 shrink-0 text-[11px] leading-4 text-white/40">
+        <p className="mt-2 min-w-0 shrink-0 text-[11px] leading-4 text-white/40">
           {mode === "low_stops"
             ? avoidElevation
               ? "Steers around lights and prefers flatter streets when a lower line exists."
@@ -288,10 +181,10 @@ export function RouteComposer({
         {mode === "low_stops" ? (
           <button
             type="button"
-            className={`mt-2 flex min-h-10 w-full shrink-0 items-center justify-between rounded-xl px-3 text-left text-xs transition ${
+            className={`mt-2 flex min-h-10 w-full min-w-0 max-w-full shrink-0 items-center justify-between rounded-xl border px-3 text-left text-xs transition ${
               avoidElevation
-                ? "bg-[#c8ff52]/12 text-[#c8ff52] ring-1 ring-[#c8ff52]/30"
-                : "bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
+                ? "border-[#c8ff52]/35 bg-[#c8ff52]/12 text-[#c8ff52]"
+                : "border-transparent bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
             }`}
             aria-pressed={avoidElevation}
             onClick={() => onAvoidElevationChange(!avoidElevation)}
@@ -311,7 +204,7 @@ export function RouteComposer({
               </p>
               <button
                 type="button"
-                className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8ff52]/10 text-[13px] font-medium text-[#c8ff52] ring-1 ring-[#c8ff52]/30 transition hover:bg-[#c8ff52]/16"
+                className="mt-3 hidden min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#c8ff52]/10 text-[13px] font-medium text-[#c8ff52] ring-1 ring-[#c8ff52]/30 transition hover:bg-[#c8ff52]/16 md:flex"
                 onClick={onUseLocation}
               >
                 <LocationGlyph />
@@ -372,128 +265,30 @@ export function RouteComposer({
           {error ? <p className="mt-3 shrink-0 text-sm text-[#ffad91]">{error}</p> : null}
         </div>
 
-        <div className="mt-3 grid shrink-0 grid-cols-2 gap-2">
-          <button
-            type="button"
-            className="rws-button min-h-10"
-            onClick={onReverse}
-            disabled={points.length < 2}
-          >
-            <ReverseGlyph />
-            Reverse
-          </button>
-          <button
-            type="button"
-            className="rws-button min-h-10"
-            onClick={onCloseLoop}
-            disabled={!canCloseLoop}
-            title="Draw the route back to the start pin"
-          >
-            <LoopGlyph />
-            Loop back
-          </button>
-          <button
-            type="button"
-            className="rws-button min-h-10"
-            onClick={onUndo}
-            disabled={points.length === 0}
-          >
-            <UndoGlyph />
-            Undo
-          </button>
-          <button
-            type="button"
-            className="rws-button min-h-10"
-            onClick={onClear}
-            disabled={points.length === 0}
-          >
-            <ClearGlyph />
-            Clear
-          </button>
+        <div className="hidden md:contents">
+          <RouteActions
+            variant="panel"
+            points={points}
+            knownLabels={knownLabels}
+            mode={mode}
+            route={route}
+            features={features}
+            canCloseLoop={canCloseLoop}
+            onUndo={onUndo}
+            onClear={onClear}
+            onReverse={onReverse}
+            onCloseLoop={onCloseLoop}
+            onUseLocation={onUseLocation}
+            unit={unit}
+            durationSeconds={durationSeconds}
+            savedRouteName={savedRouteName}
+            shareReady={shareReady}
+            shareCopied={shareCopied}
+            shareError={shareError}
+            onRequestSave={onRequestSave}
+            onRequestShare={onRequestShare}
+          />
         </div>
-
-        {route ? (
-          <div className="mt-2 shrink-0 space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" className="rws-button min-h-10" onClick={copySummary}>
-                <CopyGlyph />
-                {copied ? "Copied" : "Copy summary"}
-              </button>
-              <div className="relative">
-                <button
-                  type="button"
-                  className="rws-button min-h-10 w-full"
-                  aria-expanded={exportOpen}
-                  onClick={() => setExportOpen((open) => !open)}
-                >
-                  <ExportGlyph />
-                  Export
-                </button>
-                {exportOpen ? (
-                  <div
-                    role="menu"
-                    className="rws-panel absolute right-0 bottom-full z-20 mb-1.5 w-full overflow-hidden p-1.5"
-                  >
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="rws-button w-full text-left"
-                      onClick={exportGpx}
-                    >
-                      GPX
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="rws-button w-full text-left"
-                      onClick={() => void exportImage()}
-                    >
-                      Image
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="rws-button w-full text-left"
-                      onClick={exportSvg}
-                    >
-                      SVG overlay
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                className="rws-button min-h-10"
-                onClick={() => onRequestSave?.(exportTitle)}
-              >
-                <SaveGlyph />
-                {savedRouteName ? "Save again" : "Save route"}
-              </button>
-              <button
-                type="button"
-                className="rws-button min-h-10"
-                onClick={() => onRequestShare?.(exportTitle)}
-              >
-                <ShareGlyph />
-                {shareCopied ? "Link copied" : shareReady ? "Copy share link" : "Share link"}
-              </button>
-            </div>
-            {savedRouteName ? (
-              <p className="text-[10px] text-white/35">Saved as {savedRouteName}</p>
-            ) : null}
-            {exportError ? <p className="text-[10px] text-[#ffad91]">{exportError}</p> : null}
-            {shareError ? <p className="text-[10px] text-[#ffad91]">{shareError}</p> : null}
-          </div>
-        ) : points.length === 0 ? null : (
-          <button
-            type="button"
-            className="mt-2 flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#c8ff52]/10 text-[13px] font-medium text-[#c8ff52] ring-1 ring-[#c8ff52]/30 transition hover:bg-[#c8ff52]/16"
-            onClick={onUseLocation}
-          >
-            <LocationGlyph />
-            Use my location
-          </button>
-        )}
       </div>
     </section>
   );
