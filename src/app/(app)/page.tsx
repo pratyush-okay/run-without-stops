@@ -3,6 +3,7 @@ import { RunningDashboard } from "@/components/dashboard/running-dashboard";
 import { HomeDetails } from "@/components/seo/home-details";
 import { HomeIntro } from "@/components/seo/home-intro";
 import { env } from "@/env";
+import { HOME_FAQS } from "@/lib/seo/home-faqs";
 import { JsonLd } from "@/lib/seo/json-ld";
 import { requestIsSearchCrawler } from "@/lib/seo/request-crawler";
 import {
@@ -69,6 +70,14 @@ export default async function Home() {
                   price: "0",
                   priceCurrency: "AUD",
                 },
+              },
+              {
+                "@type": "FAQPage",
+                mainEntity: HOME_FAQS.map((faq) => ({
+                  "@type": "Question",
+                  name: faq.question,
+                  acceptedAnswer: { "@type": "Answer", text: faq.answer },
+                })),
               },
             ],
           }}
