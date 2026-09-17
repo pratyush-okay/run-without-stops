@@ -4,6 +4,7 @@ import { HomeDetails } from "@/components/seo/home-details";
 import { HomeIntro } from "@/components/seo/home-intro";
 import { env } from "@/env";
 import { JsonLd } from "@/lib/seo/json-ld";
+import { requestIsSearchCrawler } from "@/lib/seo/request-crawler";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteOrigin } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
@@ -17,8 +18,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
   const origin = siteOrigin();
+  const crawler = await requestIsSearchCrawler();
   return (
     <div className="bg-[#0a0d0b]">
       <div className="relative h-dvh min-h-dvh overflow-hidden">
@@ -56,7 +58,11 @@ export default function Home() {
           }}
         />
         <HomeIntro />
-        <RunningDashboard mapboxToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN} />
+        {crawler ? (
+          <div className="h-full w-full bg-[#0a0d0b]" />
+        ) : (
+          <RunningDashboard mapboxToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN} />
+        )}
       </div>
       <HomeDetails />
     </div>
