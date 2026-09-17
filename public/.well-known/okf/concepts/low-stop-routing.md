@@ -11,7 +11,7 @@ timestamp: 2026-09-17T12:30:00Z
 
 Low-stop routing treats waiting as part of the distance. A shortest-path walking line still sends a runner through red lights if those lights sit on the shortest legal path.
 
-In Run Without Stops, low-stop mode asks the router to prefer streets with fewer traffic lights and to keep off highways and busy roads when a quieter alternative exists. Direct mode draws the more literal pedestrian line between clicks. Avoid elevation is a separate switch that can trade extra metres for less climbing.
+In Run Without Stops, low-stop mode asks the router to prefer streets with fewer traffic lights and to keep off highways and busy roads when a quieter alternative exists. Direct mode draws the more literal pedestrian line between clicks. Avoid hills only appears under Low stops; it can trade extra metres for less climbing.
 
 The map can show traffic lights, crossings, drinking water, parks, highways, and busy roads. Those overlays load when the map is zoomed into streets, not at country scale. A quieter street can still hold one signal at a corner that cannot be skipped; the runner still reads the marks and can move a waypoint.
 

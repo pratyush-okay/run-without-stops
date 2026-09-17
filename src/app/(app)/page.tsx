@@ -51,6 +51,7 @@ export default async function Home() {
                 url: origin,
                 description: SITE_DESCRIPTION,
                 logo: absoluteUrl("/icon-512.png", origin),
+                sameAs: ["https://github.com/pratyush-okay/run-without-stops"],
               },
               {
                 "@type": "WebSite",

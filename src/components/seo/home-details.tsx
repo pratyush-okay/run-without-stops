@@ -23,7 +23,8 @@ export function HomeDetails() {
               The map still opens on Sydney if the browser has no location yet. Routing and overlays
               load for the viewport, not for a whole country at once, so a quiet line in Melbourne,
               London, or a suburb you just moved to is the same click as a loop around the park you
-              already know.
+              already know. After the second point the panel shows distance and how many lights sit
+              on the line. That number is a hint. The marks on the map are the review.
             </p>
           </div>
         </div>
