@@ -14,8 +14,18 @@ export function HomeIntro() {
         </p>
         <p className="mt-2 text-xs leading-5 text-white/70">
           Read the{" "}
-          <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/blog">
-            route planning guide
+          <Link
+            className="text-[#c8ff52] underline-offset-2 hover:underline"
+            href="/blog/the-complete-guide-to-building-a-run-without-stops"
+          >
+            complete guide to building a run without stops
+          </Link>
+          , then the{" "}
+          <Link
+            className="text-[#c8ff52] underline-offset-2 hover:underline"
+            href="/blog/a-runners-guide-to-traffic-lights-crossings-and-route-intelligence"
+          >
+            traffic lights and crossings note
           </Link>
           .
         </p>
