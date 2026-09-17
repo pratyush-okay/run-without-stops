@@ -43,6 +43,10 @@ yarn-error.log*
 .agents/
 skills-lock.json
 
+# /brag video output (renders, composition, audio, snapshots)
+/brag-output/
+/brag-output-*/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
