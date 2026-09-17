@@ -3,12 +3,12 @@ import { RunningDashboard } from "@/components/dashboard/running-dashboard";
 import { HomeIntro } from "@/components/seo/home-intro";
 import { env } from "@/env";
 import { JsonLd } from "@/lib/seo/json-ld";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteOrigin } from "@/lib/seo/site";
+import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteOrigin } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
   title: { absolute: SITE_TITLE },
   description: SITE_DESCRIPTION,
-  alternates: { canonical: "/" },
+  alternates: { canonical: absoluteUrl("/") },
 };
 
 export default function Home() {
