@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export function HomeIntro() {
   return (
-    <section className="pointer-events-none absolute z-20 max-md:sr-only md:right-4 md:bottom-[calc(var(--rws-metrics-clearance)+0.75rem)] md:max-w-sm">
-      <div className="rws-panel pointer-events-auto p-4">
+    <section className="pointer-events-none absolute z-20 inset-x-[max(0.75rem,env(safe-area-inset-left))] top-[calc(env(safe-area-inset-top)+4.75rem)] right-[max(0.75rem,env(safe-area-inset-right))] md:inset-auto md:right-4 md:top-auto md:bottom-[calc(var(--rws-metrics-clearance)+0.75rem)] md:max-w-sm">
+      <div className="rws-panel pointer-events-auto p-3 md:p-4">
         <p className="rws-kicker">Anywhere</p>
         <h1 className="mt-1 text-base font-semibold tracking-tight">Plan quieter running routes</h1>
         <p className="mt-2 text-xs leading-5 text-white/70">
