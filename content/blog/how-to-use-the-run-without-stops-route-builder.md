@@ -134,4 +134,4 @@ Stay on Direct for a park loop or street you already run. Switch to Low stops wh
 
 Direct still draws a pedestrian line. Motorways cost more than a back street, but a short fence can still win. Move a waypoint onto the path you actually run, then read the [complete guide](/blog/the-complete-guide-to-building-a-run-without-stops) if you also need hills, water, save, and share.
 
-Open the [map](/), drop two points on a loop you already run, leave Direct on, and watch the line follow the clicks. If it still cuts a corner you never take, move a point.
+Open the [map](/), drop two points on a loop you already run, leave Direct on, and watch the line follow the clicks. If it still cuts a corner you never take, move a point. If the job is a calmer profile rather than a known loop, read [flat running routes vs Direct](/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run).

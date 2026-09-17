@@ -82,6 +82,11 @@ describe("listPublishedPosts", () => {
     expect(
       posts.some((post) => post.slug === "how-to-use-the-run-without-stops-route-builder"),
     ).toBe(true);
+    expect(
+      posts.some(
+        (post) => post.slug === "flat-running-routes-vs-direct-routes-which-is-right-for-your-run",
+      ),
+    ).toBe(true);
     expect(posts.every((post) => !post.slug.startsWith("sso-"))).toBe(true);
     expect(
       posts.every((post) => `${postDocumentTitle(post)} | Run Without Stops`.length <= 60),

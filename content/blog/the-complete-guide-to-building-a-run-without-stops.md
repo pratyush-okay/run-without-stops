@@ -94,7 +94,7 @@ Turn it on before you route, then read the elevation marks on the line. If a cli
 
 Use it with low-stop, not as a substitute. A flat highway shoulder is still a bad run. Flat plus lights plus buses is still a chopped run. The useful combination in most inner suburbs is low-stop on, avoid elevation on, lights and busy roads visible.
 
-Direct plus avoid elevation is for a known corridor where you already accepted the streets and only want the profile calmer. If you do not know the streets yet, start with low-stop.
+Avoid hills only appears when Low stops is selected. Direct does not show that switch. For when a flatter line is the better request than Direct, read [flat running routes vs Direct](/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run).
 
 ## Building a direct route with the direct route builder
 

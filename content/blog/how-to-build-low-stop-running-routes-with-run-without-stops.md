@@ -59,7 +59,7 @@ An 8 km line with six lights is a different run from 8 km along a park edge. You
 
 Busy roads add a second cost even when the light is green: a pinched footpath, buses, a corner you take wide. Highways are the next step up. The legal pedestrian option may be a shoulder, an overpass, or a long fence the shortest-path engine still likes because the geometry is clean.
 
-Hill avoidance is a separate switch. Use it with low-stop when the profile matters. A flat highway shoulder is still a bad run. The useful default in most inner suburbs is low-stop on, avoid elevation on if you care about climbing, and lights plus busy roads visible.
+Hill avoidance is a separate switch. Use it with low-stop when the profile matters. A flat highway shoulder is still a bad run. The useful default in most inner suburbs is low-stop on, avoid elevation on if you care about climbing, and lights plus busy roads visible. Direct does not show Avoid hills. The comparison is in [flat running routes vs Direct](/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run).
 
 For how those marks differ (signal vs crossing vs arterial), stay on the [traffic lights and crossings note](/blog/a-runners-guide-to-traffic-lights-crossings-and-route-intelligence). This page is the click sequence.
 

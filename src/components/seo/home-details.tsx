@@ -49,6 +49,13 @@ export function HomeDetails() {
             >
               how to use the Route builder
             </Link>
+            ,{" "}
+            <Link
+              className="text-[#c8ff52] underline-offset-2 hover:underline"
+              href="/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run"
+            >
+              flat running routes vs Direct
+            </Link>
             , and{" "}
             <Link
               className="text-[#c8ff52] underline-offset-2 hover:underline"

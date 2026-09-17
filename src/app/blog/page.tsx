@@ -122,7 +122,14 @@ export default function BlogIndexPage() {
           >
             how to use the Route builder
           </Link>{" "}
-          when Direct, start, and finish are the job.
+          when Direct, start, and finish are the job, or{" "}
+          <Link
+            className="text-[#c8ff52] underline-offset-2 hover:underline"
+            href="/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run"
+          >
+            flat running routes vs Direct
+          </Link>{" "}
+          when the profile is the decision.
         </p>
         <p>
           Open the map when you finish a note. Drop a start, turn on the layers the page named, and
