@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BlogMarkdown } from "@/components/blog/blog-markdown";
 import { BlogShell } from "@/components/blog/blog-shell";
@@ -47,6 +48,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const url = absoluteUrl(`/blog/${post.slug}`);
+  const related = listPublishedPosts().filter((item) => item.slug !== post.slug);
   const jsonLd: Record<string, unknown>[] = [
     {
       "@context": "https://schema.org",
@@ -87,6 +89,32 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <article className="mt-8">
         <BlogMarkdown markdown={post.body} />
       </article>
+      <nav className="mt-12 border-t border-white/10 pt-6 text-sm leading-6 text-white/65">
+        <p>
+          Back to{" "}
+          <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/blog">
+            quieter route notes
+          </Link>
+          {" · "}
+          <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/">
+            map
+          </Link>
+        </p>
+        {related.length > 0 ? (
+          <ul className="mt-4 grid gap-2">
+            {related.map((item) => (
+              <li key={item.slug}>
+                <Link
+                  className="text-[#c8ff52] underline-offset-2 hover:underline"
+                  href={`/blog/${item.slug}`}
+                >
+                  {item.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </nav>
     </BlogShell>
   );
 }
