@@ -53,16 +53,18 @@ describe("combined checkpoint pills", () => {
       {
         waypoint: via,
         feature: signal,
+        extras: [],
       },
     ]);
     expect(leftoverFeatures.map((feature) => feature.id)).toEqual(["tap", "far"]);
   });
 
-  it("prefers a traffic light over a zebra at the same corner", () => {
+  it("prefers a traffic light over a zebra at the same corner and hides the extra icon", () => {
     const { combined, leftoverFeatures } = pairWaypointFeatures([via], [crossing, signal]);
 
     expect(combined[0]?.feature?.id).toBe("light");
-    expect(leftoverFeatures.map((feature) => feature.id)).toEqual(["zebra"]);
+    expect(combined[0]?.extras.map((feature) => feature.id)).toEqual(["zebra"]);
+    expect(leftoverFeatures).toEqual([]);
   });
 
   it("names combined icons by waypoint role and feature kind", () => {
@@ -84,7 +86,7 @@ describe("combined checkpoint pills", () => {
 
     const { combined, leftoverFeatures } = pairWaypointFeatures([startFinish, via], [farSignal]);
 
-    expect(combined).toEqual([{ waypoint: startFinish }]);
+    expect(combined).toEqual([{ waypoint: startFinish, extras: [] }]);
     expect(leftoverFeatures.map((feature) => feature.id)).toEqual(["far"]);
   });
 
@@ -110,7 +112,7 @@ describe("combined checkpoint pills", () => {
     };
 
     expect(pairWaypointFeatures([startFinish], [signal, crossing])).toEqual({
-      combined: [{ waypoint: startFinish }],
+      combined: [{ waypoint: startFinish, extras: [] }],
       leftoverFeatures: [],
     });
     expect(pairWaypointFeatures([start], [startSignal, farSignal])).toEqual({

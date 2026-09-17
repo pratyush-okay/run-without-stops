@@ -54,10 +54,19 @@ function paintTrafficGlyph(context: CanvasRenderingContext2D, cx: number, cy: nu
   }
 }
 
-function paintCrossingGlyph(context: CanvasRenderingContext2D, cx: number, cy: number) {
+function paintCrossingGlyph(
+  context: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  compact = false,
+) {
+  const width = compact ? 3.4 : 5;
+  const height = compact ? 16 : 24;
+  const radius = compact ? 1 : 1.4;
+  const xs = compact ? [cx - 7, cx - 1.2, cx + 4.6] : [cx - 11, cx - 2, cx + 7];
   context.fillStyle = "#f4f7f5";
-  for (const x of [cx - 11, cx - 2, cx + 7]) {
-    roundedRect(context, x, cy - 12, 5, 24, 1.4);
+  for (const x of xs) {
+    roundedRect(context, x, cy - height / 2, width, height, radius);
     context.fill();
   }
 }
@@ -149,7 +158,7 @@ function combinedSlots(
 }
 
 function combinedCanvasWidth(slots: number) {
-  return slots >= 3 ? 176 : 128;
+  return slots >= 3 ? 156 : 108;
 }
 
 function paintStartBadge(context: CanvasRenderingContext2D, cx: number, cy: number) {
@@ -212,7 +221,7 @@ function paintCombinedSlot(
     paintTrafficGlyph(context, cx, cy);
     return;
   }
-  paintCrossingGlyph(context, cx, cy);
+  paintCrossingGlyph(context, cx, cy, true);
 }
 
 export function createCombinedMarkIconImage(
@@ -229,14 +238,14 @@ export function createCombinedMarkIconImage(
   const context = canvas.getContext("2d");
   if (!context) return undefined;
 
-  roundedRect(context, 4, 8, width - 8, 48, 24);
+  roundedRect(context, 2, 10, width - 4, 44, 22);
   context.fillStyle = "#101512";
   context.fill();
   context.lineWidth = 2;
-  context.strokeStyle = "rgba(244, 247, 245, 0.16)";
+  context.strokeStyle = "rgba(200, 255, 82, 0.28)";
   context.stroke();
 
-  const inset = 22;
+  const inset = 20;
   const span = width - inset * 2;
   for (const [index, slot] of slots.entries()) {
     const cx = slots.length === 1 ? width / 2 : inset + (span * index) / (slots.length - 1);

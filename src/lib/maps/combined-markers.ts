@@ -12,6 +12,7 @@ export type CombinedFeature = RunnerFeature & { kind: CombinedFeatureKind };
 export type CombinedMark = {
   waypoint: WaypointMark;
   feature?: CombinedFeature;
+  extras: CombinedFeature[];
 };
 
 function isCombinable(feature: RunnerFeature): feature is CombinedFeature {
@@ -58,7 +59,17 @@ export function pairWaypointFeatures(
     }
     usedWaypoints.add(candidate.waypoint.index);
     usedFeatures.add(candidate.feature.id);
-    combined.push({ waypoint: candidate.waypoint, feature: candidate.feature });
+    combined.push({ waypoint: candidate.waypoint, feature: candidate.feature, extras: [] });
+  }
+
+  for (const mark of combined) {
+    if (mark.waypoint.role !== "via") continue;
+    for (const feature of features) {
+      if (!isCombinable(feature) || usedFeatures.has(feature.id)) continue;
+      if (distanceMeters(mark.waypoint.point, feature.point) > COMBINED_MARK_METERS) continue;
+      usedFeatures.add(feature.id);
+      mark.extras.push(feature);
+    }
   }
 
   for (const waypoint of waypoints) {
@@ -73,7 +84,7 @@ export function pairWaypointFeatures(
   for (const waypoint of waypoints) {
     if (waypoint.role !== "start_finish" || usedWaypoints.has(waypoint.index)) continue;
     usedWaypoints.add(waypoint.index);
-    combined.push({ waypoint });
+    combined.push({ waypoint, extras: [] });
   }
 
   return {

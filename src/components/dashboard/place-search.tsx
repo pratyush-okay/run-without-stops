@@ -83,6 +83,12 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
       if (event.key === "Escape") {
         setIsOpen(false);
         setMobileExpanded(false);
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setMobileExpanded(true);
+        window.requestAnimationFrame(() => inputRef.current?.focus());
       }
     }
     document.addEventListener("pointerdown", onPointerDown);
@@ -183,6 +189,12 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
           role="combobox"
           className={`min-w-0 flex-1 bg-transparent py-0 pr-1 text-sm text-white outline-none placeholder:text-white/35 ${fieldClass}`}
         />
+        <kbd
+          className="hidden h-full shrink-0 items-center px-1.5 font-mono text-[10px] tracking-wide text-white/35 md:inline-flex"
+          aria-hidden
+        >
+          ⌘K
+        </kbd>
         <button
           type="submit"
           className={`shrink-0 items-center px-3 text-[10px] font-semibold tracking-wider text-[#c8ff52] uppercase transition hover:bg-white/[0.05] disabled:opacity-40 ${goClass}`}

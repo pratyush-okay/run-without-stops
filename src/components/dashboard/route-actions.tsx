@@ -236,7 +236,7 @@ export function RouteActions({
     }
   }
 
-  const copyLabel = copied ? "Copied" : "Copy summary";
+  const copyLabel = copied ? "Copied" : "Copy";
   const saveLabel = savedRouteName ? "Save again" : "Save route";
   const shareLabel = shareCopied ? "Link copied" : shareReady ? "Copy share link" : "Share link";
 

@@ -4,7 +4,11 @@ import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 import { scrubTipHtml } from "@/components/dashboard/scrub-tip";
 import { featuresNearRoute } from "@/lib/geo";
-import { combinedIconId, pairWaypointFeatures } from "@/lib/maps/combined-markers";
+import {
+  type CombinedMark,
+  combinedIconId,
+  pairWaypointFeatures,
+} from "@/lib/maps/combined-markers";
 import {
   createClimbIconImage,
   createCombinedMarkIconImage,
@@ -137,6 +141,13 @@ function featureTitle(feature: RunnerFeature) {
   );
 }
 
+function combinedMarkTitle(item: CombinedMark) {
+  const extras = [item.feature, ...item.extras]
+    .filter((feature): feature is NonNullable<typeof feature> => Boolean(feature))
+    .map((feature) => featureTitle(feature));
+  return extras.length > 0 ? `${item.waypoint.title} · ${extras.join(" · ")}` : item.waypoint.title;
+}
+
 function syncOverlayMarkers(
   map: mapboxgl.Map,
   points: GeoPoint[],
@@ -177,9 +188,7 @@ function syncOverlayMarkers(
         label: item.waypoint.label,
         role: item.waypoint.role,
         kind: item.feature?.kind ?? "",
-        title: item.feature
-          ? `${item.waypoint.title} · ${featureTitle(item.feature)}`
-          : item.waypoint.title,
+        title: combinedMarkTitle(item),
       },
       geometry: {
         type: "Point",
@@ -403,6 +412,7 @@ function addRunnerLayers(map: mapboxgl.Map) {
     id: "runner-waypoints-hit",
     type: "circle",
     source: "runner-waypoints",
+    filter: ["!=", ["get", "paired"], "yes"],
     paint: { "circle-radius": 22, "circle-opacity": 0.01 },
   });
   addLayerOnce(map, waypointHaloLayer(), "runner-waypoints");
@@ -544,14 +554,14 @@ function addRunnerLayers(map: mapboxgl.Map) {
         ["concat", "runner-combined-", ["get", "role"]],
         ["concat", "runner-combined-", ["get", "role"], "-", ["get", "kind"]],
       ],
-      "icon-size": 1,
+      "icon-size": 0.92,
       "icon-padding": 0,
       "icon-allow-overlap": true,
       "icon-ignore-placement": true,
       "text-field": ["get", "label"],
       "text-size": 11,
       "text-font": LABEL_FONT,
-      "text-offset": [-1.36, 0.04],
+      "text-offset": [-1.42, 0.04],
       "text-allow-overlap": true,
       "text-ignore-placement": true,
     },
@@ -596,6 +606,7 @@ export function RunningMap({
   const didDragRef = useRef(false);
   const draggingRef = useRef(false);
   const waypointPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const featurePopupRef = useRef<mapboxgl.Popup | null>(null);
   const scrubberRef = useRef<mapboxgl.Marker | null>(null);
   const elevationSamplesRef = useRef(elevationSamples);
   const onScrubChangeRef = useRef(onScrubChange);
@@ -647,13 +658,23 @@ export function RunningMap({
       if (bounds) boundsChangeRef.current(bounds);
     };
 
+    const closeFeaturePopup = () => {
+      featurePopupRef.current?.remove();
+      featurePopupRef.current = null;
+    };
+
     const closeWaypointPopup = () => {
       waypointPopupRef.current?.remove();
       waypointPopupRef.current = null;
     };
 
-    const showWaypointPopup = (lngLat: mapboxgl.LngLatLike, index: number, title: string) => {
+    const closeMapPopups = () => {
       closeWaypointPopup();
+      closeFeaturePopup();
+    };
+
+    const showWaypointPopup = (lngLat: mapboxgl.LngLatLike, index: number, title: string) => {
+      closeMapPopups();
       const wrapper = document.createElement("div");
       wrapper.className = "rws-popup";
       const heading = document.createElement("strong");
@@ -717,8 +738,8 @@ export function RunningMap({
         didDragRef.current = false;
         return;
       }
-      if (waypointPopupRef.current) {
-        closeWaypointPopup();
+      if (waypointPopupRef.current || featurePopupRef.current) {
+        closeMapPopups();
         return;
       }
       const point = { lat: event.lngLat.lat, lng: event.lngLat.lng };
@@ -738,36 +759,52 @@ export function RunningMap({
       addPointRef.current(point);
     });
 
+    const showFeaturePopup = (lngLat: mapboxgl.LngLatLike, title: string, detail?: string) => {
+      closeMapPopups();
+      const wrapper = document.createElement("div");
+      wrapper.className = "rws-popup";
+      const heading = document.createElement("strong");
+      heading.textContent = title;
+      wrapper.append(heading);
+      if (detail) {
+        const extra = document.createElement("span");
+        extra.textContent = detail;
+        wrapper.append(extra);
+      }
+      const popup = new mapboxgl.Popup({
+        offset: 12,
+        closeButton: false,
+        className: "rws-map-popup",
+      })
+        .setLngLat(lngLat)
+        .setDOMContent(wrapper)
+        .addTo(map);
+      featurePopupRef.current = popup;
+      popup.on("close", () => {
+        if (featurePopupRef.current === popup) featurePopupRef.current = null;
+      });
+    };
+
+    const hitsCombinedMark = (point: mapboxgl.Point) =>
+      map.queryRenderedFeatures(point, {
+        layers: ["runner-combined", "runner-combined-hit"].filter((id) => map.getLayer(id)),
+      }).length > 0;
+
     map.on("click", "runner-elevation", (event: mapboxgl.MapMouseEvent) => {
       const feature = event.features?.[0] as MapFeature | undefined;
       if (feature?.geometry?.type !== "Point") return;
-      const wrapper = document.createElement("div");
-      wrapper.className = "rws-popup";
-      const title = document.createElement("strong");
-      title.textContent = String(feature.properties?.title ?? "Elevation");
-      const detail = document.createElement("span");
-      detail.textContent = String(feature.properties?.detail ?? "");
-      wrapper.append(title, detail);
       const [lng, lat] = feature.geometry.coordinates as [number, number];
-      new mapboxgl.Popup({ offset: 12, closeButton: false, className: "rws-map-popup" })
-        .setLngLat([lng, lat])
-        .setDOMContent(wrapper)
-        .addTo(map);
+      showFeaturePopup(
+        [lng, lat],
+        String(feature.properties?.title ?? "Elevation"),
+        String(feature.properties?.detail ?? ""),
+      );
     });
 
     map.on("click", "runner-features-unclustered", (event: mapboxgl.MapMouseEvent) => {
+      if (hitsCombinedMark(event.point)) return;
       const feature = event.features?.[0] as MapFeature | undefined;
       if (feature?.geometry?.type !== "Point") return;
-      const wrapper = document.createElement("div");
-      wrapper.className = "rws-popup";
-      const title = document.createElement("strong");
-      title.textContent = String(feature.properties?.name ?? "Map detail");
-      wrapper.append(title);
-      if (feature.properties?.detail) {
-        const detail = document.createElement("span");
-        detail.textContent = String(feature.properties.detail);
-        wrapper.append(detail);
-      }
       const [lng, lat] = feature.geometry.coordinates as [number, number];
       if (String(feature.properties?.kind) === "drinking_water") {
         const point = { lat, lng };
@@ -783,10 +820,11 @@ export function RunningMap({
         }
         addPointRef.current(point, String(feature.properties?.name ?? "Drinking water"));
       }
-      new mapboxgl.Popup({ offset: 12, closeButton: false, className: "rws-map-popup" })
-        .setLngLat([lng, lat])
-        .setDOMContent(wrapper)
-        .addTo(map);
+      showFeaturePopup(
+        [lng, lat],
+        String(feature.properties?.name ?? "Map detail"),
+        feature.properties?.detail ? String(feature.properties.detail) : undefined,
+      );
     });
 
     const onWaypointPointerDown = (event: mapboxgl.MapMouseEvent) => {
@@ -810,7 +848,7 @@ export function RunningMap({
       if (!didDragRef.current && moved < 6) return;
       didDragRef.current = true;
       draggingRef.current = true;
-      closeWaypointPopup();
+      closeMapPopups();
       map.getCanvas().style.cursor = "grabbing";
       const point = { lat: event.lngLat.lat, lng: event.lngLat.lng };
       const nextPoints = moveRoutePoint(pointsRef.current, pointer.index, point);
@@ -867,7 +905,7 @@ export function RunningMap({
     map.getCanvas().addEventListener("mouseleave", () => finishPointer());
 
     return () => {
-      closeWaypointPopup();
+      closeMapPopups();
       scrubberRef.current?.remove();
       scrubberRef.current = null;
       setMapReady(false);
