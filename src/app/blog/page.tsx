@@ -108,6 +108,14 @@ export default function BlogIndexPage() {
             the traffic lights and crossings note
           </Link>{" "}
           for OpenStreetMap marks, busy-road avoidance, and a checklist you can use on the same map.
+          Then follow{" "}
+          <Link
+            className="text-[#c8ff52] underline-offset-2 hover:underline"
+            href="/blog/how-to-build-low-stop-running-routes-with-run-without-stops"
+          >
+            how to build low-stop running routes
+          </Link>{" "}
+          for the click sequence after you already know what the layers mean.
         </p>
         <p>
           Open the map when you finish a note. Drop a start, turn on the layers the page named, and

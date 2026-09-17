@@ -70,6 +70,8 @@ Hill avoidance is the same idea on the vertical axis. A “flat” looking stree
 8. Close the loop only if you actually want to finish where you started. Closing a loop through the same arterial twice is how you collect the same lights again.
 9. Save if you want the line later. Share if someone else needs the URL. Sign-in is optional until you do either of those.
 
+For the click-by-click low-stop build, including what to do when the first draft still holds three lights, read [how to build low-stop running routes](/blog/how-to-build-low-stop-running-routes-with-run-without-stops).
+
 That is the whole loop. The intelligence is in the layers plus the router, not in a hidden coaching model.
 
 ## How running routes with fewer traffic lights work

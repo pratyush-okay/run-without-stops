@@ -34,8 +34,15 @@ export function HomeDetails() {
               href="/blog/the-complete-guide-to-building-a-run-without-stops"
             >
               the complete guide
-            </Link>{" "}
-            and{" "}
+            </Link>
+            ,{" "}
+            <Link
+              className="text-[#c8ff52] underline-offset-2 hover:underline"
+              href="/blog/how-to-build-low-stop-running-routes-with-run-without-stops"
+            >
+              how to build a low-stop line
+            </Link>
+            , and{" "}
             <Link
               className="text-[#c8ff52] underline-offset-2 hover:underline"
               href="/blog/a-runners-guide-to-traffic-lights-crossings-and-route-intelligence"
