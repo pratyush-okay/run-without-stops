@@ -22,13 +22,14 @@ export const metadata: Metadata = {
   title: "Run Without Stops",
   description: "Plan quieter running routes",
   metadataBase: new URL(appUrl),
+  manifest: "/site.webmanifest",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0a0d0b",
+  themeColor: "#0A0C0B",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
