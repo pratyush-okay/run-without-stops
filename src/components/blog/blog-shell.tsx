@@ -9,6 +9,10 @@ export function BlogShell({ children }: { children: ReactNode }) {
         <AppLogo className="size-10" />
         <div>
           <p className="rws-kicker">Run Without Stops</p>
+          <Link className="text-sm text-white/70 hover:text-white" href="/">
+            Map
+          </Link>
+          <span className="text-white/25"> · </span>
           <Link className="text-sm text-white/70 hover:text-white" href="/blog">
             Notes on quieter routes
           </Link>
