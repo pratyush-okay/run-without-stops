@@ -9,7 +9,6 @@ import { requestIsSearchCrawler } from "@/lib/seo/request-crawler";
 import {
   absoluteUrl,
   defaultSocialImages,
-  OG_IMAGE_PATH,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_TITLE,
@@ -31,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: [OG_IMAGE_PATH],
+    images: defaultSocialImages(),
   },
 };
 

@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteOrigin } from "@/lib/seo/site";
+import {
+  defaultSocialImages,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  siteOrigin,
+} from "@/lib/seo/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
+    images: defaultSocialImages(),
   },
   manifest: "/site.webmanifest",
 };

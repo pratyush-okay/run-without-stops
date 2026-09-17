@@ -7,7 +7,7 @@ import { BlogShell } from "@/components/blog/blog-shell";
 import { getPostBySlug, listPublishedPosts, postDocumentTitle } from "@/lib/blog/posts";
 import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
 import { JsonLd } from "@/lib/seo/json-ld";
-import { absoluteUrl, defaultSocialImages, OG_IMAGE_PATH, SITE_NAME } from "@/lib/seo/site";
+import { absoluteUrl, defaultSocialImages, SITE_NAME } from "@/lib/seo/site";
 
 type BlogPostPageProps = PageProps<"/blog/[slug]">;
 
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       card: "summary_large_image",
       title: post.title,
       description: post.description,
-      images: [OG_IMAGE_PATH],
+      images: defaultSocialImages(),
     },
   };
 }

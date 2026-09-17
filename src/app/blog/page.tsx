@@ -5,13 +5,7 @@ import { BlogShell } from "@/components/blog/blog-shell";
 import { listPublishedPosts } from "@/lib/blog/posts";
 import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
 import { JsonLd } from "@/lib/seo/json-ld";
-import {
-  absoluteUrl,
-  defaultSocialImages,
-  OG_IMAGE_PATH,
-  SITE_DESCRIPTION,
-  SITE_NAME,
-} from "@/lib/seo/site";
+import { absoluteUrl, defaultSocialImages, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
   title: "Quieter running route notes",
@@ -30,7 +24,7 @@ export const metadata: Metadata = {
     title: "Quieter running route notes",
     description:
       "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
-    images: [OG_IMAGE_PATH],
+    images: defaultSocialImages(),
   },
 };
 
