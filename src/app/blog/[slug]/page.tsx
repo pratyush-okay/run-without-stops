@@ -4,7 +4,7 @@ import { BlogMarkdown } from "@/components/blog/blog-markdown";
 import { BlogShell } from "@/components/blog/blog-shell";
 import { getPostBySlug, listPublishedPosts } from "@/lib/blog/posts";
 import { JsonLd } from "@/lib/seo/json-ld";
-import { absoluteUrl, SITE_NAME } from "@/lib/seo/site";
+import { absoluteUrl, defaultSocialImages, OG_IMAGE_PATH, SITE_NAME } from "@/lib/seo/site";
 
 type BlogPostPageProps = PageProps<"/blog/[slug]">;
 
@@ -27,6 +27,14 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       title: post.title,
       description: post.description,
       publishedTime: post.date,
+      url: `/blog/${post.slug}`,
+      images: defaultSocialImages(),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.description,
+      images: [OG_IMAGE_PATH],
     },
   };
 }

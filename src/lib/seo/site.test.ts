@@ -1,5 +1,8 @@
 import {
   absoluteUrl,
+  defaultSocialImages,
+  OG_IMAGE_ALT,
+  OG_IMAGE_PATH,
   PRODUCTION_SITE_ORIGIN,
   resolveSiteOrigin,
   SSO_DISALLOW_PATHS,
@@ -46,5 +49,16 @@ describe("public URL lists", () => {
   it("joins origin and path without a double slash", () => {
     expect(absoluteUrl("/", PRODUCTION_SITE_ORIGIN)).toBe(`${PRODUCTION_SITE_ORIGIN}/`);
     expect(absoluteUrl("/blog", PRODUCTION_SITE_ORIGIN)).toBe(`${PRODUCTION_SITE_ORIGIN}/blog`);
+  });
+
+  it("exposes a shared Open Graph image for article pages", () => {
+    expect(defaultSocialImages()).toEqual([
+      {
+        url: OG_IMAGE_PATH,
+        width: 1200,
+        height: 630,
+        alt: OG_IMAGE_ALT,
+      },
+    ]);
   });
 });

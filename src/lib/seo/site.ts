@@ -6,6 +6,20 @@ export const SITE_TITLE = "Quieter running routes | Run Without Stops";
 export const SITE_DESCRIPTION =
   "Free running route planner. Click the map or search a place anywhere, then skip traffic lights, highways, and busy roads. Optional save and share.";
 export const SSO_DISALLOW_PATHS = ["/sso-callback", "/sso-continue"] as const;
+export const OG_IMAGE_PATH = "/opengraph-image";
+export const OG_IMAGE_ALT = "Run Without Stops — quieter running routes";
+export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
+
+export function defaultSocialImages() {
+  return [
+    {
+      url: OG_IMAGE_PATH,
+      width: OG_IMAGE_SIZE.width,
+      height: OG_IMAGE_SIZE.height,
+      alt: OG_IMAGE_ALT,
+    },
+  ];
+}
 
 function isLocalHostname(hostname: string) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";

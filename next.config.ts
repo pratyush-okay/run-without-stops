@@ -17,6 +17,16 @@ const nextConfig: NextConfig = {
       tailwindcss: path.join(projectRoot, "node_modules/tailwindcss"),
     },
   },
+  async headers() {
+    const hsts = {
+      key: "Strict-Transport-Security",
+      value: "max-age=63072000; includeSubDomains; preload",
+    };
+    return [
+      { source: "/", headers: [hsts] },
+      { source: "/:path*", headers: [hsts] },
+    ];
+  },
   async redirects() {
     return [
       {
