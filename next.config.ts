@@ -6,6 +6,9 @@ const projectRoot = import.meta.dirname;
 const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com";
 const posthogAssetsHost = posthogHost.replace(".i.posthog.com", "-assets.i.posthog.com");
 
+const apexHost = "runwithoutstops.com";
+const wwwOrigin = "https://www.runwithoutstops.com";
+
 const nextConfig: NextConfig = {
   agentRules: false,
   skipTrailingSlashRedirect: true,
@@ -13,6 +16,22 @@ const nextConfig: NextConfig = {
     resolveAlias: {
       tailwindcss: path.join(projectRoot, "node_modules/tailwindcss"),
     },
+  },
+  async redirects() {
+    return [
+      {
+        source: "/",
+        has: [{ type: "host", value: apexHost }],
+        destination: `${wwwOrigin}/`,
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: apexHost }],
+        destination: `${wwwOrigin}/:path*`,
+        permanent: true,
+      },
+    ];
   },
   async rewrites() {
     return [

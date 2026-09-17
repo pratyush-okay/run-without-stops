@@ -11,13 +11,18 @@ function isLocalHostname(hostname: string) {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 }
 
+function isVercelHostname(hostname: string) {
+  return hostname === "vercel.app" || hostname.endsWith(".vercel.app");
+}
+
 export function resolveSiteOrigin(appUrl: string, nodeEnv: string) {
   const trimmed = appUrl.replace(/\/$/, "");
   if (nodeEnv !== "production") {
     return trimmed;
   }
   try {
-    if (isLocalHostname(new URL(trimmed).hostname)) {
+    const hostname = new URL(trimmed).hostname;
+    if (isLocalHostname(hostname) || isVercelHostname(hostname)) {
       return PRODUCTION_SITE_ORIGIN;
     }
   } catch {

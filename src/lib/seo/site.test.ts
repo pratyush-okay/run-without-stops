@@ -12,9 +12,12 @@ describe("site origin", () => {
     expect(resolveSiteOrigin("http://localhost:3000/", "test")).toBe("http://localhost:3000");
   });
 
-  it("falls back to www in production when the app URL is local", () => {
+  it("falls back to www in production when the app URL is local or a Vercel alias", () => {
     expect(resolveSiteOrigin("http://localhost:3000", "production")).toBe(PRODUCTION_SITE_ORIGIN);
     expect(resolveSiteOrigin("http://127.0.0.1:3000", "production")).toBe(PRODUCTION_SITE_ORIGIN);
+    expect(resolveSiteOrigin("https://run-without-stops.vercel.app", "production")).toBe(
+      PRODUCTION_SITE_ORIGIN,
+    );
   });
 
   it("keeps a public production URL", () => {
