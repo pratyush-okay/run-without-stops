@@ -12,6 +12,7 @@ const faqSchema = z.object({
 
 const postFrontmatterSchema = z.object({
   title: z.string().min(1),
+  seoTitle: z.string().min(1).max(40).optional(),
   description: z.string().min(1),
   date: z.string().min(1),
   slug: z.string().min(1),
@@ -22,6 +23,10 @@ const postFrontmatterSchema = z.object({
 export type BlogPost = z.infer<typeof postFrontmatterSchema> & {
   body: string;
 };
+
+export function postDocumentTitle(post: Pick<BlogPost, "title" | "seoTitle">) {
+  return post.seoTitle ?? post.title;
+}
 
 export function parsePostMarkdown(raw: string, filename: string): BlogPost {
   const parsed = matter(raw);

@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: { absolute: SITE_TITLE },
   description: SITE_DESCRIPTION,
   alternates: { canonical: absoluteUrl("/") },
+  openGraph: {
+    url: absoluteUrl("/"),
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function Home() {

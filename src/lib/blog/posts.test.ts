@@ -1,4 +1,4 @@
-import { listPublishedPosts, parsePostMarkdown } from "@/lib/blog/posts";
+import { listPublishedPosts, parsePostMarkdown, postDocumentTitle } from "@/lib/blog/posts";
 
 const SAMPLE = `---
 title: Sample post
@@ -20,6 +20,16 @@ describe("parsePostMarkdown", () => {
     expect(post.tags).toEqual(["routing"]);
     expect(post.body).toBe("Click the map and go.");
     expect(post.faqs).toEqual([]);
+    expect(postDocumentTitle(post)).toBe("Sample post");
+  });
+
+  it("uses seoTitle for the document title when present", () => {
+    const post = parsePostMarkdown(
+      SAMPLE.replace("title: Sample post", "title: Sample post\nseoTitle: Short sample title"),
+      "sample-post.md",
+    );
+    expect(post.seoTitle).toBe("Short sample title");
+    expect(postDocumentTitle(post)).toBe("Short sample title");
   });
 
   it("rejects a slug that does not match the filename", () => {
@@ -40,5 +50,8 @@ describe("listPublishedPosts", () => {
       ),
     ).toBe(true);
     expect(posts.every((post) => !post.slug.startsWith("sso-"))).toBe(true);
+    expect(
+      posts.every((post) => `${postDocumentTitle(post)} | Run Without Stops`.length <= 60),
+    ).toBe(true);
   });
 });

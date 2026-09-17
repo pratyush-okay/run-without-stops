@@ -1,5 +1,6 @@
 ---
 title: "A Runner's Guide to Traffic Lights, Crossings, and Route Intelligence"
+seoTitle: "Traffic light avoidance for runs"
 description: "See traffic lights, crossings, and busy roads on the same map you draw, then pull the line off the worst waits. OSM marks, low-stop routing, and a checklist."
 date: "2026-09-17"
 slug: a-runners-guide-to-traffic-lights-crossings-and-route-intelligence

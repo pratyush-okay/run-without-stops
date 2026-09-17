@@ -1,5 +1,6 @@
 ---
 title: "The Complete Guide to Building a Run Without Stops"
+seoTitle: "Fewer-stop running route planner"
 description: "Plan a run with fewer traffic lights, highways, and busy streets. How low-stop routing, hill avoidance, and map layers work in Run Without Stops."
 date: "2026-09-17"
 slug: the-complete-guide-to-building-a-run-without-stops

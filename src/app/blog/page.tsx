@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   description:
     "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
   alternates: { canonical: "/blog" },
+  openGraph: {
+    url: "/blog",
+    title: "Quieter running route notes",
+    description:
+      "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
+  },
 };
 
 export default function BlogIndexPage() {

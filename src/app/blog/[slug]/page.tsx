@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { BlogBreadcrumbs } from "@/components/blog/blog-breadcrumbs";
 import { BlogMarkdown } from "@/components/blog/blog-markdown";
 import { BlogShell } from "@/components/blog/blog-shell";
-import { getPostBySlug, listPublishedPosts } from "@/lib/blog/posts";
+import { getPostBySlug, listPublishedPosts, postDocumentTitle } from "@/lib/blog/posts";
 import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
 import { JsonLd } from "@/lib/seo/json-ld";
 import { absoluteUrl, defaultSocialImages, OG_IMAGE_PATH, SITE_NAME } from "@/lib/seo/site";
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     return { title: "Note not found" };
   }
   return {
-    title: post.title,
+    title: postDocumentTitle(post),
     description: post.description,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
