@@ -103,18 +103,23 @@ describe("combined checkpoint pills", () => {
       label: "",
       title: "Finish",
     };
+    const startSignal: RunnerFeature = {
+      id: "start-light",
+      kind: "traffic_signal",
+      point: start.point,
+    };
 
     expect(pairWaypointFeatures([startFinish], [signal, crossing])).toEqual({
       combined: [{ waypoint: startFinish }],
-      leftoverFeatures: [signal, crossing],
+      leftoverFeatures: [],
     });
-    expect(pairWaypointFeatures([start], [signal])).toEqual({
+    expect(pairWaypointFeatures([start], [startSignal, farSignal])).toEqual({
       combined: [],
-      leftoverFeatures: [signal],
+      leftoverFeatures: [farSignal],
     });
     expect(pairWaypointFeatures([finish], [crossing])).toEqual({
       combined: [],
-      leftoverFeatures: [crossing],
+      leftoverFeatures: [],
     });
   });
 });

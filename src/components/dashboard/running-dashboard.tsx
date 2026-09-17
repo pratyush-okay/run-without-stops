@@ -318,7 +318,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-[6] md:top-[4.6rem] md:left-4">
+      <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-[12] md:top-[4.6rem] md:left-4">
         <div className="pointer-events-auto">
           <RouteComposer
             points={planner.points}

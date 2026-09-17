@@ -199,3 +199,22 @@ export function LocationGlyph({ className = "size-3.5" }: { className?: string }
     </Glyph>
   );
 }
+
+export function SearchGlyph({ className = "size-3.5" }: { className?: string }) {
+  return (
+    <Glyph className={className} color="#c8ff52">
+      <circle cx="7" cy="7" r="4.1" />
+      <path d="M10.2 10.2 13.5 13.5" />
+    </Glyph>
+  );
+}
+
+export function LayersGlyph({ className = "size-4" }: { className?: string }) {
+  return (
+    <Glyph className={className}>
+      <path d="M8 2.3 2.7 5.2 8 8.1l5.3-2.9L8 2.3Z" />
+      <path d="M2.7 8.1 8 11l5.3-2.9" />
+      <path d="M2.7 11 8 13.9 13.3 11" />
+    </Glyph>
+  );
+}
