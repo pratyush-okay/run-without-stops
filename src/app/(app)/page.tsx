@@ -5,7 +5,15 @@ import { HomeIntro } from "@/components/seo/home-intro";
 import { env } from "@/env";
 import { JsonLd } from "@/lib/seo/json-ld";
 import { requestIsSearchCrawler } from "@/lib/seo/request-crawler";
-import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteOrigin } from "@/lib/seo/site";
+import {
+  absoluteUrl,
+  defaultSocialImages,
+  OG_IMAGE_PATH,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  siteOrigin,
+} from "@/lib/seo/site";
 
 export const metadata: Metadata = {
   title: { absolute: SITE_TITLE },
@@ -15,6 +23,13 @@ export const metadata: Metadata = {
     url: absoluteUrl("/"),
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
+    images: defaultSocialImages(),
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE_PATH],
   },
 };
 

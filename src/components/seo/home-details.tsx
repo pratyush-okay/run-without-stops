@@ -44,6 +44,13 @@ export function HomeDetails() {
             </Link>
             .
           </p>
+          <p>
+            Search any city, zoom to the streets you actually run, or start from where you are. The
+            map still opens on Sydney if the browser has no location yet. Routing and overlays load
+            for the viewport, not for a whole country at once, so a quiet line in Melbourne, London,
+            or a suburb you just moved to is the same click as a loop around the park you already
+            know.
+          </p>
         </div>
       </div>
     </section>
