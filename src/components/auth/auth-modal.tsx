@@ -4,6 +4,7 @@ import { useSignIn, useSignUp, useUser } from "@clerk/nextjs";
 import type { OAuthStrategy } from "@clerk/nextjs/types";
 import { useEffect, useId, useState } from "react";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
+import { AppLogo } from "@/components/brand/app-logo";
 import { SSO_CALLBACK_PATH, SSO_COMPLETE_PATH, ssoErrorMessage } from "@/lib/auth/oauth";
 import { usernameSchema } from "@/lib/schemas/profile";
 
@@ -132,6 +133,7 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
+            <AppLogo className="mb-3 size-10" />
             <p className="rws-kicker">Account</p>
             <h2 id={titleId} className="text-lg font-semibold tracking-tight">
               {isVerifying ? "Check your email" : mode === "sign-in" ? "Sign in" : "Create account"}

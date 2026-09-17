@@ -92,10 +92,10 @@ export function MajorRoadGlyph() {
 export function ReverseGlyph() {
   return (
     <Glyph className="size-3.5" color="#7ee8ff">
-      <path d="M3 5.6h10" />
-      <path d="M10.4 3.4 13 5.6l-2.6 2.2" />
-      <path d="M13 10.4H3" />
-      <path d="M5.6 8.2 3 10.4l2.6 2.2" />
+      <path d="M3.2 5.4h9.6" />
+      <path d="M10.2 3.2 13 5.4l-2.8 2.2" />
+      <path d="M12.8 10.6H3.2" />
+      <path d="M5.8 8.4 3 10.6l2.8 2.2" />
     </Glyph>
   );
 }
@@ -103,8 +103,8 @@ export function ReverseGlyph() {
 export function LoopGlyph() {
   return (
     <Glyph className="size-3.5" color="#c8ff52">
-      <path d="M12.1 8.1A4.1 4.1 0 1 1 8.4 4" />
-      <path d="M8.2 2.3 10.6 4.3 7.8 5.8" />
+      <path d="M12.5 8A4.5 4.5 0 1 1 8 3.5" />
+      <path d="M6.3 2.7 8.1 4.7 10.1 2.6" />
     </Glyph>
   );
 }
@@ -112,8 +112,17 @@ export function LoopGlyph() {
 export function UndoGlyph() {
   return (
     <Glyph className="size-3.5" color="#f6c453">
-      <path d="M5.2 6.4h4.2A3.3 3.3 0 1 1 6.4 12" />
-      <path d="M5.2 3.7v2.7H7.9" />
+      <path d="M6.4 3.6 3.2 6.6l3.2 3" />
+      <path d="M3.4 6.6h6.1A3.3 3.3 0 1 1 6.4 12.4" />
+    </Glyph>
+  );
+}
+
+export function RedoGlyph() {
+  return (
+    <Glyph className="size-3.5" color="#f6c453">
+      <path d="M9.6 3.6 12.8 6.6l-3.2 3" />
+      <path d="M12.6 6.6H6.5A3.3 3.3 0 1 0 9.6 12.4" />
     </Glyph>
   );
 }

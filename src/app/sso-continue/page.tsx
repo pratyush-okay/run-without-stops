@@ -3,6 +3,7 @@
 import { useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AppLogo } from "@/components/brand/app-logo";
 import { SSO_COMPLETE_PATH } from "@/lib/auth/oauth";
 import { navigateAfterSso } from "@/lib/auth/sso-navigation";
 import { usernameSchema } from "@/lib/schemas/profile";
@@ -68,6 +69,7 @@ export default function SsoContinuePage() {
   return (
     <main className="grid min-h-dvh place-items-center bg-[#0a0d0b] px-4 text-white">
       <section className="rws-panel w-full max-w-md p-5">
+        <AppLogo className="mb-3 size-10" />
         <p className="rws-kicker">Account</p>
         <h1 className="text-lg font-semibold tracking-tight">Finish creating your account</h1>
         <p className="mt-2 text-xs text-white/55">

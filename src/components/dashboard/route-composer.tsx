@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { LocationGlyph, MetricsExpandGlyph } from "@/components/dashboard/panel-marks";
-import { RouteActions } from "@/components/dashboard/route-actions";
+import { RoutePersistActions } from "@/components/dashboard/route-actions";
 import { WaypointBadge } from "@/components/dashboard/waypoint-marks";
 import { pointLabelKey, usePointLabels } from "@/hooks/use-point-labels";
 import { featuresNearRoute } from "@/lib/geo";
@@ -21,14 +21,9 @@ type RouteComposerProps = {
   error: string | undefined;
   isRouting: boolean;
   features: RunnerFeature[];
-  canCloseLoop: boolean;
   onModeChange: (mode: RouteMode) => void;
   onAvoidElevationChange: (avoid: boolean) => void;
-  onUndo: () => void;
-  onClear: () => void;
   onRemovePoint: (index: number) => void;
-  onReverse: () => void;
-  onCloseLoop: () => void;
   onFocusPoint: (point: GeoPoint) => void;
   onUseLocation: () => void;
   unit: MetricUnit;
@@ -50,14 +45,9 @@ export function RouteComposer({
   error,
   isRouting,
   features,
-  canCloseLoop,
   onModeChange,
   onAvoidElevationChange,
-  onUndo,
-  onClear,
   onRemovePoint,
-  onReverse,
-  onCloseLoop,
   onFocusPoint,
   onUseLocation,
   unit,
@@ -120,13 +110,6 @@ export function RouteComposer({
       >
         <div className="min-w-0">
           <p className="rws-kicker">Route builder</p>
-          <h1
-            className={`mt-1 text-lg font-semibold tracking-[-0.04em] text-white md:text-xl ${
-              expanded ? "block" : "hidden md:block"
-            }`}
-          >
-            Run without the noise.
-          </h1>
           {headline ? (
             <p className={`mt-1 text-sm text-white/60 ${expanded ? "block" : "hidden md:block"}`}>
               {headline}
@@ -155,7 +138,7 @@ export function RouteComposer({
             : "mt-3 hidden min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain md:flex md:overflow-hidden"
         }
       >
-        <div className="grid shrink-0 grid-cols-2 gap-1 rounded-xl bg-black/30 p-1">
+        <div className="grid shrink-0 grid-cols-2 gap-1 rounded-xl border border-white/10 bg-black/30 p-1">
           {(["direct", "low_stops"] as const).map((option) => (
             <button
               key={option}
@@ -171,20 +154,13 @@ export function RouteComposer({
             </button>
           ))}
         </div>
-        <p className="mt-2 min-w-0 shrink-0 text-[11px] leading-4 text-white/40">
-          {mode === "low_stops"
-            ? avoidElevation
-              ? "Steers around lights and prefers flatter streets when a lower line exists."
-              : "Steers around mapped traffic lights. Not a guarantee."
-            : "Takes the most direct pedestrian line."}
-        </p>
         {mode === "low_stops" ? (
           <button
             type="button"
             className={`mt-2 flex min-h-10 w-full min-w-0 max-w-full shrink-0 items-center justify-between rounded-xl border px-3 text-left text-xs transition ${
               avoidElevation
                 ? "border-[#c8ff52]/35 bg-[#c8ff52]/12 text-[#c8ff52]"
-                : "border-transparent bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
+                : "border-white/10 bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
             }`}
             aria-pressed={avoidElevation}
             onClick={() => onAvoidElevationChange(!avoidElevation)}
@@ -249,11 +225,6 @@ export function RouteComposer({
             <p className="mt-2 shrink-0 text-[11px] text-white/45">
               Cannot add more than {MAX_ROUTE_STOPS} checkpoints. Remove one to add another.
             </p>
-          ) : marks.length > 0 ? (
-            <p className="mt-2 shrink-0 text-[11px] text-white/35">
-              Click the map or search to add a {points.length === 1 ? "finish" : "via"}. Click a pin
-              to delete it, or drag to move.
-            </p>
           ) : null}
 
           {route ? (
@@ -265,30 +236,21 @@ export function RouteComposer({
           {error ? <p className="mt-3 shrink-0 text-sm text-[#ffad91]">{error}</p> : null}
         </div>
 
-        <div className="hidden md:contents">
-          <RouteActions
-            variant="panel"
-            points={points}
-            knownLabels={knownLabels}
-            mode={mode}
-            route={route}
-            features={features}
-            canCloseLoop={canCloseLoop}
-            onUndo={onUndo}
-            onClear={onClear}
-            onReverse={onReverse}
-            onCloseLoop={onCloseLoop}
-            onUseLocation={onUseLocation}
-            unit={unit}
-            durationSeconds={durationSeconds}
-            savedRouteName={savedRouteName}
-            shareReady={shareReady}
-            shareCopied={shareCopied}
-            shareError={shareError}
-            onRequestSave={onRequestSave}
-            onRequestShare={onRequestShare}
-          />
-        </div>
+        <RoutePersistActions
+          points={points}
+          knownLabels={knownLabels}
+          mode={mode}
+          route={route}
+          features={features}
+          unit={unit}
+          durationSeconds={durationSeconds}
+          savedRouteName={savedRouteName}
+          shareReady={shareReady}
+          shareCopied={shareCopied}
+          shareError={shareError}
+          onRequestSave={onRequestSave}
+          onRequestShare={onRequestShare}
+        />
       </div>
     </section>
   );

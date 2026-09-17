@@ -3,6 +3,7 @@
 import { useClerk, useSignIn, useSignUp } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { AppLogo } from "@/components/brand/app-logo";
 import { SSO_CONTINUE_PATH } from "@/lib/auth/oauth";
 import { navigateAfterSso } from "@/lib/auth/sso-navigation";
 
@@ -92,6 +93,7 @@ export default function SsoCallbackPage() {
   return (
     <main className="grid min-h-dvh place-items-center bg-[#0a0d0b] px-4 text-white">
       <section className="rws-panel w-full max-w-md p-5">
+        <AppLogo className="mb-3 size-10" />
         <p className="rws-kicker">Account</p>
         <h1 className="text-lg font-semibold tracking-tight">Connecting your account</h1>
         <p className="mt-2 text-xs text-white/55">Finishing sign in with Google.</p>

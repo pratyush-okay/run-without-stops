@@ -53,12 +53,12 @@ button:disabled {
 .rws-search {
   display: flex;
   min-height: 2.5rem;
-  align-items: stretch;
+  align-items: center;
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 0.85rem;
   background: rgb(16 21 18 / 82%);
-  padding: 0;
+  padding: 0 0.15rem 0 0;
   backdrop-filter: blur(18px) saturate(130%);
 }
 

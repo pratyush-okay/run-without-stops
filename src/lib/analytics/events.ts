@@ -11,6 +11,7 @@ export const analyticsEvents = {
   routeCleared: "route_cleared",
   routeLoopClosed: "route_loop_closed",
   routeReversed: "route_reversed",
+  routeRedone: "route_redone",
   routeSummaryCopied: "route_summary_copied",
   routeExported: "route_exported",
   routeSaved: "route_saved",

@@ -32,6 +32,10 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
   const [route, setRoute] = useState<RouteResponse | undefined>(seed?.route);
   const [isRouting, setIsRouting] = useState(false);
   const [error, setError] = useState<string>();
+  const [canRedo, setCanRedo] = useState(false);
+  const pointsRef = useRef(points);
+  const redoStackRef = useRef<GeoPoint[]>([]);
+  pointsRef.current = points;
   const frozenDraftKeyRef = useRef(
     seed?.route && seed.points.length >= 2
       ? routeDraftKey(seed.points, seed.mode ?? "low_stops")
@@ -43,57 +47,92 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     setKnownLabels((current) => ({ ...current, [pointLabelKey(point)]: label }));
   }, []);
 
+  const resetRedo = useCallback(() => {
+    redoStackRef.current = [];
+    setCanRedo(false);
+  }, []);
+
   const addPoint = useCallback(
     (point: GeoPoint, label?: string) => {
       rememberLabel(point, label);
+      resetRedo();
       setPoints((current) => addRoutePoint(current, point));
     },
-    [rememberLabel],
+    [rememberLabel, resetRedo],
   );
 
-  const movePoint = useCallback((index: number, point: GeoPoint) => {
-    setPoints((current) => moveRoutePoint(current, index, point));
-  }, []);
+  const movePoint = useCallback(
+    (index: number, point: GeoPoint) => {
+      resetRedo();
+      setPoints((current) => moveRoutePoint(current, index, point));
+    },
+    [resetRedo],
+  );
 
-  const removePoint = useCallback((index: number) => {
-    setPoints((current) => removeRoutePoint(current, index));
-  }, []);
+  const removePoint = useCallback(
+    (index: number) => {
+      resetRedo();
+      setPoints((current) => removeRoutePoint(current, index));
+    },
+    [resetRedo],
+  );
 
   const reversePoints = useCallback(() => {
+    resetRedo();
     setPoints((current) => reverseRoutePoints(current));
     captureEvent(analyticsEvents.routeReversed, { point_count: points.length });
-  }, [points.length]);
+  }, [points.length, resetRedo]);
 
   const closeLoop = useCallback(() => {
+    resetRedo();
     setPoints((current) => closeRouteLoop(current));
     captureEvent(analyticsEvents.routeLoopClosed, { point_count: points.length });
-  }, [points.length]);
+  }, [points.length, resetRedo]);
 
   const undo = useCallback(() => {
-    setPoints((current) => current.slice(0, -1));
+    const current = pointsRef.current;
+    const last = current.at(-1);
+    if (!last) return;
+    redoStackRef.current = [...redoStackRef.current, last];
+    setCanRedo(true);
+    setPoints(current.slice(0, -1));
+  }, []);
+
+  const redo = useCallback(() => {
+    const next = redoStackRef.current.at(-1);
+    if (!next) return;
+    redoStackRef.current = redoStackRef.current.slice(0, -1);
+    setCanRedo(redoStackRef.current.length > 0);
+    setPoints((current) => [...current, next]);
+    captureEvent(analyticsEvents.routeRedone, { point_count: pointsRef.current.length + 1 });
   }, []);
 
   const clear = useCallback(() => {
     frozenDraftKeyRef.current = undefined;
+    resetRedo();
     setPoints([]);
     setKnownLabels({});
     setAvoidElevation(false);
     setRoute(undefined);
     setError(undefined);
     captureEvent(analyticsEvents.routeCleared);
-  }, []);
+  }, [resetRedo]);
 
-  const loadRoute = useCallback((next: RouteSeed) => {
-    const nextMode = next.mode ?? "low_stops";
-    frozenDraftKeyRef.current =
-      next.route && next.points.length >= 2 ? routeDraftKey(next.points, nextMode) : undefined;
-    setPoints(next.points);
-    setKnownLabels(next.knownLabels ?? {});
-    setMode(nextMode);
-    setAvoidElevation(false);
-    setRoute(next.route);
-    setError(undefined);
-  }, []);
+  const loadRoute = useCallback(
+    (next: RouteSeed) => {
+      const nextMode = next.mode ?? "low_stops";
+      frozenDraftKeyRef.current =
+        next.route && next.points.length >= 2 ? routeDraftKey(next.points, nextMode) : undefined;
+      resetRedo();
+      setPoints(next.points);
+      setKnownLabels(next.knownLabels ?? {});
+      setMode(nextMode);
+      setAvoidElevation(false);
+      setRoute(next.route);
+      setError(undefined);
+    },
+    [resetRedo],
+  );
 
   const featuresRef = useRef(features);
   featuresRef.current = features;
@@ -177,12 +216,14 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     isRouting,
     error,
     canCloseLoop: points.length >= 2 && !isRouteLoop(points) && points.length <= MAX_ROUTE_STOPS,
+    canRedo,
     addPoint,
     movePoint,
     removePoint,
     reversePoints,
     closeLoop,
     undo,
+    redo,
     clear,
     loadRoute,
     setMode: setRouteMode,

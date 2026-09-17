@@ -5,10 +5,11 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthControls } from "@/components/auth/auth-controls";
 import { type AuthIntent, AuthModal } from "@/components/auth/auth-modal";
+import { AppLogo } from "@/components/brand/app-logo";
 import { LayerControls } from "@/components/dashboard/layer-controls";
 import { MetricsToggle } from "@/components/dashboard/metrics-toggle";
 import { PlaceSearch } from "@/components/dashboard/place-search";
-import { RouteActions } from "@/components/dashboard/route-actions";
+import { RouteEditActions } from "@/components/dashboard/route-actions";
 import { RouteComposer } from "@/components/dashboard/route-composer";
 import { RouteSummary } from "@/components/dashboard/route-summary";
 import { SaveRouteDialog } from "@/components/dashboard/save-route-dialog";
@@ -256,8 +257,8 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
     <main
       className={`relative h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white ${
         metricsExpanded
-          ? "[--rws-metrics-clearance:10.25rem] md:[--rws-metrics-clearance:11rem]"
-          : "[--rws-metrics-clearance:10.25rem] md:[--rws-metrics-clearance:6.25rem]"
+          ? "[--rws-metrics-clearance:11.5rem] md:[--rws-metrics-clearance:11rem]"
+          : "[--rws-metrics-clearance:11.5rem] md:[--rws-metrics-clearance:6.25rem]"
       }`}
     >
       <div className="absolute inset-0">
@@ -286,30 +287,37 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
         />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center gap-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-2.5 md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="pointer-events-auto min-w-0 flex-1">
-          <PlaceSearch
-            onSelect={(point, label) => {
-              setFocusPoint(point);
-              planner.addPoint(point, label);
-              captureEvent(analyticsEvents.placeSelected, { source: "search" });
-            }}
-            onLocate={(point) => {
-              setFocusPoint(point);
-              setUserLocation(point);
-              planner.addPoint(point, "My location");
-              captureEvent(analyticsEvents.myLocationUsed, { source: "search" });
-            }}
-          />
-        </div>
-        <div className="pointer-events-auto shrink-0">
-          <MetricsToggle
-            unit={unit}
-            onChange={(next) => {
-              setUnit(next);
-              captureEvent(analyticsEvents.metricUnitChanged, { unit: next });
-            }}
-          />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-2 md:block md:h-10">
+          <div className="pointer-events-auto shrink-0 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-[max(1rem,env(safe-area-inset-left))]">
+            <div className="rws-panel grid size-11 place-items-center md:size-10">
+              <AppLogo className="size-full" />
+            </div>
+          </div>
+          <div className="pointer-events-auto min-w-0 flex-1 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-1/2 md:w-[clamp(18rem,36vw,28rem)] md:-translate-x-1/2">
+            <PlaceSearch
+              onSelect={(point, label) => {
+                setFocusPoint(point);
+                planner.addPoint(point, label);
+                captureEvent(analyticsEvents.placeSelected, { source: "search" });
+              }}
+              onLocate={(point) => {
+                setFocusPoint(point);
+                setUserLocation(point);
+                planner.addPoint(point, "My location");
+                captureEvent(analyticsEvents.myLocationUsed, { source: "search" });
+              }}
+            />
+          </div>
+          <div className="pointer-events-auto shrink-0 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:right-[max(1rem,env(safe-area-inset-right))]">
+            <MetricsToggle
+              unit={unit}
+              onChange={(next) => {
+                setUnit(next);
+                captureEvent(analyticsEvents.metricUnitChanged, { unit: next });
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -332,17 +340,9 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
             error={planner.error}
             isRouting={planner.isRouting}
             features={featureState.features}
-            canCloseLoop={planner.canCloseLoop}
             onModeChange={planner.setMode}
             onAvoidElevationChange={planner.setAvoidElevation}
-            onUndo={planner.undo}
-            onClear={() => {
-              planner.clear();
-              setCurrentSaved(undefined);
-            }}
             onRemovePoint={planner.removePoint}
-            onReverse={planner.reversePoints}
-            onCloseLoop={planner.closeLoop}
             onFocusPoint={setFocusPoint}
             onUseLocation={useMyLocation}
             unit={unit}
@@ -375,12 +375,25 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex justify-center pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex flex-col gap-1 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end md:gap-3">
+        <div className="pointer-events-auto hidden w-max max-w-full md:block md:justify-self-start">
+          <RouteEditActions
+            points={planner.points}
+            canCloseLoop={planner.canCloseLoop}
+            canRedo={planner.canRedo}
+            onUndo={planner.undo}
+            onRedo={planner.redo}
+            onClear={() => {
+              planner.clear();
+              setCurrentSaved(undefined);
+            }}
+            onReverse={planner.reversePoints}
+            onCloseLoop={planner.closeLoop}
+          />
+        </div>
         <div
-          className={`flex min-w-0 w-full flex-col gap-1 md:gap-1.5 transition-[width] duration-200 ease-out md:mx-auto ${
-            metricsExpanded
-              ? "md:w-[min(68rem,calc(100vw-2rem))]"
-              : "md:w-max md:max-w-[min(56rem,calc(100vw-3rem))]"
+          className={`flex min-w-0 w-full flex-col gap-1 md:col-start-2 md:w-max md:max-w-[min(56rem,calc(100vw-3rem))] md:justify-self-center ${
+            metricsExpanded ? "md:max-w-[min(68rem,calc(100vw-2rem))]" : ""
           }`}
         >
           <div className="pointer-events-auto min-w-0 w-full overflow-hidden overscroll-none">
@@ -400,30 +413,18 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
             />
           </div>
           <div className="pointer-events-auto w-full md:hidden">
-            <RouteActions
-              variant="bar"
+            <RouteEditActions
               points={planner.points}
-              knownLabels={planner.knownLabels}
-              mode={planner.mode}
-              route={planner.route}
-              features={featureState.features}
               canCloseLoop={planner.canCloseLoop}
+              canRedo={planner.canRedo}
               onUndo={planner.undo}
+              onRedo={planner.redo}
               onClear={() => {
                 planner.clear();
                 setCurrentSaved(undefined);
               }}
               onReverse={planner.reversePoints}
               onCloseLoop={planner.closeLoop}
-              onUseLocation={useMyLocation}
-              unit={unit}
-              durationSeconds={effort.durationSeconds}
-              savedRouteName={activeSaved?.name}
-              shareReady={Boolean(activeSaved)}
-              shareCopied={shareCopied}
-              shareError={shareError}
-              onRequestSave={requestSave}
-              onRequestShare={requestShare}
             />
           </div>
         </div>

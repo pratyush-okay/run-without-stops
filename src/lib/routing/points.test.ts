@@ -1,7 +1,9 @@
+import { distanceMeters } from "@/lib/geo";
 import {
   addRoutePoint,
   closeRouteLoop,
   isRouteLoop,
+  LOOP_SNAP_METERS,
   MAX_ROUTE_STOPS,
   moveRoutePoint,
   removeRoutePoint,
@@ -12,6 +14,8 @@ import { linePreviewCoordinates, visibleWaypoints } from "@/lib/routing/waypoint
 const start = { lat: -33.873, lng: 151.21 };
 const finish = { lat: -33.868, lng: 151.211 };
 const via = { lat: -33.87, lng: 151.215 };
+const nearStart = { lat: start.lat + 0.0004, lng: start.lng };
+const farFromStart = { lat: start.lat + 0.0012, lng: start.lng };
 
 describe("route point edits", () => {
   it("adds unique stops and ignores near-duplicates", () => {
@@ -62,6 +66,24 @@ describe("route point edits", () => {
       finish,
       { lat: -33.874, lng: 151.209 },
     ]);
+  });
+
+  it("snaps a checkpoint near the start into a combined loop-back pill", () => {
+    expect(distanceMeters(start, nearStart)).toBeLessThan(LOOP_SNAP_METERS);
+    expect(distanceMeters(start, farFromStart)).toBeGreaterThan(LOOP_SNAP_METERS);
+    expect(addRoutePoint([start, via, finish], nearStart)).toEqual([start, via, finish, start]);
+    expect(addRoutePoint([start, via, finish], farFromStart)).toEqual([
+      start,
+      via,
+      finish,
+      farFromStart,
+    ]);
+    expect(addRoutePoint([start], nearStart)).toEqual([start, nearStart]);
+  });
+
+  it("snaps dragging the finish near the start into a loop", () => {
+    expect(moveRoutePoint([start, via, finish], 2, nearStart)).toEqual([start, via, start]);
+    expect(moveRoutePoint([start, finish], 1, nearStart)).toEqual([start, nearStart]);
   });
 
   it("deleting the start/stop pin unwraps the loop", () => {

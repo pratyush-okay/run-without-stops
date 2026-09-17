@@ -4,6 +4,11 @@ import type { GeoPoint } from "@/lib/schemas/features";
 export const MAX_ROUTE_STOPS = 50;
 export const MAX_ROUTE_POINTS = MAX_ROUTE_STOPS + 1;
 export const MINIMUM_STOP_SPACING_METERS = 2;
+export const LOOP_SNAP_METERS = 60;
+
+function isNearStart(start: GeoPoint | undefined, point: GeoPoint) {
+  return Boolean(start && distanceMeters(start, point) < LOOP_SNAP_METERS);
+}
 
 function uniqueStops(points: GeoPoint[]) {
   return isRouteLoop(points) ? points.slice(0, -1) : points;
@@ -14,7 +19,11 @@ export function addRoutePoint(points: GeoPoint[], point: GeoPoint, maxStops = MA
   const isDuplicate = stops.some(
     (current) => distanceMeters(current, point) < MINIMUM_STOP_SPACING_METERS,
   );
-  if (stops.length >= maxStops || isDuplicate) return points;
+  if (isDuplicate) return points;
+  if (stops.length >= 2 && isNearStart(stops[0], point)) {
+    return closeRouteLoop(stops, maxStops);
+  }
+  if (stops.length >= maxStops) return points;
   const next = [...stops, point];
   return isRouteLoop(points) ? closeRouteLoop(next, maxStops) : next;
 }
@@ -43,6 +52,9 @@ export function moveRoutePoint(points: GeoPoint[], index: number, point: GeoPoin
     return distanceMeters(currentPoint, point) < MINIMUM_STOP_SPACING_METERS;
   });
   if (overlapsAnotherPoint) return points;
+  if (!loop && index === lastIndex && points.length >= 3 && isNearStart(points[0], point)) {
+    return closeRouteLoop(points.slice(0, -1));
+  }
   return points.map((currentPoint, currentIndex) => {
     if (currentIndex === index) return point;
     if (loop && index === 0 && currentIndex === lastIndex) return point;

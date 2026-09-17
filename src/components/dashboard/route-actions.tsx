@@ -5,8 +5,8 @@ import {
   ClearGlyph,
   CopyGlyph,
   ExportGlyph,
-  LocationGlyph,
   LoopGlyph,
+  RedoGlyph,
   ReverseGlyph,
   SaveGlyph,
   ShareGlyph,
@@ -31,19 +31,12 @@ import { isRouteLoop } from "@/lib/routing/points";
 import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import type { RouteMode, RouteResponse } from "@/lib/schemas/route";
 
-export type RouteActionsProps = {
-  variant: "panel" | "bar";
+type RouteShareProps = {
   points: GeoPoint[];
   knownLabels: Record<string, string>;
   mode: RouteMode;
   route: RouteResponse | undefined;
   features: RunnerFeature[];
-  canCloseLoop: boolean;
-  onUndo: () => void;
-  onClear: () => void;
-  onReverse: () => void;
-  onCloseLoop: () => void;
-  onUseLocation: () => void;
   unit: MetricUnit;
   durationSeconds: number | undefined;
   savedRouteName?: string | undefined;
@@ -54,8 +47,20 @@ export type RouteActionsProps = {
   onRequestShare?: ((suggestedName: string) => void) | undefined;
 };
 
-function ToolButton({
-  compact,
+export type RoutePersistActionsProps = RouteShareProps;
+
+export type RouteEditActionsProps = {
+  points: GeoPoint[];
+  canCloseLoop: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  onClear: () => void;
+  onReverse: () => void;
+  onCloseLoop: () => void;
+};
+
+function ActionTile({
   label,
   disabled,
   title,
@@ -63,7 +68,6 @@ function ToolButton({
   onClick,
   children,
 }: {
-  compact: boolean;
   label: string;
   disabled?: boolean;
   title?: string;
@@ -71,49 +75,69 @@ function ToolButton({
   onClick: () => void;
   children: ReactNode;
 }) {
-  if (compact) {
-    return (
-      <button
-        type="button"
-        className="grid h-8 min-w-8 flex-1 place-items-center rounded-md text-white/70 transition hover:bg-white/[0.07] hover:text-white disabled:opacity-30"
-        onClick={onClick}
-        disabled={disabled}
-        aria-label={label}
-        aria-expanded={expanded}
-        title={title ?? label}
-      >
-        {children}
-      </button>
-    );
-  }
-
   return (
     <button
       type="button"
-      className="rws-button min-h-10"
+      className={`flex h-full min-h-11 w-full min-w-16 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border bg-white/[0.04] px-1.5 py-1.5 text-white/75 transition hover:border-white/16 hover:bg-white/[0.07] hover:text-white disabled:opacity-30 ${
+        expanded ? "border-white/20 bg-white/[0.08] text-white" : "border-white/10"
+      }`}
       onClick={onClick}
       disabled={disabled}
-      title={title}
+      aria-label={label}
+      aria-expanded={expanded}
+      aria-haspopup={expanded === undefined ? undefined : "menu"}
+      title={title ?? label}
     >
       {children}
-      {label}
+      <span className="text-[9px] leading-3 text-white/55">{label}</span>
     </button>
   );
 }
 
-export function RouteActions({
-  variant,
+export function RouteEditActions({
+  points,
+  canCloseLoop,
+  canRedo,
+  onUndo,
+  onRedo,
+  onClear,
+  onReverse,
+  onCloseLoop,
+}: RouteEditActionsProps) {
+  return (
+    <section className="rws-panel rounded-xl px-1 py-1" aria-label="Action">
+      <div className="flex items-stretch gap-1">
+        <ActionTile label="Undo" onClick={onUndo} disabled={points.length === 0}>
+          <UndoGlyph />
+        </ActionTile>
+        <ActionTile label="Forward" onClick={onRedo} disabled={!canRedo}>
+          <RedoGlyph />
+        </ActionTile>
+        <ActionTile
+          label="Loop back"
+          onClick={onCloseLoop}
+          disabled={!canCloseLoop}
+          title="Draw the route back to the start pin"
+        >
+          <LoopGlyph />
+        </ActionTile>
+        <ActionTile label="Reverse" onClick={onReverse} disabled={points.length < 2}>
+          <ReverseGlyph />
+        </ActionTile>
+        <ActionTile label="Clear" onClick={onClear} disabled={points.length === 0}>
+          <ClearGlyph />
+        </ActionTile>
+      </div>
+    </section>
+  );
+}
+
+export function RoutePersistActions({
   points,
   knownLabels,
   mode,
   route,
   features,
-  canCloseLoop,
-  onUndo,
-  onClear,
-  onReverse,
-  onCloseLoop,
-  onUseLocation,
   unit,
   durationSeconds,
   savedRouteName,
@@ -122,8 +146,7 @@ export function RouteActions({
   shareError,
   onRequestSave,
   onRequestShare,
-}: RouteActionsProps) {
-  const compact = variant === "bar";
+}: RoutePersistActionsProps) {
   const [copied, setCopied] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [exportError, setExportError] = useState<string>();
@@ -236,165 +259,78 @@ export function RouteActions({
     }
   }
 
+  if (!route) return null;
+
   const copyLabel = copied ? "Copied" : "Copy";
   const saveLabel = savedRouteName ? "Save again" : "Save route";
-  const shareLabel = shareCopied ? "Link copied" : shareReady ? "Copy share link" : "Share link";
-
-  const editTools = (
-    <>
-      <ToolButton
-        compact={compact}
-        label="Reverse"
-        onClick={onReverse}
-        disabled={points.length < 2}
-      >
-        <ReverseGlyph />
-      </ToolButton>
-      <ToolButton
-        compact={compact}
-        label="Loop back"
-        onClick={onCloseLoop}
-        disabled={!canCloseLoop}
-        title="Draw the route back to the start pin"
-      >
-        <LoopGlyph />
-      </ToolButton>
-      <ToolButton compact={compact} label="Undo" onClick={onUndo} disabled={points.length === 0}>
-        <UndoGlyph />
-      </ToolButton>
-      <ToolButton compact={compact} label="Clear" onClick={onClear} disabled={points.length === 0}>
-        <ClearGlyph />
-      </ToolButton>
-    </>
-  );
-
-  const exportMenu = (
-    <div
-      role="menu"
-      className={`rws-panel absolute z-20 overflow-hidden p-1.5 ${
-        compact ? "right-0 bottom-full mb-1.5 w-36" : "right-0 bottom-full mb-1.5 w-full"
-      }`}
-    >
-      <button
-        type="button"
-        role="menuitem"
-        className="rws-button w-full text-left"
-        onClick={exportGpx}
-      >
-        GPX
-      </button>
-      <button
-        type="button"
-        role="menuitem"
-        className="rws-button w-full text-left"
-        onClick={() => void exportImage()}
-      >
-        Image
-      </button>
-      <button
-        type="button"
-        role="menuitem"
-        className="rws-button w-full text-left"
-        onClick={exportSvg}
-      >
-        SVG overlay
-      </button>
-    </div>
-  );
-
-  if (compact) {
-    return (
-      <section className="rws-panel rounded-xl px-0.5 py-0.5" aria-label="Route tools">
-        <div className="flex items-center gap-px">
-          {editTools}
-          {route ? (
-            <>
-              <ToolButton compact label={copyLabel} onClick={copySummary}>
-                <CopyGlyph />
-              </ToolButton>
-              <div ref={exportRef} className="relative flex min-w-8 flex-1 justify-center">
-                <ToolButton
-                  compact
-                  label="Export"
-                  expanded={exportOpen}
-                  onClick={() => setExportOpen((open) => !open)}
-                >
-                  <ExportGlyph />
-                </ToolButton>
-                {exportOpen ? exportMenu : null}
-              </div>
-              <ToolButton compact label={saveLabel} onClick={() => onRequestSave?.(exportTitle)}>
-                <SaveGlyph />
-              </ToolButton>
-              <ToolButton compact label={shareLabel} onClick={() => onRequestShare?.(exportTitle)}>
-                <ShareGlyph />
-              </ToolButton>
-            </>
-          ) : (
-            <ToolButton compact label="Use my location" onClick={onUseLocation}>
-              <LocationGlyph />
-            </ToolButton>
-          )}
-        </div>
-        {exportError ? <p className="px-2 pt-1 text-[10px] text-[#ffad91]">{exportError}</p> : null}
-        {shareError ? <p className="px-2 pt-1 text-[10px] text-[#ffad91]">{shareError}</p> : null}
-      </section>
-    );
-  }
+  const shareLabel = shareCopied ? "Copied" : shareReady ? "Copy link" : "Share link";
 
   return (
-    <>
-      <div className="mt-3 grid shrink-0 grid-cols-2 gap-2">{editTools}</div>
-
-      {route ? (
-        <div className="mt-2 shrink-0 space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <ToolButton compact={false} label={copyLabel} onClick={copySummary}>
-              <CopyGlyph />
-            </ToolButton>
-            <div ref={exportRef} className="relative">
-              <button
-                type="button"
-                className="rws-button min-h-10 w-full"
-                aria-expanded={exportOpen}
-                onClick={() => setExportOpen((open) => !open)}
-              >
-                <ExportGlyph />
-                Export
-              </button>
-              {exportOpen ? exportMenu : null}
-            </div>
-            <ToolButton
-              compact={false}
-              label={saveLabel}
-              onClick={() => onRequestSave?.(exportTitle)}
-            >
-              <SaveGlyph />
-            </ToolButton>
-            <ToolButton
-              compact={false}
-              label={shareLabel}
-              onClick={() => onRequestShare?.(exportTitle)}
-            >
-              <ShareGlyph />
-            </ToolButton>
-          </div>
-          {savedRouteName ? (
-            <p className="text-[10px] text-white/35">Saved as {savedRouteName}</p>
-          ) : null}
-          {exportError ? <p className="text-[10px] text-[#ffad91]">{exportError}</p> : null}
-          {shareError ? <p className="text-[10px] text-[#ffad91]">{shareError}</p> : null}
+    <div className="mt-3 shrink-0 space-y-2">
+      <div ref={exportRef} className="space-y-1.5">
+        <div className="grid grid-cols-2 gap-1.5">
+          <ActionTile
+            label={saveLabel}
+            onClick={() => {
+              setExportOpen(false);
+              onRequestSave?.(exportTitle);
+            }}
+          >
+            <SaveGlyph />
+          </ActionTile>
+          <ActionTile
+            label={shareLabel}
+            onClick={() => {
+              setExportOpen(false);
+              onRequestShare?.(exportTitle);
+            }}
+          >
+            <ShareGlyph />
+          </ActionTile>
+          <ActionTile
+            label="Export"
+            expanded={exportOpen}
+            onClick={() => setExportOpen((open) => !open)}
+          >
+            <ExportGlyph />
+          </ActionTile>
+          <ActionTile
+            label={copyLabel}
+            onClick={() => {
+              setExportOpen(false);
+              copySummary();
+            }}
+          >
+            <CopyGlyph />
+          </ActionTile>
         </div>
-      ) : points.length === 0 ? null : (
-        <button
-          type="button"
-          className="mt-2 flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[#c8ff52]/10 text-[13px] font-medium text-[#c8ff52] ring-1 ring-[#c8ff52]/30 transition hover:bg-[#c8ff52]/16"
-          onClick={onUseLocation}
-        >
-          <LocationGlyph />
-          Use my location
-        </button>
-      )}
-    </>
+        {exportOpen ? (
+          <div role="menu" className="grid grid-cols-3 gap-1">
+            {(
+              [
+                ["GPX", exportGpx],
+                ["Image", () => void exportImage()],
+                ["SVG", exportSvg],
+              ] as const
+            ).map(([itemLabel, onSelect]) => (
+              <button
+                key={itemLabel}
+                type="button"
+                role="menuitem"
+                className="flex min-h-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[11px] text-white/70 transition hover:border-white/16 hover:bg-white/[0.07] hover:text-white"
+                onClick={onSelect}
+              >
+                {itemLabel}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      {savedRouteName ? (
+        <p className="text-[10px] text-white/35">Saved as {savedRouteName}</p>
+      ) : null}
+      {exportError ? <p className="text-[10px] text-[#ffad91]">{exportError}</p> : null}
+      {shareError ? <p className="text-[10px] text-[#ffad91]">{shareError}</p> : null}
+    </div>
   );
 }

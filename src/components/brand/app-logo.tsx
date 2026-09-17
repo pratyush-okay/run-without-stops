@@ -1,21 +1,24 @@
+export function BrandMark({ className = "size-8" }: { className?: string }) {
+  return (
+    <svg viewBox="30.44 42 291.56 266" className={className} fill="none" aria-hidden>
+      <g stroke="currentColor" strokeWidth="44" strokeLinecap="butt" strokeLinejoin="miter">
+        <path d="M218 96 L164 150 L88 150 L46 192" />
+        <path d="M164 150 L224 210 L148 286 L80 286" />
+        <path d="M224 210 L288 274 L322 274" />
+      </g>
+      <circle cx="104" cy="76" r="34" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function AppLogo({ className = "size-10" }: { className?: string }) {
   return (
     <a
       href="/"
-      className={`grid shrink-0 place-items-center ${className}`}
+      className={`grid shrink-0 place-items-center text-[#A8FF35] ${className}`}
       aria-label="Run Without Stops"
     >
-      <svg viewBox="0 0 32 32" className="size-full" aria-hidden>
-        <circle cx="16" cy="16" r="15.15" fill="#101512" stroke="#c8ff52" strokeWidth="1.4" />
-        <path
-          d="M9 17.1c.35-4.35 3.4-7.25 7.45-7.25 4.55 0 7.55 3.05 7.55 7.55 0 4.55-3.2 7.7-7.85 7.7-2.45 0-4.55-.85-6-2.35"
-          fill="none"
-          stroke="#c8ff52"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-        />
-        <circle cx="9.15" cy="17.2" r="1.65" fill="#c8ff52" />
-      </svg>
+      <BrandMark className="size-[70%]" />
       <span className="sr-only">Run Without Stops</span>
     </a>
   );

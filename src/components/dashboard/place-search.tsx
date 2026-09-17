@@ -138,12 +138,9 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
   const compact = !mobileExpanded;
 
   return (
-    <div
-      ref={rootRef}
-      className={`relative ${compact ? "w-max" : "min-w-0 w-full"} md:min-w-0 md:w-full`}
-    >
+    <div ref={rootRef} className={`relative ${compact ? "w-max" : "min-w-0 w-full"} md:w-full`}>
       <form
-        className={`rws-search h-10 ${compact ? "w-max md:w-full" : "w-full"}`}
+        className={`rws-search h-10 items-center ${compact ? "w-max md:w-full" : "w-full"}`}
         onSubmit={(event) => {
           event.preventDefault();
           if (results[0]) selectResult(results[0]);
@@ -151,7 +148,7 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
       >
         <button
           type="button"
-          className="grid w-10 shrink-0 place-items-center text-[#c8ff52] transition hover:bg-white/[0.05] disabled:opacity-50"
+          className="grid h-full w-10 shrink-0 place-items-center text-[#c8ff52] transition hover:bg-white/[0.05] disabled:opacity-50"
           onClick={locateMe}
           disabled={isLocating}
           aria-label="Use my location"
@@ -166,7 +163,7 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
         </button>
         <button
           type="button"
-          className={`w-10 shrink-0 place-items-center text-[#c8ff52] transition hover:bg-white/[0.05] ${
+          className={`h-full w-10 shrink-0 place-items-center text-[#c8ff52] transition hover:bg-white/[0.05] ${
             compact ? "grid md:hidden" : "hidden"
           }`}
           onClick={expandSearch}
@@ -190,17 +187,17 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
           className={`min-w-0 flex-1 bg-transparent py-0 pr-1 text-sm text-white outline-none placeholder:text-white/35 ${fieldClass}`}
         />
         <kbd
-          className="hidden h-full shrink-0 items-center px-1.5 font-mono text-[10px] tracking-wide text-white/35 md:inline-flex"
+          className="mr-1.5 hidden h-5 shrink-0 items-center justify-center rounded-md border border-white/15 px-1.5 font-sans text-[11px] font-normal leading-none text-white/40 md:inline-flex"
           aria-hidden
         >
           ⌘K
         </kbd>
         <button
           type="submit"
-          className={`shrink-0 items-center px-3 text-[10px] font-semibold tracking-wider text-[#c8ff52] uppercase transition hover:bg-white/[0.05] disabled:opacity-40 ${goClass}`}
+          className={`h-full shrink-0 items-center px-2.5 text-[10px] font-semibold tracking-wider whitespace-nowrap text-[#c8ff52] uppercase transition hover:bg-white/[0.05] disabled:opacity-40 ${goClass}`}
           disabled={isSearching || query.trim().length < 2}
         >
-          {isSearching ? "…" : "Go"}
+          {isSearching ? "…" : "Go run"}
         </button>
       </form>
       {isOpen ? (
