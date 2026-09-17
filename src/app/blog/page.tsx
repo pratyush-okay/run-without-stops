@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BlogShell } from "@/components/blog/blog-shell";
 import { listPublishedPosts } from "@/lib/blog/posts";
+import { JsonLd } from "@/lib/seo/json-ld";
+import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/seo/site";
 
 export const metadata: Metadata = {
   title: "Quieter running route notes",
@@ -11,9 +13,34 @@ export const metadata: Metadata = {
 
 export default function BlogIndexPage() {
   const posts = listPublishedPosts();
+  const blogUrl = absoluteUrl("/blog");
 
   return (
     <BlogShell>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Quieter running route notes",
+          description: "Guides for planning runs with fewer lights, highways, and busy streets.",
+          url: blogUrl,
+          isPartOf: {
+            "@type": "WebSite",
+            name: SITE_NAME,
+            url: absoluteUrl("/"),
+            description: SITE_DESCRIPTION,
+          },
+          mainEntity: {
+            "@type": "ItemList",
+            itemListElement: posts.map((post, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              url: absoluteUrl(`/blog/${post.slug}`),
+              name: post.title,
+            })),
+          },
+        }}
+      />
       <p className="rws-kicker">Blog</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Quieter running route notes</h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">
