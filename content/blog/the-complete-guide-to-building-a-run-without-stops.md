@@ -81,6 +81,8 @@ Crossings are a different object. Some are signals. Some are zebra crossings or 
 
 If the first low-stop line still threads three lights in a kilometre, you are not looking at a bug so much as a neighbourhood that is built that way. Centennial Park or the coast will forgive you. A Parramatta Road parallel will not. Move a waypoint into the grid behind the arterial and generate again.
 
+For a tighter pass on lights, crossings, and busy-road marks, read [A Runner's Guide to Traffic Lights, Crossings, and Route Intelligence](/blog/a-runners-guide-to-traffic-lights-crossings-and-route-intelligence).
+
 ## Using running route hill avoidance
 
 Avoid elevation is a constraint, not a promise of pancake-flat kilometres. Sydney has ridges. The option tells the router that climbing has a cost, so a longer flatter street can win.

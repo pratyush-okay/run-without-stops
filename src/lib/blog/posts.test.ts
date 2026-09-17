@@ -33,6 +33,12 @@ describe("listPublishedPosts", () => {
     expect(
       posts.some((post) => post.slug === "the-complete-guide-to-building-a-run-without-stops"),
     ).toBe(true);
+    expect(
+      posts.some(
+        (post) =>
+          post.slug === "a-runners-guide-to-traffic-lights-crossings-and-route-intelligence",
+      ),
+    ).toBe(true);
     expect(posts.every((post) => !post.slug.startsWith("sso-"))).toBe(true);
   });
 });
