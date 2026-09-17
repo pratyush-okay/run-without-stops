@@ -2,9 +2,14 @@
 
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
+import { scrubTipHtml } from "@/components/dashboard/scrub-tip";
 import { featuresNearRoute } from "@/lib/geo";
+import { combinedIconId, pairWaypointFeatures } from "@/lib/maps/combined-markers";
 import {
+  createClimbIconImage,
+  createCombinedMarkIconImage,
   createCrossingIconImage,
+  createDescentIconImage,
   createTrafficLightIconImage,
   createWaterDropletIconImage,
 } from "@/lib/maps/feature-icons";
@@ -19,9 +24,12 @@ import {
   ROUTE_LIME,
   STOP_CORAL,
 } from "@/lib/maps/layers";
+import type { MetricUnit } from "@/lib/routing/format";
 import { addRoutePoint, moveRoutePoint } from "@/lib/routing/points";
+import { nearestScrubOnRoute, type RouteScrub, routePrefix } from "@/lib/routing/route-scrub";
 import { linePreviewCoordinates, visibleWaypoints } from "@/lib/routing/waypoints";
 import type { BoundingBox, GeoPoint, RunnerFeature } from "@/lib/schemas/features";
+import type { ElevationMark, RouteElevation } from "@/lib/schemas/route";
 
 export type { MapLayerVisibility };
 
@@ -30,6 +38,11 @@ type RunningMapProps = {
   isRoutePreview: boolean;
   points: GeoPoint[];
   routeCoordinates: [number, number][];
+  elevationMarks?: ElevationMark[];
+  elevationSamples?: RouteElevation["samples"];
+  scrub?: RouteScrub | undefined;
+  onScrubChange?: ((scrub: RouteScrub | undefined) => void) | undefined;
+  unit?: MetricUnit;
   features: RunnerFeature[];
   layers: MapLayerVisibility;
   focusPoint: GeoPoint | undefined;
@@ -78,18 +91,117 @@ function updateRouteSource(map: mapboxgl.Map, coordinates: [number, number][], d
   map.setPaintProperty("runner-route-glow", "line-opacity", dashed ? 0.08 : 0.18);
 }
 
-function updateWaypointSource(map: mapboxgl.Map, points: GeoPoint[]) {
+function updateProgressSource(map: mapboxgl.Map, coordinates: [number, number][]) {
+  geojsonSource(map, "runner-route-progress")?.setData(
+    coordinates.length >= 2
+      ? {
+          type: "Feature",
+          properties: {},
+          geometry: { type: "LineString", coordinates },
+        }
+      : { type: "FeatureCollection", features: [] },
+  );
+}
+
+function createScrubberElement(html: string) {
+  const root = document.createElement("div");
+  root.className = "rws-scrubber";
+  const tip = document.createElement("div");
+  tip.className = "rws-scrubber-tip";
+  tip.innerHTML = html;
+  const dot = document.createElement("div");
+  dot.className = "rws-scrubber-dot";
+  root.append(tip, dot);
+  return root;
+}
+
+function updateElevationSource(map: mapboxgl.Map, marks: ElevationMark[]) {
+  geojsonSource(map, "runner-elevation")?.setData({
+    type: "FeatureCollection",
+    features: marks.map((mark, index) => ({
+      type: "Feature",
+      properties: {
+        kind: mark.kind,
+        title: mark.kind === "climb" ? "Climb starts" : "Descent starts",
+        detail: `${Math.round(mark.elevationMeters)} m`,
+      },
+      id: index,
+      geometry: { type: "Point", coordinates: [mark.point.lng, mark.point.lat] },
+    })),
+  });
+}
+
+function featureTitle(feature: RunnerFeature) {
+  return (
+    feature.name ?? (feature.kind === "crossing" ? "Crossing" : feature.kind.replaceAll("_", " "))
+  );
+}
+
+function syncOverlayMarkers(
+  map: mapboxgl.Map,
+  points: GeoPoint[],
+  features: RunnerFeature[],
+  layers: MapLayerVisibility,
+  routeCoordinates: [number, number][],
+) {
+  const marks = visibleWaypoints(points);
+  const enabled = features.filter((feature) => layers[feature.kind]);
+  const visible =
+    routeCoordinates.length >= 2
+      ? featuresNearRoute(enabled, routePointsFromCoordinates(routeCoordinates))
+      : [];
+  const { combined, leftoverFeatures } = pairWaypointFeatures(marks, visible);
+  const pairedIndexes = new Set(combined.map((item) => item.waypoint.index));
+
   geojsonSource(map, "runner-waypoints")?.setData({
     type: "FeatureCollection",
-    features: visibleWaypoints(points).map((mark) => ({
+    features: marks.map((mark) => ({
       type: "Feature",
       properties: {
         index: mark.index,
         label: mark.label,
         role: mark.role,
         title: mark.title,
+        paired: pairedIndexes.has(mark.index) ? "yes" : "no",
       },
       geometry: { type: "Point", coordinates: [mark.point.lng, mark.point.lat] },
+    })),
+  });
+
+  geojsonSource(map, "runner-combined")?.setData({
+    type: "FeatureCollection",
+    features: combined.map((item) => ({
+      type: "Feature",
+      properties: {
+        index: item.waypoint.index,
+        label: item.waypoint.label,
+        role: item.waypoint.role,
+        kind: item.feature?.kind ?? "",
+        title: item.feature
+          ? `${item.waypoint.title} · ${featureTitle(item.feature)}`
+          : item.waypoint.title,
+      },
+      geometry: {
+        type: "Point",
+        coordinates: [item.waypoint.point.lng, item.waypoint.point.lat],
+      },
+    })),
+  });
+
+  geojsonSource(map, "runner-features")?.setData({
+    type: "FeatureCollection",
+    features: leftoverFeatures.map((feature) => ({
+      type: "Feature",
+      properties: {
+        id: feature.id,
+        kind: feature.kind,
+        name: featureTitle(feature),
+        detail: feature.detail ?? "",
+      },
+      geometry: {
+        type: "Point",
+        coordinates: [feature.point.lng, feature.point.lat],
+      },
     })),
   });
 }
@@ -113,43 +225,21 @@ function routePointsFromCoordinates(coordinates: [number, number][]): GeoPoint[]
   return coordinates.map(([lng, lat]) => ({ lng, lat }));
 }
 
-function updateFeatureSource(
-  map: mapboxgl.Map,
-  features: RunnerFeature[],
-  layers: MapLayerVisibility,
-  routeCoordinates: [number, number][],
-) {
-  const enabled = features.filter((feature) => layers[feature.kind]);
-  const visible =
-    routeCoordinates.length >= 2
-      ? featuresNearRoute(enabled, routePointsFromCoordinates(routeCoordinates))
-      : [];
-  geojsonSource(map, "runner-features")?.setData({
-    type: "FeatureCollection",
-    features: visible.map((feature) => ({
-      type: "Feature",
-      properties: {
-        id: feature.id,
-        kind: feature.kind,
-        name:
-          feature.name ??
-          (feature.kind === "crossing" ? "Crossing" : feature.kind.replaceAll("_", " ")),
-        detail: feature.detail ?? "",
-      },
-      geometry: {
-        type: "Point",
-        coordinates: [feature.point.lng, feature.point.lat],
-      },
-    })),
-  });
-}
-
 function addOverlayImages(map: mapboxgl.Map) {
-  const images = {
+  const images: Record<string, ImageData | undefined> = {
     "runner-feature-crossing": createCrossingIconImage(),
     "runner-feature-traffic_signal": createTrafficLightIconImage(),
     "runner-feature-drinking_water": createWaterDropletIconImage(),
-  } as const;
+    "runner-elevation-climb": createClimbIconImage(),
+    "runner-elevation-descent": createDescentIconImage(),
+  };
+
+  images[combinedIconId("start_finish")] = createCombinedMarkIconImage("start_finish");
+  for (const role of ["start", "finish", "start_finish", "via"] as const) {
+    for (const kind of ["traffic_signal", "crossing"] as const) {
+      images[combinedIconId(role, kind)] = createCombinedMarkIconImage(role, kind);
+    }
+  }
 
   for (const [imageId, image] of Object.entries(images)) {
     if (!image) continue;
@@ -195,6 +285,18 @@ const WAYPOINT_LAYER_IDS = [
   "runner-waypoints",
   "runner-waypoint-cores",
   "runner-waypoint-labels",
+  "runner-combined-hit",
+  "runner-combined",
+] as const;
+
+const WAYPOINT_POINTER_LAYER_IDS = [
+  "runner-waypoints-hit",
+  "runner-waypoint-halo",
+  "runner-waypoints",
+  "runner-waypoint-cores",
+  "runner-waypoint-labels",
+  "runner-combined-hit",
+  "runner-combined",
 ] as const;
 
 function showWaypointLayers(map: mapboxgl.Map) {
@@ -209,6 +311,7 @@ function waypointHaloLayer(): mapboxgl.CircleLayerSpecification {
     id: "runner-waypoint-halo",
     type: "circle",
     source: "runner-waypoints",
+    filter: ["!=", ["get", "paired"], "yes"],
     paint: {
       "circle-radius": ["match", ["get", "role"], "start_finish", 15, "via", 11, 14],
       "circle-color": "#070908",
@@ -243,6 +346,32 @@ function addRunnerLayers(map: mapboxgl.Map) {
       "line-width": 5.5,
     },
   });
+  addLayerOnce(map, {
+    id: "runner-route-hit",
+    type: "line",
+    source: "runner-route",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": ROUTE_LIME,
+      "line-width": 22,
+      "line-opacity": 0.01,
+    },
+  });
+  addSourceOnce(map, "runner-route-progress", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] },
+  });
+  addLayerOnce(map, {
+    id: "runner-route-progress",
+    type: "line",
+    source: "runner-route-progress",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: {
+      "line-color": "#e7ff9a",
+      "line-width": 6.2,
+      "line-opacity": 1,
+    },
+  });
 
   const overlayBefore = map.getLayer(CONTEXT_OVERLAY_BEFORE) ? CONTEXT_OVERLAY_BEFORE : undefined;
   for (const overlay of contextOverlayLayers()) {
@@ -250,6 +379,22 @@ function addRunnerLayers(map: mapboxgl.Map) {
   }
 
   addOverlayImages(map);
+  addSourceOnce(map, "runner-elevation", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] },
+  });
+  addLayerOnce(map, {
+    id: "runner-elevation",
+    type: "symbol",
+    source: "runner-elevation",
+    layout: {
+      "icon-image": ["concat", "runner-elevation-", ["get", "kind"]],
+      "icon-size": 0.62,
+      "icon-padding": 0,
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+    },
+  });
   addSourceOnce(map, "runner-waypoints", {
     type: "geojson",
     data: { type: "FeatureCollection", features: [] },
@@ -265,6 +410,7 @@ function addRunnerLayers(map: mapboxgl.Map) {
     id: "runner-waypoints",
     type: "circle",
     source: "runner-waypoints",
+    filter: ["!=", ["get", "paired"], "yes"],
     paint: {
       "circle-radius": ["match", ["get", "role"], "start_finish", 12, "via", 8, 11],
       "circle-color": [
@@ -296,7 +442,7 @@ function addRunnerLayers(map: mapboxgl.Map) {
     id: "runner-waypoint-cores",
     type: "circle",
     source: "runner-waypoints",
-    filter: ["!=", ["get", "role"], "via"],
+    filter: ["all", ["!=", ["get", "paired"], "yes"], ["!=", ["get", "role"], "via"]],
     paint: {
       "circle-radius": ["match", ["get", "role"], "finish", 3.6, 3.2],
       "circle-color": [
@@ -315,7 +461,7 @@ function addRunnerLayers(map: mapboxgl.Map) {
     id: "runner-waypoint-labels",
     type: "symbol",
     source: "runner-waypoints",
-    filter: ["==", ["get", "role"], "via"],
+    filter: ["all", ["==", ["get", "role"], "via"], ["!=", ["get", "paired"], "yes"]],
     layout: {
       "text-field": ["get", "label"],
       "text-size": 11,
@@ -377,6 +523,40 @@ function addRunnerLayers(map: mapboxgl.Map) {
       "icon-ignore-placement": true,
     },
   });
+  addSourceOnce(map, "runner-combined", {
+    type: "geojson",
+    data: { type: "FeatureCollection", features: [] },
+  });
+  addLayerOnce(map, {
+    id: "runner-combined-hit",
+    type: "circle",
+    source: "runner-combined",
+    paint: { "circle-radius": 30, "circle-opacity": 0.01 },
+  });
+  addLayerOnce(map, {
+    id: "runner-combined",
+    type: "symbol",
+    source: "runner-combined",
+    layout: {
+      "icon-image": [
+        "case",
+        ["==", ["get", "kind"], ""],
+        ["concat", "runner-combined-", ["get", "role"]],
+        ["concat", "runner-combined-", ["get", "role"], "-", ["get", "kind"]],
+      ],
+      "icon-size": 1,
+      "icon-padding": 0,
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+      "text-field": ["get", "label"],
+      "text-size": 11,
+      "text-font": LABEL_FONT,
+      "text-offset": [-1.36, 0.04],
+      "text-allow-overlap": true,
+      "text-ignore-placement": true,
+    },
+    paint: { "text-color": "#f4f7f5" },
+  });
 }
 
 export function RunningMap({
@@ -384,6 +564,11 @@ export function RunningMap({
   isRoutePreview,
   points,
   routeCoordinates,
+  elevationMarks = [],
+  elevationSamples = [],
+  scrub,
+  onScrubChange,
+  unit = "metric",
   features,
   layers,
   focusPoint,
@@ -402,6 +587,7 @@ export function RunningMap({
   const boundsChangeRef = useRef(onBoundsChange);
   const pointsRef = useRef(points);
   const routeCoordinatesRef = useRef(routeCoordinates);
+  const elevationMarksRef = useRef(elevationMarks);
   const isRoutePreviewRef = useRef(isRoutePreview);
   const featuresRef = useRef(features);
   const layersRef = useRef(layers);
@@ -410,6 +596,9 @@ export function RunningMap({
   const didDragRef = useRef(false);
   const draggingRef = useRef(false);
   const waypointPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const scrubberRef = useRef<mapboxgl.Marker | null>(null);
+  const elevationSamplesRef = useRef(elevationSamples);
+  const onScrubChangeRef = useRef(onScrubChange);
 
   addPointRef.current = onAddPoint;
   movePointRef.current = onMovePoint;
@@ -419,6 +608,9 @@ export function RunningMap({
     pointsRef.current = points;
   }
   routeCoordinatesRef.current = routeCoordinates;
+  elevationMarksRef.current = elevationMarks;
+  elevationSamplesRef.current = elevationSamples;
+  onScrubChangeRef.current = onScrubChange;
   isRoutePreviewRef.current = isRoutePreview;
   featuresRef.current = features;
   layersRef.current = layers;
@@ -498,8 +690,14 @@ export function RunningMap({
       addRunnerLayers(map);
       applyBasemap(map, layersRef.current);
       updateRouteSource(map, routeCoordinatesRef.current, isRoutePreviewRef.current);
-      updateWaypointSource(map, pointsRef.current);
-      updateFeatureSource(map, featuresRef.current, layersRef.current, routeCoordinatesRef.current);
+      updateElevationSource(map, elevationMarksRef.current);
+      syncOverlayMarkers(
+        map,
+        pointsRef.current,
+        featuresRef.current,
+        layersRef.current,
+        routeCoordinatesRef.current,
+      );
       updateUserLocationSource(map, userLocationRef.current);
       emitBounds();
       setMapReady(true);
@@ -508,13 +706,10 @@ export function RunningMap({
     map.on("moveend", emitBounds);
     map.on("click", (event: mapboxgl.MapMouseEvent) => {
       const hitLayers = [
-        "runner-waypoints-hit",
-        "runner-waypoint-halo",
-        "runner-waypoints",
-        "runner-waypoint-cores",
-        "runner-waypoint-labels",
+        ...WAYPOINT_POINTER_LAYER_IDS,
         "runner-features-unclustered",
         "runner-features-halo",
+        "runner-elevation",
       ].filter((id) => map.getLayer(id));
       const featureHits =
         hitLayers.length > 0 ? map.queryRenderedFeatures(event.point, { layers: hitLayers }) : [];
@@ -529,12 +724,35 @@ export function RunningMap({
       const point = { lat: event.lngLat.lat, lng: event.lngLat.lng };
       const nextPoints = addRoutePoint(pointsRef.current, point);
       if (nextPoints !== pointsRef.current) {
-        updateWaypointSource(map, nextPoints);
+        syncOverlayMarkers(
+          map,
+          nextPoints,
+          featuresRef.current,
+          layersRef.current,
+          routeCoordinatesRef.current,
+        );
         if (nextPoints.length >= 2) {
           updateRouteSource(map, linePreviewCoordinates(nextPoints), true);
         }
       }
       addPointRef.current(point);
+    });
+
+    map.on("click", "runner-elevation", (event: mapboxgl.MapMouseEvent) => {
+      const feature = event.features?.[0] as MapFeature | undefined;
+      if (feature?.geometry?.type !== "Point") return;
+      const wrapper = document.createElement("div");
+      wrapper.className = "rws-popup";
+      const title = document.createElement("strong");
+      title.textContent = String(feature.properties?.title ?? "Elevation");
+      const detail = document.createElement("span");
+      detail.textContent = String(feature.properties?.detail ?? "");
+      wrapper.append(title, detail);
+      const [lng, lat] = feature.geometry.coordinates as [number, number];
+      new mapboxgl.Popup({ offset: 12, closeButton: false, className: "rws-map-popup" })
+        .setLngLat([lng, lat])
+        .setDOMContent(wrapper)
+        .addTo(map);
     });
 
     map.on("click", "runner-features-unclustered", (event: mapboxgl.MapMouseEvent) => {
@@ -555,7 +773,13 @@ export function RunningMap({
         const point = { lat, lng };
         const nextPoints = addRoutePoint(pointsRef.current, point);
         if (nextPoints !== pointsRef.current) {
-          updateWaypointSource(map, nextPoints);
+          syncOverlayMarkers(
+            map,
+            nextPoints,
+            featuresRef.current,
+            layersRef.current,
+            routeCoordinatesRef.current,
+          );
         }
         addPointRef.current(point, String(feature.properties?.name ?? "Drinking water"));
       }
@@ -575,13 +799,7 @@ export function RunningMap({
       map.getCanvas().style.cursor = "grab";
       event.preventDefault();
     };
-    for (const layerId of [
-      "runner-waypoints-hit",
-      "runner-waypoint-halo",
-      "runner-waypoints",
-      "runner-waypoint-cores",
-      "runner-waypoint-labels",
-    ]) {
+    for (const layerId of WAYPOINT_POINTER_LAYER_IDS) {
       map.on("mousedown", layerId, onWaypointPointerDown);
     }
 
@@ -597,7 +815,13 @@ export function RunningMap({
       const point = { lat: event.lngLat.lat, lng: event.lngLat.lng };
       const nextPoints = moveRoutePoint(pointsRef.current, pointer.index, point);
       pointsRef.current = nextPoints;
-      updateWaypointSource(map, nextPoints);
+      syncOverlayMarkers(
+        map,
+        nextPoints,
+        featuresRef.current,
+        layersRef.current,
+        routeCoordinatesRef.current,
+      );
       if (nextPoints.length >= 2) {
         updateRouteSource(map, linePreviewCoordinates(nextPoints), true);
       }
@@ -616,7 +840,13 @@ export function RunningMap({
         if (point) {
           const nextPoints = moveRoutePoint(pointsRef.current, pointer.index, point);
           pointsRef.current = nextPoints;
-          updateWaypointSource(map, nextPoints);
+          syncOverlayMarkers(
+            map,
+            nextPoints,
+            featuresRef.current,
+            layersRef.current,
+            routeCoordinatesRef.current,
+          );
           if (nextPoints.length >= 2) {
             updateRouteSource(map, linePreviewCoordinates(nextPoints), true);
           }
@@ -626,13 +856,7 @@ export function RunningMap({
       }
       if (!event) return;
       const hits = map.queryRenderedFeatures(event.point, {
-        layers: [
-          "runner-waypoints-hit",
-          "runner-waypoint-halo",
-          "runner-waypoints",
-          "runner-waypoint-cores",
-          "runner-waypoint-labels",
-        ].filter((id) => map.getLayer(id)),
+        layers: WAYPOINT_POINTER_LAYER_IDS.filter((id) => map.getLayer(id)),
       });
       const feature = hits[0] as MapFeature | undefined;
       const title = String(feature?.properties?.title ?? "Stop");
@@ -644,6 +868,8 @@ export function RunningMap({
 
     return () => {
       closeWaypointPopup();
+      scrubberRef.current?.remove();
+      scrubberRef.current = null;
       setMapReady(false);
       map.remove();
       mapRef.current = null;
@@ -654,21 +880,113 @@ export function RunningMap({
     const map = mapRef.current;
     if (!mapReady || !map || draggingRef.current) return;
     updateRouteSource(map, routeCoordinates, isRoutePreview);
-    updateFeatureSource(map, featuresRef.current, layersRef.current, routeCoordinates);
-  }, [isRoutePreview, mapReady, routeCoordinates]);
+    updateElevationSource(map, isRoutePreview ? [] : elevationMarks);
+    syncOverlayMarkers(
+      map,
+      pointsRef.current,
+      featuresRef.current,
+      layersRef.current,
+      routeCoordinates,
+    );
+  }, [elevationMarks, isRoutePreview, mapReady, routeCoordinates]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
+    const onRouteMove = (event: mapboxgl.MapMouseEvent) => {
+      if (
+        pointerRef.current ||
+        isRoutePreviewRef.current ||
+        elevationSamplesRef.current.length < 2
+      ) {
+        return;
+      }
+      const hoverLayers = ["runner-route-hit", "runner-route", "runner-route-progress"].filter(
+        (id) => map.getLayer(id),
+      );
+      const hits =
+        hoverLayers.length > 0
+          ? map.queryRenderedFeatures(event.point, { layers: hoverLayers })
+          : [];
+      if (hits.length === 0) {
+        onScrubChangeRef.current?.(undefined);
+        map.getCanvas().style.cursor = "";
+        return;
+      }
+      const next = nearestScrubOnRoute(routeCoordinatesRef.current, elevationSamplesRef.current, {
+        lat: event.lngLat.lat,
+        lng: event.lngLat.lng,
+      });
+      if (!next) {
+        onScrubChangeRef.current?.(undefined);
+        map.getCanvas().style.cursor = "";
+        return;
+      }
+      map.getCanvas().style.cursor = "crosshair";
+      onScrubChangeRef.current?.(next);
+    };
+
+    map.on("mousemove", onRouteMove);
+    return () => {
+      map.off("mousemove", onRouteMove);
+    };
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
+    if (!scrub || isRoutePreview) {
+      updateProgressSource(map, []);
+      if (map.getLayer("runner-route") && !isRoutePreview) {
+        map.setPaintProperty("runner-route", "line-opacity", 1);
+      }
+      scrubberRef.current?.remove();
+      scrubberRef.current = null;
+      return;
+    }
+
+    updateProgressSource(map, routePrefix(routeCoordinates, scrub.distanceMeters));
+    if (map.getLayer("runner-route")) {
+      map.setPaintProperty("runner-route", "line-opacity", 0.4);
+    }
+
+    const tipHtml = scrubTipHtml(scrub, unit);
+    if (!scrubberRef.current) {
+      scrubberRef.current = new mapboxgl.Marker({
+        element: createScrubberElement(tipHtml),
+        anchor: "bottom",
+        offset: [0, 8],
+      })
+        .setLngLat([scrub.point.lng, scrub.point.lat])
+        .addTo(map);
+      return;
+    }
+
+    scrubberRef.current.setLngLat([scrub.point.lng, scrub.point.lat]);
+    const tip = scrubberRef.current.getElement().querySelector(".rws-scrubber-tip");
+    if (tip) tip.innerHTML = tipHtml;
+  }, [isRoutePreview, mapReady, routeCoordinates, scrub, unit]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map || draggingRef.current) return;
     addLayerOnce(map, waypointHaloLayer(), "runner-waypoints");
     showWaypointLayers(map);
-    updateWaypointSource(map, points);
+    syncOverlayMarkers(
+      map,
+      points,
+      featuresRef.current,
+      layersRef.current,
+      routeCoordinatesRef.current,
+    );
   }, [mapReady, points]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!mapReady || !map) return;
-    updateFeatureSource(map, features, layers, routeCoordinatesRef.current);
+    syncOverlayMarkers(map, pointsRef.current, features, layers, routeCoordinatesRef.current);
   }, [features, layers, mapReady]);
 
   useEffect(() => {

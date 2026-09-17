@@ -36,6 +36,32 @@ function paintChip(context: CanvasRenderingContext2D) {
   context.stroke();
 }
 
+function paintTrafficGlyph(context: CanvasRenderingContext2D, cx: number, cy: number) {
+  roundedRect(context, cx - 6, cy - 16, 12, 32, 6);
+  context.fillStyle = "#1b211d";
+  context.fill();
+
+  const lamps = [
+    { y: cy - 8.5, color: "#ff5a5a" },
+    { y: cy, color: "#ffc857" },
+    { y: cy + 8.5, color: "#6ee07a" },
+  ];
+  for (const lamp of lamps) {
+    context.beginPath();
+    context.arc(cx, lamp.y, 3.4, 0, Math.PI * 2);
+    context.fillStyle = lamp.color;
+    context.fill();
+  }
+}
+
+function paintCrossingGlyph(context: CanvasRenderingContext2D, cx: number, cy: number) {
+  context.fillStyle = "#f4f7f5";
+  for (const x of [cx - 11, cx - 2, cx + 7]) {
+    roundedRect(context, x, cy - 12, 5, 24, 1.4);
+    context.fill();
+  }
+}
+
 function paintDroplet(context: CanvasRenderingContext2D) {
   context.beginPath();
   context.moveTo(CENTER, 18);
@@ -51,11 +77,7 @@ export function createCrossingIconImage() {
   if (!context) return undefined;
 
   paintChip(context);
-  context.fillStyle = "#f4f7f5";
-  for (const x of [21, 30, 39]) {
-    roundedRect(context, x, 20, 5, 24, 1.4);
-    context.fill();
-  }
+  paintCrossingGlyph(context, CENTER, CENTER);
 
   return context.getImageData(0, 0, SIZE, SIZE);
 }
@@ -75,21 +97,157 @@ export function createTrafficLightIconImage() {
   if (!context) return undefined;
 
   paintChip(context);
-  roundedRect(context, 26, 16, 12, 32, 6);
-  context.fillStyle = "#1b211d";
-  context.fill();
-
-  const lamps = [
-    { y: 23.5, color: "#ff5a5a" },
-    { y: 32, color: "#ffc857" },
-    { y: 40.5, color: "#6ee07a" },
-  ];
-  for (const lamp of lamps) {
-    context.beginPath();
-    context.arc(CENTER, lamp.y, 3.4, 0, Math.PI * 2);
-    context.fillStyle = lamp.color;
-    context.fill();
-  }
+  paintTrafficGlyph(context, CENTER, CENTER);
 
   return context.getImageData(0, 0, SIZE, SIZE);
+}
+
+function paintTriangle(context: CanvasRenderingContext2D, color: string, direction: "up" | "down") {
+  context.beginPath();
+  if (direction === "up") {
+    context.moveTo(CENTER, 18);
+    context.lineTo(46, 44);
+    context.lineTo(18, 44);
+  } else {
+    context.moveTo(18, 20);
+    context.lineTo(46, 20);
+    context.lineTo(CENTER, 46);
+  }
+  context.closePath();
+  context.fillStyle = color;
+  context.fill();
+}
+
+export function createClimbIconImage() {
+  const context = canvasContext();
+  if (!context) return undefined;
+  paintChip(context);
+  paintTriangle(context, "#ffb35c", "up");
+  return context.getImageData(0, 0, SIZE, SIZE);
+}
+
+export function createDescentIconImage() {
+  const context = canvasContext();
+  if (!context) return undefined;
+  paintChip(context);
+  paintTriangle(context, "#7ee8ff", "down");
+  return context.getImageData(0, 0, SIZE, SIZE);
+}
+
+const COMBINED_HEIGHT = 64;
+
+type CombinedSlot = "start" | "finish" | "via" | "traffic_signal" | "crossing";
+
+function combinedSlots(
+  role: "start" | "finish" | "start_finish" | "via",
+  kind?: "traffic_signal" | "crossing",
+): CombinedSlot[] {
+  if (role === "start_finish") {
+    return kind ? ["start", "finish", kind] : ["start", "finish"];
+  }
+  return kind ? [role, kind] : [role];
+}
+
+function combinedCanvasWidth(slots: number) {
+  return slots >= 3 ? 176 : 128;
+}
+
+function paintStartBadge(context: CanvasRenderingContext2D, cx: number, cy: number) {
+  context.beginPath();
+  context.arc(cx, cy, 13, 0, Math.PI * 2);
+  context.fillStyle = "#c8ff52";
+  context.fill();
+  context.lineWidth = 2.2;
+  context.strokeStyle = "#101512";
+  context.stroke();
+  context.beginPath();
+  context.arc(cx, cy, 3.2, 0, Math.PI * 2);
+  context.fillStyle = "#101512";
+  context.fill();
+}
+
+function paintFinishBadge(context: CanvasRenderingContext2D, cx: number, cy: number) {
+  context.beginPath();
+  context.arc(cx, cy, 13, 0, Math.PI * 2);
+  context.fillStyle = "#ff5d7a";
+  context.fill();
+  context.lineWidth = 2.4;
+  context.strokeStyle = "#fff5f7";
+  context.stroke();
+  context.beginPath();
+  context.arc(cx, cy, 3.6, 0, Math.PI * 2);
+  context.fillStyle = "#fff5f7";
+  context.fill();
+}
+
+function paintViaBadge(context: CanvasRenderingContext2D, cx: number, cy: number) {
+  context.beginPath();
+  context.arc(cx, cy, 15, 0, Math.PI * 2);
+  context.fillStyle = "#0a0d0b";
+  context.fill();
+  context.lineWidth = 2.4;
+  context.strokeStyle = "#c8ff52";
+  context.stroke();
+}
+
+function paintCombinedSlot(
+  context: CanvasRenderingContext2D,
+  slot: CombinedSlot,
+  cx: number,
+  cy: number,
+) {
+  if (slot === "start") {
+    paintStartBadge(context, cx, cy);
+    return;
+  }
+  if (slot === "finish") {
+    paintFinishBadge(context, cx, cy);
+    return;
+  }
+  if (slot === "via") {
+    paintViaBadge(context, cx, cy);
+    return;
+  }
+  if (slot === "traffic_signal") {
+    paintTrafficGlyph(context, cx, cy);
+    return;
+  }
+  paintCrossingGlyph(context, cx, cy);
+}
+
+export function createCombinedMarkIconImage(
+  role: "start" | "finish" | "start_finish" | "via",
+  kind?: "traffic_signal" | "crossing",
+) {
+  const slots = combinedSlots(role, kind);
+  if (slots.length === 0) return undefined;
+
+  const width = combinedCanvasWidth(slots.length);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = COMBINED_HEIGHT;
+  const context = canvas.getContext("2d");
+  if (!context) return undefined;
+
+  roundedRect(context, 4, 8, width - 8, 48, 24);
+  context.fillStyle = "#101512";
+  context.fill();
+  context.lineWidth = 2;
+  context.strokeStyle = "rgba(244, 247, 245, 0.16)";
+  context.stroke();
+
+  const inset = 22;
+  const span = width - inset * 2;
+  for (const [index, slot] of slots.entries()) {
+    const cx = slots.length === 1 ? width / 2 : inset + (span * index) / (slots.length - 1);
+    if (index > 0) {
+      const prevX =
+        slots.length === 1 ? width / 2 : inset + (span * (index - 1)) / (slots.length - 1);
+      context.fillStyle = "rgba(244, 247, 245, 0.12)";
+      context.fillRect((prevX + cx) / 2 - 0.75, 18, 1.5, 28);
+    }
+    paintCombinedSlot(context, slot, cx, 32);
+  }
+
+  return context.getImageData(0, 0, width, COMBINED_HEIGHT);
 }

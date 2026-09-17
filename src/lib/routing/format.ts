@@ -68,3 +68,15 @@ export function paceFromDuration(meters: number, durationSeconds: number) {
   if (meters <= 0) return DEFAULT_PACE_SECONDS_PER_KM;
   return storePaceSeconds(durationSeconds / (meters / METERS_PER_KM), "metric");
 }
+
+export function formatElevation(meters: number, unit: MetricUnit = "metric") {
+  const parts = elevationParts(meters, unit);
+  return `${parts.amount} ${parts.unit}`;
+}
+
+export function elevationParts(meters: number, unit: MetricUnit = "metric") {
+  if (unit === "imperial") {
+    return { amount: String(Math.round(meters * 3.28084)), unit: "ft" };
+  }
+  return { amount: String(Math.round(meters)), unit: "m" };
+}

@@ -165,6 +165,32 @@ export function ShareGlyph() {
   );
 }
 
+export function ClimbGlyph() {
+  return (
+    <Glyph color="#ffb35c">
+      <path d="M2.6 12.2 6.4 6.4 8.6 9.1 13.4 3.8" />
+      <path d="M10.2 3.8h3.2v3.1" />
+    </Glyph>
+  );
+}
+
+export function DescentGlyph() {
+  return (
+    <Glyph color="#7ee8ff">
+      <path d="M2.6 3.8 6.4 9.6 8.6 6.9 13.4 12.2" />
+      <path d="M10.2 12.2h3.2V9.1" />
+    </Glyph>
+  );
+}
+
+export function MetricsExpandGlyph({ expanded }: { expanded: boolean }) {
+  return (
+    <Glyph className="size-3.5">
+      {expanded ? <path d="M3.6 6.2 8 10.6 12.4 6.2" /> : <path d="M3.6 9.8 8 5.4 12.4 9.8" />}
+    </Glyph>
+  );
+}
+
 export function LocationGlyph({ className = "size-3.5" }: { className?: string }) {
   return (
     <Glyph className={className} color="#c8ff52">

@@ -27,9 +27,10 @@ export function WaypointBadge({ role, label }: { role: WaypointRole; label: stri
     return (
       <span
         aria-hidden
-        className="grid size-6 shrink-0 place-items-center rounded-full border-2 border-[#ff5d7a] bg-[#c8ff52]"
+        className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-[#101512] px-1.5 ring-1 ring-white/15"
       >
-        <span className="size-1.5 rounded-full bg-[#ff5d7a]" />
+        <span className="size-3 rounded-full bg-[#c8ff52]" />
+        <span className="size-3 rounded-full bg-[#ff5d7a]" />
       </span>
     );
   }

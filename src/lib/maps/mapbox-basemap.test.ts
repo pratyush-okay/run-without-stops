@@ -28,6 +28,7 @@ describe("Mapbox 2D dark basemap", () => {
     expect(isQuietLabelLayer("settlement-major-label")).toBe(false);
     expect(isQuietLabelLayer("runner-waypoints")).toBe(false);
     expect(isQuietLabelLayer("runner-waypoint-labels")).toBe(false);
+    expect(isQuietLabelLayer("runner-elevation")).toBe(false);
   });
 
   it("targets dedicated park layers and mixed landuse, not all vegetation", () => {

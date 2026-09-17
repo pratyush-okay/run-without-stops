@@ -1,6 +1,7 @@
 import {
   boundingBoxDiagonalMeters,
   countFeaturesNearRoute,
+  featureIsCrossedOnRoute,
   featuresNearRoute,
   isWithinSydney,
   quantizeBoundingBox,
@@ -113,6 +114,56 @@ describe("Sydney geo helpers", () => {
     );
 
     expect(visible.map((feature) => feature.id)).toEqual(["light"]);
+  });
+
+  it("ignores a traffic light on the unused arm of a right turn", () => {
+    const junction = { lat: -33.87, lng: 151.21 };
+    const rightTurn = [{ lat: -33.87, lng: 151.205 }, junction, { lat: -33.874, lng: 151.21 }];
+    const metersPerLng = 111_320 * Math.cos((-33.87 * Math.PI) / 180);
+    const unusedEast: RunnerFeature = {
+      id: "unused-east",
+      kind: "traffic_signal",
+      point: { lat: -33.87, lng: 151.21 + 12 / metersPerLng },
+    };
+    const outgoingSouth: RunnerFeature = {
+      id: "outgoing-south",
+      kind: "traffic_signal",
+      point: { lat: -33.87 - 12 / 111_320, lng: 151.21 },
+    };
+    const unusedNorth: RunnerFeature = {
+      id: "unused-north",
+      kind: "crossing",
+      point: { lat: -33.87 + 12 / 111_320, lng: 151.21 },
+    };
+
+    expect(featureIsCrossedOnRoute(unusedEast, rightTurn)).toBe(false);
+    expect(featureIsCrossedOnRoute(outgoingSouth, rightTurn)).toBe(true);
+    expect(featureIsCrossedOnRoute(unusedNorth, rightTurn)).toBe(false);
+    expect(
+      featuresNearRoute([unusedEast, outgoingSouth, unusedNorth], rightTurn).map(
+        (feature) => feature.id,
+      ),
+    ).toEqual(["outgoing-south"]);
+    expect(countFeaturesNearRoute([unusedEast, outgoingSouth], rightTurn, "traffic_signal")).toBe(
+      1,
+    );
+  });
+
+  it("still counts a light the runner walks through on a straight street", () => {
+    const metersPerLng = 111_320 * Math.cos((-33.87 * Math.PI) / 180);
+    const beside: RunnerFeature = {
+      id: "beside",
+      kind: "traffic_signal",
+      point: { lat: -33.87 + 4 / 111_320, lng: 151.21 },
+    };
+    const unusedIfTurning: RunnerFeature = {
+      id: "east-arm",
+      kind: "traffic_signal",
+      point: { lat: -33.87, lng: 151.21 + 12 / metersPerLng },
+    };
+
+    expect(featureIsCrossedOnRoute(beside, route)).toBe(true);
+    expect(featureIsCrossedOnRoute(unusedIfTurning, route)).toBe(true);
   });
 
   it("turns the closest traffic signal into a closed avoidance polygon", () => {

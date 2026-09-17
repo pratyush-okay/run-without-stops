@@ -3,9 +3,12 @@
 import { useClerk, useUser } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
 
+const profileShellClass = "rws-panel p-1.5";
+const profileTileClass = "grid size-11 place-items-center rounded-lg transition md:size-10";
+
 function AccountIcon() {
   return (
-    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
       <circle cx="8" cy="5.2" r="2.4" fill="none" stroke="currentColor" strokeWidth="1.4" />
       <path
         d="M3.2 13c.5-2.4 2.3-3.6 4.8-3.6s4.3 1.2 4.8 3.6"
@@ -52,23 +55,24 @@ export function AuthControls({
 
   if (!isLoaded) {
     return (
-      <div
-        className="size-10 rounded-full border border-white/8 bg-[#101512]/70 md:size-9"
-        aria-hidden
-      />
+      <div className={profileShellClass} aria-hidden>
+        <div className={`${profileTileClass} bg-white/[0.04]`} />
+      </div>
     );
   }
 
   if (!isSignedIn || !user) {
     return (
-      <button
-        type="button"
-        className="grid size-10 place-items-center rounded-full border border-white/8 bg-[#101512]/70 text-white/40 backdrop-blur-xl transition hover:border-white/16 hover:text-white/80 md:size-9"
-        onClick={onSignIn}
-        aria-label="Sign in"
-      >
-        <AccountIcon />
-      </button>
+      <div className={profileShellClass}>
+        <button
+          type="button"
+          className={`${profileTileClass} text-white/50 hover:bg-white/[0.06] hover:text-white/85`}
+          onClick={onSignIn}
+          aria-label="Sign in"
+        >
+          <AccountIcon />
+        </button>
+      </div>
     );
   }
 
@@ -82,16 +86,18 @@ export function AuthControls({
 
   return (
     <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        className="grid size-10 place-items-center rounded-full border border-[#c8ff52]/80 bg-[#0a0d0b] font-mono text-sm font-semibold text-[#c8ff52] shadow-[0_0_0_3px_rgb(200_255_82/0.16)] md:size-9"
-        onClick={() => setIsMenuOpen((open) => !open)}
-        aria-expanded={isMenuOpen}
-        aria-haspopup="menu"
-        aria-label={`Account, ${username}`}
-      >
-        {initial}
-      </button>
+      <div className={profileShellClass}>
+        <button
+          type="button"
+          className={`${profileTileClass} bg-[#c8ff52]/10 font-mono text-sm font-semibold text-[#c8ff52] hover:bg-[#c8ff52]/16`}
+          onClick={() => setIsMenuOpen((open) => !open)}
+          aria-expanded={isMenuOpen}
+          aria-haspopup="menu"
+          aria-label={`Account, ${username}`}
+        >
+          {initial}
+        </button>
+      </div>
       {isMenuOpen ? (
         <div
           role="menu"

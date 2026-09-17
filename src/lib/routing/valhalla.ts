@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { env } from "@/env";
 import { countFeaturesNearRoute } from "@/lib/geo";
+import { applyElevationToMetrics, summarizeElevation } from "@/lib/routing/elevation";
+import { fetchHeightsAlongRoute } from "@/lib/routing/elevation-lookup";
 import type { GeoPoint } from "@/lib/schemas/features";
 import type { RouteRequest, RouteResponse } from "@/lib/schemas/route";
 
@@ -52,8 +54,8 @@ export async function fetchValhallaRoute(input: RouteRequest): Promise<RouteResp
       costing: "pedestrian",
       units: "kilometers",
       costing_options: {
-        pedestrian:
-          input.mode === "low_stops"
+        pedestrian: {
+          ...(input.mode === "low_stops"
             ? {
                 walkway_factor: 0.75,
                 sidewalk_factor: 0.8,
@@ -61,7 +63,9 @@ export async function fetchValhallaRoute(input: RouteRequest): Promise<RouteResp
                 driveway_factor: 4,
                 step_penalty: 90,
               }
-            : {},
+            : {}),
+          ...(input.avoidElevation ? { use_hills: 0 } : {}),
+        },
       },
     }),
     signal: AbortSignal.timeout(18_000),
@@ -79,15 +83,21 @@ export async function fetchValhallaRoute(input: RouteRequest): Promise<RouteResp
   });
   const routePoints: GeoPoint[] = coordinates.map(([lng, lat]) => ({ lng, lat }));
 
+  const summary = summarizeElevation((await fetchHeightsAlongRoute(coordinates)) ?? []);
+
   return {
     coordinates,
-    metrics: {
-      distanceMeters: payload.trip.summary.length * 1000,
-      durationSeconds: payload.trip.summary.time,
-      trafficSignals: countFeaturesNearRoute(input.features, routePoints, "traffic_signal"),
-      crossings: countFeaturesNearRoute(input.features, routePoints, "crossing"),
-      majorRoadMeters: 0,
-    },
+    metrics: applyElevationToMetrics(
+      {
+        distanceMeters: payload.trip.summary.length * 1000,
+        durationSeconds: payload.trip.summary.time,
+        trafficSignals: countFeaturesNearRoute(input.features, routePoints, "traffic_signal"),
+        crossings: countFeaturesNearRoute(input.features, routePoints, "crossing"),
+        majorRoadMeters: 0,
+      },
+      summary,
+    ),
+    ...(summary ? { elevation: summary.elevation } : {}),
     provider: "valhalla",
     warnings: [
       "Development routing is using public Valhalla; configure GraphHopper for full low-stop road penalties.",

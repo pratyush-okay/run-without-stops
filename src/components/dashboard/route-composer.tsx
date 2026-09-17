@@ -20,7 +20,12 @@ import { featuresNearRoute } from "@/lib/geo";
 import { suggestedRouteName } from "@/lib/routes/name";
 import { fileSafeName } from "@/lib/routes/slug";
 import { downloadPngFromSvg, downloadText } from "@/lib/routing/download";
-import { formatDistance, formatEffortDuration, type MetricUnit } from "@/lib/routing/format";
+import {
+  formatDistance,
+  formatEffortDuration,
+  formatElevation,
+  type MetricUnit,
+} from "@/lib/routing/format";
 import { downloadGpx, routeToGpx } from "@/lib/routing/gpx";
 import { routeToSvg, STORY_GRAPHIC_SIZE } from "@/lib/routing/graphic";
 import { isRouteLoop, MAX_ROUTE_STOPS } from "@/lib/routing/points";
@@ -32,12 +37,14 @@ type RouteComposerProps = {
   points: GeoPoint[];
   knownLabels: Record<string, string>;
   mode: RouteMode;
+  avoidElevation: boolean;
   route: RouteResponse | undefined;
   error: string | undefined;
   isRouting: boolean;
   features: RunnerFeature[];
   canCloseLoop: boolean;
   onModeChange: (mode: RouteMode) => void;
+  onAvoidElevationChange: (avoid: boolean) => void;
   onUndo: () => void;
   onClear: () => void;
   onRemovePoint: (index: number) => void;
@@ -59,12 +66,14 @@ export function RouteComposer({
   points,
   knownLabels,
   mode,
+  avoidElevation,
   route,
   error,
   isRouting,
   features,
   canCloseLoop,
   onModeChange,
+  onAvoidElevationChange,
   onUndo,
   onClear,
   onRemovePoint,
@@ -102,8 +111,13 @@ export function RouteComposer({
         ? `${formatDistance(route.metrics.distanceMeters, unit)} · ${formatEffortDuration(durationSeconds)}`
         : formatDistance(route.metrics.distanceMeters, unit),
       `${route.metrics.trafficSignals} lights · ${route.metrics.crossings} crossings · ${nearbyWater} water`,
+      route.metrics.ascentMeters === undefined
+        ? undefined
+        : `${formatElevation(route.metrics.ascentMeters, unit)} gain`,
       mode === "low_stops" ? "Low stops" : "Direct",
-    ].join(" · ");
+    ]
+      .filter(Boolean)
+      .join(" · ");
     void navigator.clipboard.writeText(text).then(
       () => {
         setCopied(true);
@@ -185,7 +199,7 @@ export function RouteComposer({
 
   return (
     <section
-      className="rws-panel flex max-h-[min(32rem,calc(100dvh-11rem))] w-[min(24rem,calc(100vw-5.25rem))] flex-col overflow-hidden p-3 md:max-h-[min(38rem,calc(100dvh-10rem))] md:w-[min(24rem,calc(100vw-2rem))] md:p-4"
+      className="rws-panel flex max-h-[min(28rem,calc(100dvh-13.5rem))] w-[min(24rem,calc(100vw-5.25rem))] flex-col overflow-hidden p-3 md:max-h-[min(32rem,calc(100dvh-13rem))] md:w-[min(24rem,calc(100vw-2rem))] md:p-4"
       aria-label="Route builder"
     >
       <div className="flex shrink-0 items-start justify-between gap-3">
@@ -235,9 +249,28 @@ export function RouteComposer({
       </div>
       <p className="mt-2 shrink-0 text-[11px] leading-4 text-white/40">
         {mode === "low_stops"
-          ? "Steers around mapped traffic lights. Not a guarantee."
+          ? avoidElevation
+            ? "Steers around lights and prefers flatter streets when a lower line exists."
+            : "Steers around mapped traffic lights. Not a guarantee."
           : "Takes the most direct pedestrian line."}
       </p>
+      {mode === "low_stops" ? (
+        <button
+          type="button"
+          className={`mt-2 flex min-h-10 w-full shrink-0 items-center justify-between rounded-xl px-3 text-left text-xs transition ${
+            avoidElevation
+              ? "bg-[#c8ff52]/12 text-[#c8ff52] ring-1 ring-[#c8ff52]/30"
+              : "bg-white/[0.04] text-white/60 hover:bg-white/[0.07] hover:text-white"
+          }`}
+          aria-pressed={avoidElevation}
+          onClick={() => onAvoidElevationChange(!avoidElevation)}
+        >
+          <span>Avoid hills</span>
+          <span className="font-mono text-[10px] tracking-wider uppercase">
+            {avoidElevation ? "On" : "Off"}
+          </span>
+        </button>
+      ) : null}
 
       <div
         id="route-builder-details"
@@ -295,7 +328,11 @@ export function RouteComposer({
           </ol>
         )}
 
-        {marks.length > 0 && marks.length < MAX_ROUTE_STOPS ? (
+        {marks.length >= MAX_ROUTE_STOPS ? (
+          <p className="mt-2 shrink-0 text-[11px] text-white/45">
+            Cannot add more than {MAX_ROUTE_STOPS} checkpoints. Remove one to add another.
+          </p>
+        ) : marks.length > 0 ? (
           <p className="mt-2 shrink-0 text-[11px] text-white/35">
             Click the map or search to add a {points.length === 1 ? "finish" : "via"}. Click a pin
             to delete it, or drag to move.

@@ -14,6 +14,7 @@ const baseRequest: RouteRequest = {
     },
   ],
   mode: "direct",
+  avoidElevation: false,
 };
 
 describe("GraphHopper custom model", () => {
@@ -41,6 +42,21 @@ describe("GraphHopper custom model", () => {
           if: "in_signal_0",
           multiply_by: 0.25,
         }),
+      ]),
+    );
+  });
+
+  it("penalizes steep slopes when low-stops avoids elevation", () => {
+    const request = buildGraphHopperRequest({
+      ...baseRequest,
+      mode: "low_stops",
+      avoidElevation: true,
+    });
+
+    expect(request.custom_model.priority).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ if: "max_slope >= 6", multiply_by: 0.45 }),
+        expect.objectContaining({ if: "max_slope >= 15", multiply_by: 0.08 }),
       ]),
     );
   });

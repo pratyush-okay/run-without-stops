@@ -2,6 +2,7 @@ import {
   addRoutePoint,
   closeRouteLoop,
   isRouteLoop,
+  MAX_ROUTE_STOPS,
   moveRoutePoint,
   removeRoutePoint,
   reverseRoutePoints,
@@ -27,6 +28,18 @@ describe("route point edits", () => {
     expect(closeRouteLoop(points)).toEqual([start, finish, start]);
     expect(isRouteLoop(closeRouteLoop(points))).toBe(true);
     expect(closeRouteLoop(closeRouteLoop(points))).toEqual([start, finish, start]);
+  });
+
+  it("stops adding unique checkpoints at the route cap", () => {
+    const filled = Array.from({ length: MAX_ROUTE_STOPS }, (_, index) => ({
+      lat: start.lat + index * 0.001,
+      lng: start.lng + index * 0.001,
+    }));
+    const extra = { lat: start.lat + 1, lng: start.lng + 1 };
+
+    expect(filled).toHaveLength(MAX_ROUTE_STOPS);
+    expect(addRoutePoint(filled, extra)).toEqual(filled);
+    expect(addRoutePoint(closeRouteLoop(filled), extra)).toEqual(closeRouteLoop(filled));
   });
 
   it("closes a loop even when the unique stop cap is full", () => {

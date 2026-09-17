@@ -1,10 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
+import { ElevationChart } from "@/components/dashboard/elevation-chart";
 import {
+  ClimbGlyph,
   CrossingsGlyph,
-  DistanceGlyph,
+  DescentGlyph,
   MajorRoadGlyph,
+  MetricsExpandGlyph,
   PaceGlyph,
   SignalsGlyph,
   TimeGlyph,
@@ -13,11 +16,13 @@ import {
   displayPaceSeconds,
   distanceParts,
   durationFromPace,
+  elevationParts,
   formatEffortDuration,
   formatPace,
   type MetricUnit,
   paceUnitLabel,
 } from "@/lib/routing/format";
+import type { RouteScrub } from "@/lib/routing/route-scrub";
 import type { RouteResponse } from "@/lib/schemas/route";
 
 type RouteSummaryProps = {
@@ -27,23 +32,19 @@ type RouteSummaryProps = {
   unit: MetricUnit;
   paceSecondsPerKm: number;
   durationSeconds: number | undefined;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
   onNudgePace: (deltaSeconds: number) => void;
   onNudgeTime: (deltaSeconds: number) => void;
+  scrub?: RouteScrub | undefined;
+  onScrubChange?: ((scrub: RouteScrub | undefined) => void) | undefined;
 };
-
-function Heading({ icon, children }: { icon: ReactNode; children: string }) {
-  return (
-    <p className="flex items-center gap-1.5 text-[9px] tracking-[0.16em] text-white/35 uppercase">
-      {icon}
-      {children}
-    </p>
-  );
-}
 
 function Stepper({
   label,
   icon,
   value,
+  showLabel,
   onDecrease,
   onIncrease,
   decreaseLabel,
@@ -52,39 +53,86 @@ function Stepper({
   label: string;
   icon: ReactNode;
   value: string;
+  showLabel: boolean;
   onDecrease: () => void;
   onIncrease: () => void;
   decreaseLabel: string;
   increaseLabel: string;
 }) {
   return (
-    <div className="min-w-0 px-1.5 md:border-r md:border-white/8 md:px-3">
-      <Heading icon={icon}>{label}</Heading>
-      <div className="mt-1 flex items-center gap-1">
-        <button
-          type="button"
-          className="grid size-7 place-items-center rounded-md text-white/40 hover:bg-white/8 hover:text-white"
-          onClick={onDecrease}
-          aria-label={decreaseLabel}
-        >
-          −
-        </button>
-        <p
-          className="min-w-[5.4rem] text-center font-mono text-sm text-white tabular-nums md:text-base"
-          aria-live="polite"
-        >
-          {value}
-        </p>
-        <button
-          type="button"
-          className="grid size-7 place-items-center rounded-md text-white/40 hover:bg-white/8 hover:text-white"
-          onClick={onIncrease}
-          aria-label={increaseLabel}
-        >
-          +
-        </button>
-      </div>
+    <div className="flex shrink-0 items-center gap-0.5 md:gap-1">
+      {showLabel ? (
+        <span className="mr-1 hidden items-center gap-1 text-[11px] text-white/40 md:inline-flex">
+          {icon}
+          {label}
+        </span>
+      ) : (
+        <>
+          <span className="sr-only">{label}</span>
+          <span className="hidden md:inline">{icon}</span>
+        </>
+      )}
+      <button
+        type="button"
+        className="grid size-7 place-items-center rounded-md text-white/40 hover:bg-white/8 hover:text-white md:size-8"
+        onClick={onDecrease}
+        aria-label={decreaseLabel}
+      >
+        −
+      </button>
+      <p
+        className="min-w-[2.6rem] text-center font-mono text-[13px] text-white tabular-nums md:min-w-[3rem] md:text-[15px]"
+        aria-live="polite"
+      >
+        {value}
+      </p>
+      <button
+        type="button"
+        className="grid size-7 place-items-center rounded-md text-white/40 hover:bg-white/8 hover:text-white md:size-8"
+        onClick={onIncrease}
+        aria-label={increaseLabel}
+      >
+        +
+      </button>
     </div>
+  );
+}
+
+function Stat({
+  label,
+  icon,
+  value,
+  showLabel,
+}: {
+  label: string;
+  icon: ReactNode;
+  value: string;
+  showLabel: boolean;
+}) {
+  return (
+    <p className="flex shrink-0 items-center gap-1 font-mono text-[12px] text-white tabular-nums md:gap-1.5 md:text-[13px]">
+      <span className="shrink-0 text-white/55">{icon}</span>
+      {showLabel ? (
+        <span className="hidden text-[11px] text-white/40 md:inline">{label}</span>
+      ) : (
+        <span className="sr-only">{label}</span>
+      )}
+      {value}
+    </p>
+  );
+}
+
+function ExpandButton({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      className="ml-1 hidden size-8 shrink-0 place-items-center rounded-lg text-white/40 hover:bg-white/8 hover:text-white md:grid"
+      aria-expanded={expanded}
+      aria-label={expanded ? "Collapse metrics" : "Expand metrics"}
+      onClick={onToggle}
+    >
+      <MetricsExpandGlyph expanded={expanded} />
+    </button>
   );
 }
 
@@ -95,16 +143,34 @@ export function RouteSummary({
   unit,
   paceSecondsPerKm,
   durationSeconds,
+  expanded,
+  onExpandedChange,
   onNudgePace,
   onNudgeTime,
+  scrub,
+  onScrubChange,
 }: RouteSummaryProps) {
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)");
+    const collapseOnMobile = () => {
+      if (!media.matches) onExpandedChange(false);
+    };
+    collapseOnMobile();
+    media.addEventListener("change", collapseOnMobile);
+    return () => media.removeEventListener("change", collapseOnMobile);
+  }, [onExpandedChange]);
+
   if (error) {
-    return <section className="rws-panel w-full px-4 py-3 text-sm text-[#ffad91]">{error}</section>;
+    return (
+      <section className="rws-panel w-full px-3 py-2 text-sm text-[#ffad91] md:w-max">
+        {error}
+      </section>
+    );
   }
 
   if (!route) {
     return (
-      <section className="rws-panel w-full px-4 py-3 text-xs text-white/45">
+      <section className="rws-panel w-full px-3 py-2 text-xs text-white/45 md:w-max md:px-3.5 md:py-2.5 md:text-sm">
         {isRouting ? "Finding your line…" : "Add a start and finish to see route intelligence."}
       </section>
     );
@@ -112,70 +178,133 @@ export function RouteSummary({
 
   const distance = distanceParts(route.metrics.distanceMeters, unit);
   const major = distanceParts(route.metrics.majorRoadMeters, unit);
-  const pace = `${formatPace(displayPaceSeconds(paceSecondsPerKm, unit))} ${paceUnitLabel(unit)}`;
+  const gain = elevationParts(route.metrics.ascentMeters ?? 0, unit);
+  const loss = elevationParts(route.metrics.descentMeters ?? 0, unit);
+  const pace = formatPace(displayPaceSeconds(paceSecondsPerKm, unit));
   const time = formatEffortDuration(
     durationSeconds ?? durationFromPace(route.metrics.distanceMeters, paceSecondsPerKm),
   );
 
   return (
     <section
-      className="rws-panel flex w-full flex-col gap-3 px-3 py-3 md:flex-row md:items-stretch md:overflow-x-auto md:px-2 md:py-2.5"
+      className={`rws-panel w-full overscroll-none select-none ${
+        expanded
+          ? "flex flex-col gap-2 px-2.5 py-2 md:gap-3 md:px-3.5 md:py-3"
+          : "flex items-center gap-2 px-2.5 py-2 md:gap-3 md:px-3.5 md:py-2.5"
+      }`}
       aria-label="Route metrics"
     >
-      <div className="min-w-0 px-1.5 md:min-w-[10.5rem] md:border-r md:border-white/8 md:px-4">
-        <Heading icon={<DistanceGlyph />}>Distance</Heading>
-        <p className="mt-0.5 flex items-baseline gap-1.5" aria-live="polite">
-          <span className="font-mono text-[2.15rem] leading-none font-semibold tracking-tight text-[#c8ff52] md:text-[2.7rem]">
-            {distance.amount}
-          </span>
-          <span className="text-sm font-medium text-white/55 md:text-base">{distance.unit}</span>
-        </p>
+      <div className="flex min-w-0 items-center gap-2 md:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden overscroll-none md:gap-3">
+          <p className="flex shrink-0 items-baseline gap-1" aria-live="polite">
+            <span
+              className={`font-mono leading-none font-semibold tracking-tight text-[#c8ff52] ${
+                expanded ? "text-[2.35rem] md:text-[3.5rem]" : "text-[2.35rem] md:text-[3.25rem]"
+              }`}
+            >
+              {distance.amount}
+            </span>
+            <span className="text-sm font-medium text-white/50 md:text-base">{distance.unit}</span>
+          </p>
+
+          <div className="h-6 w-px shrink-0 bg-white/8 md:h-7" />
+
+          <Stepper
+            label={`Pace ${paceUnitLabel(unit)}`}
+            icon={<PaceGlyph />}
+            value={pace}
+            showLabel={expanded}
+            onDecrease={() => onNudgePace(-5)}
+            onIncrease={() => onNudgePace(5)}
+            decreaseLabel="Faster pace"
+            increaseLabel="Slower pace"
+          />
+          <Stepper
+            label="Run time"
+            icon={<TimeGlyph />}
+            value={time}
+            showLabel={expanded}
+            onDecrease={() => onNudgeTime(-15)}
+            onIncrease={() => onNudgeTime(15)}
+            decreaseLabel="Shorter run time"
+            increaseLabel="Longer run time"
+          />
+
+          <div className="h-6 w-px shrink-0 bg-white/8 md:h-7" />
+
+          <Stat
+            label="Gain"
+            icon={<ClimbGlyph />}
+            showLabel={expanded}
+            value={route.metrics.ascentMeters === undefined ? "—" : `${gain.amount} ${gain.unit}`}
+          />
+          <Stat
+            label="Loss"
+            icon={<DescentGlyph />}
+            showLabel={expanded}
+            value={route.metrics.descentMeters === undefined ? "—" : `${loss.amount} ${loss.unit}`}
+          />
+          <Stat
+            label="Signals"
+            icon={<SignalsGlyph />}
+            showLabel={expanded}
+            value={String(route.metrics.trafficSignals)}
+          />
+          <Stat
+            label="Crossings"
+            icon={<CrossingsGlyph />}
+            showLabel={expanded}
+            value={String(route.metrics.crossings)}
+          />
+          <Stat
+            label="Major road"
+            icon={<MajorRoadGlyph />}
+            showLabel={expanded}
+            value={`${major.amount} ${major.unit}`}
+          />
+
+          {route.elevation && !expanded ? (
+            <>
+              <div className="hidden h-7 w-px shrink-0 bg-white/8 md:block" />
+              <div className="hidden md:block">
+                <ElevationChart
+                  elevation={route.elevation}
+                  unit={unit}
+                  size="comfortable"
+                  coordinates={route.coordinates}
+                  scrub={scrub}
+                  onScrubChange={onScrubChange}
+                />
+              </div>
+              <div className="md:hidden">
+                <ElevationChart
+                  elevation={route.elevation}
+                  unit={unit}
+                  size="compact"
+                  coordinates={route.coordinates}
+                  scrub={scrub}
+                  onScrubChange={onScrubChange}
+                />
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        <ExpandButton expanded={expanded} onToggle={() => onExpandedChange(!expanded)} />
       </div>
 
-      <div className="grid grid-cols-2 gap-y-2 md:flex md:flex-1 md:items-stretch">
-        <Stepper
-          label="Pace"
-          icon={<PaceGlyph />}
-          value={pace}
-          onDecrease={() => onNudgePace(-5)}
-          onIncrease={() => onNudgePace(5)}
-          decreaseLabel="Faster pace"
-          increaseLabel="Slower pace"
-        />
-        <Stepper
-          label="Run time"
-          icon={<TimeGlyph />}
-          value={time}
-          onDecrease={() => onNudgeTime(-15)}
-          onIncrease={() => onNudgeTime(15)}
-          decreaseLabel="Shorter run time"
-          increaseLabel="Longer run time"
-        />
-        <Metric
-          label="Signals"
-          icon={<SignalsGlyph />}
-          value={String(route.metrics.trafficSignals)}
-        />
-        <Metric
-          label="Crossings"
-          icon={<CrossingsGlyph />}
-          value={String(route.metrics.crossings)}
-        />
-        <Metric
-          label="Major road"
-          icon={<MajorRoadGlyph />}
-          value={`${major.amount} ${major.unit}`}
-        />
-      </div>
+      {route.elevation && expanded ? (
+        <div className="hidden md:block">
+          <ElevationChart
+            elevation={route.elevation}
+            unit={unit}
+            size="expanded"
+            coordinates={route.coordinates}
+            scrub={scrub}
+            onScrubChange={onScrubChange}
+          />
+        </div>
+      ) : null}
     </section>
-  );
-}
-
-function Metric({ label, icon, value }: { label: string; icon: ReactNode; value: string }) {
-  return (
-    <div className="min-w-0 px-1.5 md:min-w-[6.2rem] md:border-r md:border-white/8 md:px-3 md:last:border-0">
-      <Heading icon={icon}>{label}</Heading>
-      <p className="mt-1 truncate font-mono text-sm text-white">{value}</p>
-    </div>
   );
 }

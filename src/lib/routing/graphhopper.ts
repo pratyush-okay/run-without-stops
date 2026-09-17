@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { env } from "@/env";
 import { countFeaturesNearRoute, distanceMeters, signalAvoidancePolygons } from "@/lib/geo";
+import {
+  applyElevationToMetrics,
+  elevatedPointsFromCoordinates,
+  summarizeElevation,
+} from "@/lib/routing/elevation";
+import { fetchHeightsAlongRoute } from "@/lib/routing/elevation-lookup";
 import type { GeoPoint } from "@/lib/schemas/features";
 import type { RouteRequest, RouteResponse } from "@/lib/schemas/route";
 
@@ -8,6 +14,7 @@ const graphHopperPathSchema = z.object({
   distance: z.number(),
   time: z.number(),
   ascend: z.number().optional(),
+  descend: z.number().optional(),
   points: z.object({
     coordinates: z.array(
       z.union([z.tuple([z.number(), z.number()]), z.tuple([z.number(), z.number(), z.number()])]),
@@ -60,6 +67,14 @@ export function buildGraphHopperRequest(input: RouteRequest) {
     priority.push({ if: areaCondition, multiply_by: 0.25 });
   }
 
+  if (input.avoidElevation) {
+    priority.push(
+      { if: "max_slope >= 6", multiply_by: 0.45 },
+      { if: "max_slope >= 10", multiply_by: 0.2 },
+      { if: "max_slope >= 15", multiply_by: 0.08 },
+    );
+  }
+
   return {
     points: input.points.map((point) => [point.lng, point.lat]),
     profile: "foot",
@@ -104,8 +119,66 @@ export async function fetchRoute(input: RouteRequest): Promise<RouteResponse> {
     throw new Error("GRAPHHOPPER_API_KEY is not configured");
   }
 
+  const payload = await requestGraphHopperPath(input);
+  const path = payload.paths[0];
+  if (!path) throw new Error("GraphHopper returned no route");
+
+  const coordinates: [number, number][] = path.points.coordinates.map(([lng, lat]) => [lng, lat]);
+  const routePoints: GeoPoint[] = coordinates.map(([lng, lat]) => ({ lat, lng }));
+  const warnings: string[] = [];
+  if (input.features.length === 0) {
+    warnings.push("Stop counts are unavailable until nearby map data loads.");
+  }
+
+  const elevated =
+    elevatedPointsFromCoordinates(path.points.coordinates) ??
+    (await fetchHeightsAlongRoute(coordinates));
+  const summary = elevated
+    ? summarizeElevation(elevated, {
+        ...(path.ascend === undefined ? {} : { ascentMeters: path.ascend }),
+        ...(path.descend === undefined ? {} : { descentMeters: path.descend }),
+      })
+    : undefined;
+
+  return {
+    coordinates,
+    metrics: applyElevationToMetrics(
+      {
+        distanceMeters: path.distance,
+        durationSeconds: path.time / 1000,
+        trafficSignals: countFeaturesNearRoute(input.features, routePoints, "traffic_signal"),
+        crossings: countFeaturesNearRoute(input.features, routePoints, "crossing"),
+        majorRoadMeters: majorRoadDistance(coordinates, path.details?.road_class),
+      },
+      summary,
+    ),
+    ...(summary ? { elevation: summary.elevation } : {}),
+    provider: "graphhopper",
+    warnings,
+  };
+}
+
+async function requestGraphHopperPath(input: RouteRequest) {
+  const attempts = input.avoidElevation ? [input, { ...input, avoidElevation: false }] : [input];
+  let lastError: Error | undefined;
+
+  for (const attempt of attempts) {
+    try {
+      return await postGraphHopper(attempt);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("GraphHopper request failed");
+      if (!input.avoidElevation || !isMissingSlopeModel(lastError) || !attempt.avoidElevation) {
+        throw lastError;
+      }
+    }
+  }
+
+  throw lastError ?? new Error("GraphHopper request failed");
+}
+
+async function postGraphHopper(input: RouteRequest) {
   const response = await fetch(
-    `${env.GRAPHHOPPER_API_URL}/route?key=${encodeURIComponent(env.GRAPHHOPPER_API_KEY)}`,
+    `${env.GRAPHHOPPER_API_URL}/route?key=${encodeURIComponent(env.GRAPHHOPPER_API_KEY ?? "")}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -124,28 +197,9 @@ export async function fetchRoute(input: RouteRequest): Promise<RouteResponse> {
     throw new Error(`GraphHopper request failed with ${response.status}: ${message.slice(0, 160)}`);
   }
 
-  const payload = graphHopperResponseSchema.parse(await response.json());
-  const path = payload.paths[0];
-  if (!path) throw new Error("GraphHopper returned no route");
+  return graphHopperResponseSchema.parse(await response.json());
+}
 
-  const coordinates: [number, number][] = path.points.coordinates.map(([lng, lat]) => [lng, lat]);
-  const routePoints: GeoPoint[] = coordinates.map(([lng, lat]) => ({ lat, lng }));
-  const warnings: string[] = [];
-  if (input.features.length === 0) {
-    warnings.push("Stop counts are unavailable until nearby map data loads.");
-  }
-
-  return {
-    coordinates,
-    metrics: {
-      distanceMeters: path.distance,
-      durationSeconds: path.time / 1000,
-      ...(path.ascend !== undefined ? { ascentMeters: path.ascend } : {}),
-      trafficSignals: countFeaturesNearRoute(input.features, routePoints, "traffic_signal"),
-      crossings: countFeaturesNearRoute(input.features, routePoints, "crossing"),
-      majorRoadMeters: majorRoadDistance(coordinates, path.details?.road_class),
-    },
-    provider: "graphhopper",
-    warnings,
-  };
+function isMissingSlopeModel(error: Error) {
+  return /max_slope|average_slope|cannot compile|not available/i.test(error.message);
 }

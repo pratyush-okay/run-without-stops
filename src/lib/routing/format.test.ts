@@ -5,6 +5,7 @@ import {
   formatDistance,
   formatDuration,
   formatEffortDuration,
+  formatElevation,
   formatPace,
   paceFromDuration,
   storePaceSeconds,
@@ -31,5 +32,10 @@ describe("route formatting", () => {
     expect(formatPace(paceFromDuration(4_730, 26 * 60))).toBe("5:30");
     expect(formatPace(displayPaceSeconds(DEFAULT_PACE_SECONDS_PER_KM, "imperial"))).toBe("8:51");
     expect(formatPace(storePaceSeconds(8 * 60 + 51, "imperial"))).toBe("5:30");
+  });
+
+  it("formats elevation gain in meters or feet", () => {
+    expect(formatElevation(48)).toBe("48 m");
+    expect(formatElevation(48, "imperial")).toBe("157 ft");
   });
 });

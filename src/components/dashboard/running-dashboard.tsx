@@ -13,6 +13,7 @@ import { RouteSummary } from "@/components/dashboard/route-summary";
 import { SaveRouteDialog } from "@/components/dashboard/save-route-dialog";
 import { SavedRoutesPanel } from "@/components/dashboard/saved-routes-panel";
 import { useRoutePlanner } from "@/hooks/use-route-planner";
+import { useRouteScrub } from "@/hooks/use-route-scrub";
 import { useRunEffort } from "@/hooks/use-run-effort";
 import { useRunnerFeatures } from "@/hooks/use-runner-features";
 import { useSavedRoutes } from "@/hooks/use-saved-routes";
@@ -61,6 +62,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
   const [currentSaved, setCurrentSaved] = useState<SavedRoute | undefined>(sharedRoute);
   const [shareCopied, setShareCopied] = useState(false);
   const [shareError, setShareError] = useState<string>();
+  const [metricsExpanded, setMetricsExpanded] = useState(false);
   const pendingAuthRef = useRef<AuthIntent | undefined>(undefined);
   const featureState = useRunnerFeatures();
   const planner = useRoutePlanner(
@@ -75,6 +77,11 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
       : undefined,
   );
   const effort = useRunEffort(planner.route?.metrics.distanceMeters);
+  const { scrub, updateScrub } = useRouteScrub(
+    planner.route
+      ? `${planner.route.coordinates[0]?.join(",")}:${planner.route.metrics.distanceMeters}`
+      : undefined,
+  );
   const { isSignedIn } = useUser();
   const savedRoutes = useSavedRoutes(Boolean(isSignedIn));
 
@@ -245,7 +252,11 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
   }
 
   return (
-    <main className="relative h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white">
+    <main
+      className={`relative h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white ${
+        metricsExpanded ? "md:[--rws-metrics-clearance:11rem]" : ""
+      }`}
+    >
       <div className="absolute inset-0">
         <RunningMap
           accessToken={mapboxToken}
@@ -256,6 +267,11 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
               : linePreviewCoordinates(planner.points)
           }
           isRoutePreview={!planner.route || planner.isRouting}
+          elevationMarks={planner.route?.elevation?.marks ?? []}
+          elevationSamples={planner.route?.elevation?.samples ?? []}
+          scrub={planner.route && !planner.isRouting ? scrub : undefined}
+          onScrubChange={updateScrub}
+          unit={unit}
           features={featureState.features}
           layers={layers}
           focusPoint={focusPoint}
@@ -292,16 +308,6 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
             }}
           />
         </div>
-        <div className="pointer-events-auto shrink-0 md:hidden">
-          <AuthControls
-            menuPlacement="down"
-            onSignIn={() => openAuth()}
-            onOpenSavedRoutes={() => {
-              setIsRoutesOpen(true);
-              captureEvent(analyticsEvents.savedRoutesOpened);
-            }}
-          />
-        </div>
       </div>
 
       {sharedRoute ? (
@@ -312,18 +318,20 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-[5] md:top-[4.6rem] md:left-4">
+      <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-[6] md:top-[4.6rem] md:left-4">
         <div className="pointer-events-auto">
           <RouteComposer
             points={planner.points}
             knownLabels={planner.knownLabels}
             mode={planner.mode}
+            avoidElevation={planner.avoidElevation}
             route={planner.route}
             error={planner.error}
             isRouting={planner.isRouting}
             features={featureState.features}
             canCloseLoop={planner.canCloseLoop}
             onModeChange={planner.setMode}
+            onAvoidElevationChange={planner.setAvoidElevation}
             onUndo={planner.undo}
             onClear={() => {
               planner.clear();
@@ -348,25 +356,30 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
 
       <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] right-[max(0.75rem,env(safe-area-inset-right))] z-[5] md:top-[4.6rem] md:right-4">
         <div className="pointer-events-auto flex flex-col items-end gap-2">
+          <AuthControls
+            menuPlacement="down"
+            onSignIn={() => openAuth()}
+            onOpenSavedRoutes={() => {
+              setIsRoutesOpen(true);
+              captureEvent(analyticsEvents.savedRoutesOpened);
+            }}
+          />
           <LayerControls
             layers={layers}
             onToggle={toggleLayer}
             isLoading={featureState.isLoading}
           />
-          <div className="hidden md:block">
-            <AuthControls
-              onSignIn={() => openAuth()}
-              onOpenSavedRoutes={() => {
-                setIsRoutesOpen(true);
-                captureEvent(analyticsEvents.savedRoutesOpened);
-              }}
-            />
-          </div>
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex justify-center px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="pointer-events-auto w-full max-w-6xl">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex justify-center pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div
+          className={`pointer-events-auto min-w-0 w-full overflow-hidden overscroll-none transition-[width] duration-200 ease-out md:mx-auto ${
+            metricsExpanded
+              ? "md:w-[min(68rem,calc(100vw-2rem))]"
+              : "md:w-max md:max-w-[min(56rem,calc(100vw-3rem))]"
+          }`}
+        >
           <RouteSummary
             route={planner.route}
             error={planner.error}
@@ -374,19 +387,31 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
             unit={unit}
             paceSecondsPerKm={effort.secondsPerKm}
             durationSeconds={effort.durationSeconds}
+            expanded={metricsExpanded}
+            onExpandedChange={setMetricsExpanded}
             onNudgePace={(delta) => effort.nudgePace(delta, unit)}
             onNudgeTime={effort.nudgeTime}
+            scrub={scrub}
+            onScrubChange={updateScrub}
           />
         </div>
       </div>
 
       {featureState.error || featureState.isPartial ? (
-        <div className="pointer-events-none absolute bottom-24 left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-[#ffad91]/20 bg-[#261712]/90 px-3 py-1.5 text-center text-[10px] text-[#ffad91] backdrop-blur md:bottom-28">
+        <div
+          className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-[#ffad91]/20 bg-[#261712]/90 px-3 py-1.5 text-center text-[10px] text-[#ffad91] backdrop-blur ${
+            metricsExpanded ? "bottom-16 md:bottom-48" : "bottom-16 md:bottom-24"
+          }`}
+        >
           {featureState.error ?? "Some live OSM details are temporarily unavailable"}
         </div>
       ) : null}
       {!mapboxToken ? (
-        <div className="pointer-events-none absolute bottom-24 left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[10px] text-white/70 backdrop-blur md:bottom-28">
+        <div
+          className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[10px] text-white/70 backdrop-blur ${
+            metricsExpanded ? "bottom-16 md:bottom-48" : "bottom-16 md:bottom-24"
+          }`}
+        >
           Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to load the dark map
         </div>
       ) : null}

@@ -47,9 +47,25 @@ export function quantizeBoundingBox(box: BoundingBox, precision = 3): BoundingBo
   };
 }
 
-export function closestPointOnRoute(point: GeoPoint, route: GeoPoint[]) {
+export type RouteSnap = {
+  distance: number;
+  point: GeoPoint;
+  segmentIndex: number;
+  t: number;
+};
+
+function lerpPoint(start: GeoPoint, finish: GeoPoint, t: number): GeoPoint {
+  return {
+    lat: start.lat + (finish.lat - start.lat) * t,
+    lng: start.lng + (finish.lng - start.lng) * t,
+  };
+}
+
+export function closestPointOnRoute(point: GeoPoint, route: GeoPoint[]): RouteSnap {
   let closest = Number.POSITIVE_INFINITY;
   let snapped = point;
+  let segmentIndex = 0;
+  let t = 0;
 
   for (let index = 0; index < route.length - 1; index += 1) {
     const start = route[index];
@@ -69,13 +85,109 @@ export function closestPointOnRoute(point: GeoPoint, route: GeoPoint[]) {
     if (distance >= closest) continue;
 
     closest = distance;
-    snapped = {
-      lat: start.lat + projection * (finish.lat - start.lat),
-      lng: start.lng + projection * (finish.lng - start.lng),
-    };
+    segmentIndex = index;
+    t = projection;
+    snapped = lerpPoint(start, finish, projection);
   }
 
-  return { distance: closest, point: snapped };
+  return { distance: closest, point: snapped, segmentIndex, t };
+}
+
+export function bearingDegrees(from: GeoPoint, to: GeoPoint) {
+  const fromLat = toRadians(from.lat);
+  const toLat = toRadians(to.lat);
+  const deltaLng = toRadians(to.lng - from.lng);
+  const y = Math.sin(deltaLng) * Math.cos(toLat);
+  const x =
+    Math.cos(fromLat) * Math.sin(toLat) - Math.sin(fromLat) * Math.cos(toLat) * Math.cos(deltaLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+export function smallestAngleDegrees(a: number, b: number) {
+  return Math.abs(((b - a + 540) % 360) - 180);
+}
+
+function walkAlongRoute(
+  route: GeoPoint[],
+  segmentIndex: number,
+  t: number,
+  meters: number,
+  direction: 1 | -1,
+): GeoPoint | undefined {
+  if (route.length < 2 || meters <= 0) return undefined;
+
+  let index = segmentIndex;
+  let localT = t;
+  let remaining = meters;
+
+  for (let guard = 0; guard < route.length + 2; guard += 1) {
+    if (index < 0 || index >= route.length - 1) return undefined;
+    const start = route[index];
+    const finish = route[index + 1];
+    if (!start || !finish) return undefined;
+
+    const here = lerpPoint(start, finish, localT);
+    if (direction === 1) {
+      const toEnd = distanceMeters(here, finish);
+      if (toEnd >= remaining) {
+        return lerpPoint(here, finish, remaining / Math.max(toEnd, 1e-6));
+      }
+      remaining -= toEnd;
+      index += 1;
+      localT = 0;
+      continue;
+    }
+
+    const toStart = distanceMeters(here, start);
+    if (toStart >= remaining) {
+      return lerpPoint(here, start, remaining / Math.max(toStart, 1e-6));
+    }
+    remaining -= toStart;
+    index -= 1;
+    localT = 1;
+  }
+
+  return undefined;
+}
+
+const TRAVEL_LOOKAHEAD_METERS = 24;
+const THROUGH_TURN_DEGREES = 42;
+const UNUSED_ARM_CONE_DEGREES = 36;
+const ON_PATH_METERS = 7;
+
+export function featureIsCrossedOnRoute(feature: RunnerFeature, route: GeoPoint[]) {
+  if (feature.kind === "drinking_water") return true;
+  if (route.length < 2) return false;
+
+  const snap = closestPointOnRoute(feature.point, route);
+  if (!Number.isFinite(snap.distance) || snap.distance > ROUTE_FEATURE_THRESHOLDS[feature.kind]) {
+    return false;
+  }
+
+  const behind = walkAlongRoute(route, snap.segmentIndex, snap.t, TRAVEL_LOOKAHEAD_METERS, -1);
+  const ahead = walkAlongRoute(route, snap.segmentIndex, snap.t, TRAVEL_LOOKAHEAD_METERS, 1);
+  if (!behind || !ahead) return true;
+
+  const inbound = bearingDegrees(behind, snap.point);
+  const outbound = bearingDegrees(snap.point, ahead);
+  if (smallestAngleDegrees(inbound, outbound) < THROUGH_TURN_DEGREES) return true;
+  if (snap.distance < ON_PATH_METERS) return true;
+
+  const unused = inbound;
+  const featureBearing = bearingDegrees(snap.point, feature.point);
+  const towardUnused = smallestAngleDegrees(featureBearing, unused);
+  const towardOut = smallestAngleDegrees(featureBearing, outbound);
+  const towardBack = smallestAngleDegrees(featureBearing, (inbound + 180) % 360);
+
+  if (
+    towardUnused < UNUSED_ARM_CONE_DEGREES &&
+    towardUnused + 10 < towardOut &&
+    towardUnused + 10 < towardBack
+  ) {
+    return false;
+  }
+
+  return towardOut <= UNUSED_ARM_CONE_DEGREES || towardBack <= UNUSED_ARM_CONE_DEGREES;
 }
 
 export function pointToRouteDistanceMeters(point: GeoPoint, route: GeoPoint[]) {
@@ -132,9 +244,10 @@ export function featuresNearRoute(
   thresholds: Record<RunnerFeature["kind"], number> = ROUTE_FEATURE_THRESHOLDS,
 ) {
   if (route.length < 2) return [];
-  const onRoute = features.filter(
-    (feature) => pointToRouteDistanceMeters(feature.point, route) <= thresholds[feature.kind],
-  );
+  const onRoute = features.filter((feature) => {
+    if (pointToRouteDistanceMeters(feature.point, route) > thresholds[feature.kind]) return false;
+    return featureIsCrossedOnRoute(feature, route);
+  });
   return collapseNearbyFeatures(onRoute, route);
 }
 

@@ -1,7 +1,7 @@
 import { distanceMeters } from "@/lib/geo";
 import type { GeoPoint } from "@/lib/schemas/features";
 
-export const MAX_ROUTE_STOPS = 10;
+export const MAX_ROUTE_STOPS = 50;
 export const MAX_ROUTE_POINTS = MAX_ROUTE_STOPS + 1;
 export const MINIMUM_STOP_SPACING_METERS = 2;
 

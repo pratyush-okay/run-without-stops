@@ -28,6 +28,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
   const [points, setPoints] = useState<GeoPoint[]>(seed?.points ?? []);
   const [knownLabels, setKnownLabels] = useState<Record<string, string>>(seed?.knownLabels ?? {});
   const [mode, setMode] = useState<RouteMode>(seed?.mode ?? "low_stops");
+  const [avoidElevation, setAvoidElevation] = useState(false);
   const [route, setRoute] = useState<RouteResponse | undefined>(seed?.route);
   const [isRouting, setIsRouting] = useState(false);
   const [error, setError] = useState<string>();
@@ -76,6 +77,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     frozenDraftKeyRef.current = undefined;
     setPoints([]);
     setKnownLabels({});
+    setAvoidElevation(false);
     setRoute(undefined);
     setError(undefined);
     captureEvent(analyticsEvents.routeCleared);
@@ -88,6 +90,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     setPoints(next.points);
     setKnownLabels(next.knownLabels ?? {});
     setMode(nextMode);
+    setAvoidElevation(false);
     setRoute(next.route);
     setError(undefined);
   }, []);
@@ -99,7 +102,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
   );
 
   useEffect(() => {
-    const draftKey = routeDraftKey(points, mode);
+    const draftKey = routeDraftKey(points, mode, mode === "low_stops" && avoidElevation);
     if (frozenDraftKeyRef.current && frozenDraftKeyRef.current === draftKey) {
       return;
     }
@@ -122,6 +125,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
           body: JSON.stringify({
             points,
             mode,
+            avoidElevation: mode === "low_stops" && avoidElevation,
             features: [
               ...latestFeatures.filter((feature) => feature.kind === "traffic_signal").slice(0, 60),
               ...latestFeatures.filter((feature) => feature.kind === "crossing").slice(0, 40),
@@ -157,7 +161,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [hasSignalData, mode, points]);
+  }, [avoidElevation, hasSignalData, mode, points]);
 
   const setRouteMode = useCallback((next: RouteMode) => {
     setMode(next);
@@ -168,6 +172,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     points,
     knownLabels,
     mode,
+    avoidElevation,
     route,
     isRouting,
     error,
@@ -181,5 +186,6 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     clear,
     loadRoute,
     setMode: setRouteMode,
+    setAvoidElevation,
   };
 }

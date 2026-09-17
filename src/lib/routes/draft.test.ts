@@ -14,5 +14,8 @@ describe("route draft keys", () => {
     expect(routeDraftKey([start, finish], "low_stops")).not.toBe(
       routeDraftKey([finish, start], "low_stops"),
     );
+    expect(routeDraftKey([start, finish], "low_stops", true)).not.toBe(
+      routeDraftKey([start, finish], "low_stops"),
+    );
   });
 });
