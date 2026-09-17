@@ -55,7 +55,7 @@ export function sitemapPaths(postSlugs: string[]) {
 
 export function absoluteUrl(path: string, origin = siteOrigin()) {
   if (path === "/") {
-    return `${origin}/`;
+    return origin;
   }
   return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
 }

@@ -47,7 +47,7 @@ describe("public URL lists", () => {
   });
 
   it("joins origin and path without a double slash", () => {
-    expect(absoluteUrl("/", PRODUCTION_SITE_ORIGIN)).toBe(`${PRODUCTION_SITE_ORIGIN}/`);
+    expect(absoluteUrl("/", PRODUCTION_SITE_ORIGIN)).toBe(PRODUCTION_SITE_ORIGIN);
     expect(absoluteUrl("/blog", PRODUCTION_SITE_ORIGIN)).toBe(`${PRODUCTION_SITE_ORIGIN}/blog`);
   });
 

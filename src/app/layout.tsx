@@ -1,8 +1,5 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { IdentifyUser } from "@/components/analytics/identify-user";
-import { clerkAppearance } from "@/lib/auth/appearance";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteOrigin } from "@/lib/seo/site";
 import "./globals.css";
 
@@ -48,12 +45,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">
-        <ClerkProvider appearance={clerkAppearance}>
-          <IdentifyUser />
-          {children}
-        </ClerkProvider>
-      </body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }
