@@ -1,6 +1,24 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+export function headingId(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function headingText(children: ReactNode): string {
+  if (Array.isArray(children)) {
+    return children.map(headingText).join("");
+  }
+  if (typeof children === "string" || typeof children === "number") {
+    return String(children);
+  }
+  return "";
+}
 
 export function BlogMarkdown({ markdown }: { markdown: string }) {
   return (
@@ -8,6 +26,10 @@ export function BlogMarkdown({ markdown }: { markdown: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          h2: ({ children }) => {
+            const id = headingId(headingText(children));
+            return <h2 id={id || undefined}>{children}</h2>;
+          },
           a: ({ href, children }) => {
             if (href?.startsWith("/")) {
               return (

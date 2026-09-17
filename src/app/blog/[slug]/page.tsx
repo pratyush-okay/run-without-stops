@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BlogBreadcrumbs } from "@/components/blog/blog-breadcrumbs";
-import { BlogMarkdown } from "@/components/blog/blog-markdown";
+import { BlogMarkdown, headingId } from "@/components/blog/blog-markdown";
 import { BlogShell } from "@/components/blog/blog-shell";
 import { getPostBySlug, listPublishedPosts, postDocumentTitle } from "@/lib/blog/posts";
 import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
@@ -83,6 +83,22 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         "@type": "Question",
         name: faq.question,
         acceptedAnswer: { "@type": "Answer", text: faq.answer },
+      })),
+    });
+  }
+
+  if (post.howTo) {
+    const howTo = post.howTo;
+    jsonLd.push({
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      name: howTo.name,
+      description: post.description,
+      step: howTo.steps.map((step) => ({
+        "@type": "HowToStep",
+        name: step.name,
+        text: step.text,
+        url: `${url}#${howTo.anchor ?? headingId(howTo.name)}`,
       })),
     });
   }

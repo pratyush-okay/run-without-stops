@@ -20,7 +20,32 @@ describe("parsePostMarkdown", () => {
     expect(post.tags).toEqual(["routing"]);
     expect(post.body).toBe("Click the map and go.");
     expect(post.faqs).toEqual([]);
+    expect(post.howTo).toBeUndefined();
     expect(postDocumentTitle(post)).toBe("Sample post");
+  });
+
+  it("reads howTo steps when present", () => {
+    const post = parsePostMarkdown(
+      `---
+title: Sample post
+description: A test post for the loader.
+date: "2026-09-17"
+slug: sample-post
+howTo:
+  name: How to sample
+  steps:
+    - name: Open the map
+      text: Click start.
+    - name: Choose low-stop
+      text: Leave direct off.
+---
+
+Click the map and go.
+`,
+      "sample-post.md",
+    );
+    expect(post.howTo?.name).toBe("How to sample");
+    expect(post.howTo?.steps).toHaveLength(2);
   });
 
   it("uses seoTitle for the document title when present", () => {
@@ -47,6 +72,11 @@ describe("listPublishedPosts", () => {
       posts.some(
         (post) =>
           post.slug === "a-runners-guide-to-traffic-lights-crossings-and-route-intelligence",
+      ),
+    ).toBe(true);
+    expect(
+      posts.some(
+        (post) => post.slug === "how-to-build-low-stop-running-routes-with-run-without-stops",
       ),
     ).toBe(true);
     expect(posts.every((post) => !post.slug.startsWith("sso-"))).toBe(true);

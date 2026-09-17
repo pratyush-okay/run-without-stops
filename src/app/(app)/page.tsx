@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   alternates: { canonical: absoluteUrl("/") },
   openGraph: {
+    type: "website",
     url: absoluteUrl("/"),
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,

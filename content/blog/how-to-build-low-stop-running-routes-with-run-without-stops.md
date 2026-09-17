@@ -19,6 +19,24 @@ faqs:
     answer: Use low-stop for streets you do not already know. Switch to direct for a park loop or a gate you always take. You can mix both on one saved route.
   - question: Why did the first low-stop line still hit three lights?
     answer: The neighbourhood may be built that way, or the two clicks were too far apart with no waypoint through a park or parallel grid. Add a click behind the arterial and route again.
+howTo:
+  name: How to build a low-stop running route
+  anchor: how-to-build-a-low-stop-line
+  steps:
+    - name: Open the map
+      text: Search a city, zoom until streets appear, or start from where you are. Layers load for the viewport.
+    - name: Set a start
+      text: Click the map, pick a search result, or use current location.
+    - name: Add a finish
+      text: One extra click is enough for a point-to-point. Add more clicks for a park gate or street you trust.
+    - name: Choose low-stop
+      text: Leave direct for a loop you already run and do not want rerouted.
+    - name: Turn on lights and busy roads
+      text: Enable traffic lights, highways, and busy roads. Use avoid elevation if the profile matters.
+    - name: Edit remaining waits
+      text: Move a waypoint if you can drop lights. Keep a crossing if it is the only way over a six-lane road.
+    - name: Export or save
+      text: Export GPX or an image with no account. Sign in only to save or share a private link.
 ---
 
 ## TL;DR

@@ -10,6 +10,11 @@ const faqSchema = z.object({
   answer: z.string().min(1),
 });
 
+const howToStepSchema = z.object({
+  name: z.string().min(1),
+  text: z.string().min(1),
+});
+
 const postFrontmatterSchema = z.object({
   title: z.string().min(1),
   seoTitle: z.string().min(1).max(40).optional(),
@@ -18,6 +23,13 @@ const postFrontmatterSchema = z.object({
   slug: z.string().min(1),
   tags: z.array(z.string()).default([]),
   faqs: z.array(faqSchema).default([]),
+  howTo: z
+    .object({
+      name: z.string().min(1),
+      anchor: z.string().min(1).optional(),
+      steps: z.array(howToStepSchema).min(2),
+    })
+    .optional(),
 });
 
 export type BlogPost = z.infer<typeof postFrontmatterSchema> & {

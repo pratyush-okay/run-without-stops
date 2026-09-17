@@ -31,6 +31,13 @@ export function HomeIntro() {
           >
             traffic lights and crossings note
           </Link>
+          , or{" "}
+          <Link
+            className="text-[#c8ff52] underline-offset-2 hover:underline"
+            href="/blog/how-to-build-low-stop-running-routes-with-run-without-stops"
+          >
+            how to build a low-stop line
+          </Link>
           .
         </p>
       </div>
