@@ -1,6 +1,6 @@
 ---
 title: "The Complete Guide to Building a Run Without Stops"
-description: "Plan a Sydney run with fewer traffic lights, highways, and busy streets. How low-stop routing, hill avoidance, and map layers work in Run Without Stops."
+description: "Plan a run with fewer traffic lights, highways, and busy streets. How low-stop routing, hill avoidance, and map layers work in Run Without Stops."
 date: "2026-09-17"
 slug: the-complete-guide-to-building-a-run-without-stops
 tags:
@@ -9,7 +9,7 @@ tags:
   - traffic-lights
 faqs:
   - question: What is the best running route planner for fewer stops?
-    answer: A planner that can see traffic lights, highways, and busy roads on the same map you draw, then build a pedestrian line that skips them when you ask. Run Without Stops does that for Sydney, for free.
+    answer: A planner that can see traffic lights, highways, and busy roads on the same map you draw, then build a pedestrian line that skips them when you ask. Run Without Stops does that worldwide, for free.
   - question: How do I plan a nonstop running route in Sydney?
     answer: Open the map, drop a start, add a finish, choose low-stop, and check the traffic-light and busy-road layers before you go. Add more clicks if the first line still clips a junction you hate.
   - question: Does low-stop routing avoid every traffic light?
@@ -19,16 +19,16 @@ faqs:
   - question: Can I flatten hills on a planned run?
     answer: Turn on avoid elevation before you route. The line will trade some extra metres for less climbing. Confirm the result on the elevation marks, then move a point if a remaining climb is still too steep.
   - question: Does Run Without Stops work outside Sydney?
-    answer: No. Search, OSM layers, and routing are built around Sydney. Do not treat a line drawn here as a plan for another city.
+    answer: Yes. Search a city, zoom the map, or start from where you are. Lights, crossings, and routing load for the streets you are looking at.
 ---
 
-A run without stops is a Sydney pedestrian line you can keep moving on: fewer red lights, fewer highway edges, fewer busy-road squeezes. The [Run Without Stops map](/) lets you click a start, search a place, and ask for a low-stop line instead of the shortest path across every signal.
+A run without stops is a pedestrian line you can keep moving on: fewer red lights, fewer highway edges, fewer busy-road squeezes. The [Run Without Stops map](/) lets you click a start, search a place, and ask for a low-stop line instead of the shortest path across every signal.
 
 ## What is a run without stops?
 
 A run without stops is a route that treats waiting as part of the distance. The clock on your watch includes the minute you spend at a pedestrian crossing on Anzac Parade. A map that only minimises metres will still send you through those lights if they sit on the shortest legal path.
 
-Run Without Stops is a free, map-first planner for Sydney. You click the map, search a Sydney place, or start from where you are. Low-stop mode asks the router to prefer streets with fewer traffic lights and to keep off highways and busy roads when a quieter alternative exists. Direct mode draws the more literal pedestrian line. Avoid elevation is a separate switch for hills.
+Run Without Stops is a free, map-first planner. You click the map, search a place, or start from where you are. The map still opens on Sydney if the browser has no location yet. Low-stop mode asks the router to prefer streets with fewer traffic lights and to keep off highways and busy roads when a quieter alternative exists. Direct mode draws the more literal pedestrian line. Avoid elevation is a separate switch for hills.
 
 The product name is literal. The job is not a training plan, a race predictor, or a social feed. It is a line on a dark map that you can follow without collecting a string of reds.
 
@@ -59,7 +59,7 @@ Hill avoidance is the same idea on the vertical axis. A “flat” looking stree
 
 ## How to plan a nonstop running route
 
-1. Open the [map](/). Stay in Sydney. Search will not invent another city for you.
+1. Open the [map](/). Search a city or zoom until you can see the streets you want.
 2. Set a start. Click the map, pick a search result, or use your location.
 3. Add a finish. One more click is enough for a point-to-point. Add extra clicks if you need a park gate, a water fountain, or a street you already trust.
 4. Choose **low-stop** unless you already know the exact path and want **direct**.
@@ -114,7 +114,7 @@ The intelligence on this map is visible. It is not a hidden score.
 
 All of that is OpenStreetMap, loaded for the area you are looking at. If a light is missing, OSM may be missing it. If a park path is missing, the router cannot use it. The honest move is to treat the layers as the current map, then adjust a waypoint when the street in front of you disagrees.
 
-Search is Sydney-specific. Type a park, a suburb, a landmark. If nothing comes back, you are probably asking for a place this map does not cover.
+Search is worldwide. Type a park, a suburb, a city. Results bias toward the map you are looking at. If nothing comes back, try a more specific name.
 
 Shared routes live at a `/r/` link after you save. That URL is for a person you chose, not for search engines. The public pages to index are the [map](/) and these [notes](/blog).
 
@@ -135,13 +135,13 @@ Interruptions also include hills you did not ask for, a missing water tap, and a
 3. **Closing a loop on the same arterial you arrived on.** You just doubled the signals.
 4. **Using avoid elevation as the only switch.** Flat plus a highway is still a bad run.
 5. **Dropping two points 12 km apart with no intermediate click through a park you actually want.** The router will pick a legal path. It may not pick your park.
-6. **Assuming the map covers Melbourne, Brisbane, or a holiday town.** It is Sydney. Search and layers are built for that.
+6. **Expecting lights to load for a whole country.** Zoom into the streets you will run before you trust the layers.
 
 ## FAQs
 
 ### What is the best running route planner for fewer stops?
 
-One that shows traffic lights, highways, and busy roads on the same canvas you draw, then builds a pedestrian line that can skip them. For Sydney, that is the [Run Without Stops map](/). It is free. Sign-in is only for save and share.
+One that shows traffic lights, highways, and busy roads on the same canvas you draw, then builds a pedestrian line that can skip them. That is the [Run Without Stops map](/). It is free. Sign-in is only for save and share.
 
 ### How do I plan a nonstop running route in Sydney?
 
@@ -161,6 +161,6 @@ Turn on avoid elevation, regenerate, and read the elevation marks. Add a waypoin
 
 ### Does Run Without Stops work outside Sydney?
 
-No. Do not export a line from this map and treat it as a plan for another city.
+Yes. Search a city, zoom the map, or start from where you are. Lights and routing load for the streets on screen.
 
 Open the [map](/), drop two points in a neighbourhood you actually run, and leave the traffic-light layer on while the line draws. That is the review. If the line still looks like a bus route, move a point and generate it again.

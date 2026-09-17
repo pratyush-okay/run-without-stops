@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { analyticsEvents } from "@/lib/analytics/events";
 import { captureRequestEvent } from "@/lib/analytics/server";
-import { searchSydney } from "@/lib/maps/stadia";
+import { SYDNEY_CENTER } from "@/lib/geo";
+import { searchPlaces } from "@/lib/maps/stadia";
 import { reportError } from "@/lib/observability/report-error";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
+import { geoPointSchema } from "@/lib/schemas/features";
 import { searchResponseSchema } from "@/lib/schemas/search";
 
 export async function GET(request: Request) {
-  const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
+  const url = new URL(request.url);
+  const query = url.searchParams.get("q")?.trim() ?? "";
   if (query.length < 2 || query.length > 100) {
     return NextResponse.json(
       apiErrorSchema.parse({ error: "Search must be between 2 and 100 characters" }),
@@ -15,8 +18,15 @@ export async function GET(request: Request) {
     );
   }
 
+  const focus = geoPointSchema.safeParse({
+    lat: Number(url.searchParams.get("lat")),
+    lng: Number(url.searchParams.get("lng")),
+  });
+
   try {
-    const body = searchResponseSchema.parse({ results: await searchSydney(query) });
+    const body = searchResponseSchema.parse({
+      results: await searchPlaces(query, focus.success ? focus.data : SYDNEY_CENTER),
+    });
     await captureRequestEvent(request, analyticsEvents.placeSearched, {
       query_length: query.length,
       result_count: body.results.length,

@@ -3,7 +3,7 @@
 import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 import { scrubTipHtml } from "@/components/dashboard/scrub-tip";
-import { featuresNearRoute } from "@/lib/geo";
+import { featuresNearRoute, WORLD_BOUNDS } from "@/lib/geo";
 import {
   type CombinedMark,
   combinedIconId,
@@ -28,6 +28,13 @@ import {
   ROUTE_LIME,
   STOP_CORAL,
 } from "@/lib/maps/layers";
+import {
+  DEFAULT_MAP_CENTER,
+  DEFAULT_MAP_ZOOM,
+  FOCUS_MAP_ZOOM,
+  MAP_MAX_ZOOM,
+  MAP_MIN_ZOOM,
+} from "@/lib/maps/view";
 import type { MetricUnit } from "@/lib/routing/format";
 import { addRoutePoint, moveRoutePoint } from "@/lib/routing/points";
 import { nearestScrubOnRoute, type RouteScrub, routePrefix } from "@/lib/routing/route-scrub";
@@ -59,15 +66,15 @@ type RunningMapProps = {
 
 const LABEL_FONT = ["DIN Offc Pro Medium", "Arial Unicode MS Regular"];
 
-function getViewportBounds(map: mapboxgl.Map): BoundingBox | undefined {
+function getViewportBounds(map: mapboxgl.Map): BoundingBox {
   const bounds = map.getBounds();
-  if (!bounds) return undefined;
-  return {
-    south: bounds.getSouth(),
-    west: bounds.getWest(),
-    north: bounds.getNorth(),
-    east: bounds.getEast(),
-  };
+  if (!bounds) return WORLD_BOUNDS;
+  const south = bounds.getSouth();
+  const west = bounds.getWest();
+  const north = bounds.getNorth();
+  const east = bounds.getEast();
+  if (!(south < north) || !(west < east)) return WORLD_BOUNDS;
+  return { south, west, north, east };
 }
 
 type MapFeature = {
@@ -635,15 +642,16 @@ export function RunningMap({
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: MAPBOX_DARK_STYLE,
-      center: start ? [start.lng, start.lat] : [151.2093, -33.8688],
-      zoom: start ? 15.2 : 13.8,
+      center: start ? [start.lng, start.lat] : [DEFAULT_MAP_CENTER.lng, DEFAULT_MAP_CENTER.lat],
+      zoom: start ? FOCUS_MAP_ZOOM : DEFAULT_MAP_ZOOM,
       pitch: 0,
       bearing: 0,
-      minZoom: 10,
-      maxZoom: 20,
+      minZoom: MAP_MIN_ZOOM,
+      maxZoom: MAP_MAX_ZOOM,
       maxPitch: 0,
       dragRotate: false,
       pitchWithRotate: false,
+      renderWorldCopies: true,
       fadeDuration: 0,
       attributionControl: false,
       antialias: false,
@@ -653,9 +661,7 @@ export function RunningMap({
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
 
     const emitBounds = () => {
-      if (map.getZoom() < 13) return;
-      const bounds = getViewportBounds(map);
-      if (bounds) boundsChangeRef.current(bounds);
+      boundsChangeRef.current(getViewportBounds(map));
     };
 
     const closeFeaturePopup = () => {
@@ -1040,10 +1046,11 @@ export function RunningMap({
   }, [mapReady, userLocation]);
 
   useEffect(() => {
-    if (!focusPoint) return;
-    mapRef.current?.flyTo({
+    const map = mapRef.current;
+    if (!focusPoint || !map) return;
+    map.flyTo({
       center: [focusPoint.lng, focusPoint.lat],
-      zoom: 15.2,
+      zoom: Math.max(map.getZoom(), FOCUS_MAP_ZOOM),
       pitch: 0,
       bearing: 0,
       duration: 700,
@@ -1052,8 +1059,8 @@ export function RunningMap({
   }, [focusPoint]);
 
   if (!accessToken) {
-    return <section className="h-full w-full bg-[#0a0d0b]" aria-label="Sydney running map" />;
+    return <section className="h-full w-full bg-[#0a0d0b]" aria-label="Running map" />;
   }
 
-  return <section ref={containerRef} className="h-full w-full" aria-label="Sydney running map" />;
+  return <section ref={containerRef} className="h-full w-full" aria-label="Running map" />;
 }

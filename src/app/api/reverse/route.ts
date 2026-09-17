@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyticsEvents } from "@/lib/analytics/events";
 import { captureRequestEvent } from "@/lib/analytics/server";
-import { reverseSydney } from "@/lib/maps/stadia";
+import { reverseGeocode } from "@/lib/maps/stadia";
 import { reportError } from "@/lib/observability/report-error";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
 import { geoPointSchema } from "@/lib/schemas/features";
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const body = reverseResponseSchema.parse({ label: await reverseSydney(parsed.data) });
+    const body = reverseResponseSchema.parse({ label: await reverseGeocode(parsed.data) });
     await captureRequestEvent(request, analyticsEvents.placeReversed, {
       has_label: Boolean(body.label),
     });

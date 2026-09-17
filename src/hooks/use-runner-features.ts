@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { analyticsHeaders } from "@/lib/analytics/client";
+import { canLoadRunnerFeatures } from "@/lib/geo";
 import type { BoundingBox, RunnerFeature } from "@/lib/schemas/features";
 import { featuresResponseSchema } from "@/lib/schemas/features";
 
@@ -15,6 +16,15 @@ export function useRunnerFeatures() {
 
   const loadForBounds = useCallback((bounds: BoundingBox) => {
     if (timerRef.current) clearTimeout(timerRef.current);
+    if (!canLoadRunnerFeatures(bounds)) {
+      controllerRef.current?.abort();
+      setFeatures([]);
+      setError(undefined);
+      setIsPartial(false);
+      setIsLoading(false);
+      return;
+    }
+
     timerRef.current = setTimeout(async () => {
       controllerRef.current?.abort();
       const controller = new AbortController();

@@ -1,6 +1,6 @@
 import { shortPlaceLabel } from "@/lib/maps/place-label";
 
-const FALLBACK_NAME = "Sydney run";
+const FALLBACK_NAME = "Untitled run";
 
 function usefulPlace(label: string | undefined) {
   if (!label) return undefined;

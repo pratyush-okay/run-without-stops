@@ -2,9 +2,9 @@ import { env } from "@/env";
 
 export const PRODUCTION_SITE_ORIGIN = "https://www.runwithoutstops.com";
 export const SITE_NAME = "Run Without Stops";
-export const SITE_TITLE = "Quieter Sydney running routes | Run Without Stops";
+export const SITE_TITLE = "Quieter running routes | Run Without Stops";
 export const SITE_DESCRIPTION =
-  "Free Sydney running route planner. Click the map or search a place, then skip traffic lights, highways, and busy roads. Optional save and share.";
+  "Free running route planner. Click the map or search a place anywhere, then skip traffic lights, highways, and busy roads. Optional save and share.";
 export const SSO_DISALLOW_PATHS = ["/sso-callback", "/sso-continue"] as const;
 
 function isLocalHostname(hostname: string) {

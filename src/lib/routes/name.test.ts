@@ -21,6 +21,6 @@ describe("suggested route names", () => {
   });
 
   it("falls back when places are unknown", () => {
-    expect(suggestedRouteName({ startLabel: "Pinned place" })).toBe("Sydney run");
+    expect(suggestedRouteName({ startLabel: "Pinned place" })).toBe("Untitled run");
   });
 });

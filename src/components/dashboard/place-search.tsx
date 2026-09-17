@@ -11,6 +11,7 @@ import { type SearchResult, searchResponseSchema } from "@/lib/schemas/search";
 type PlaceSearchProps = {
   onSelect: (point: GeoPoint, label?: string) => void;
   onLocate: (point: GeoPoint) => void;
+  focus?: GeoPoint;
 };
 
 function locateErrorMessage(error: GeolocationPositionError | undefined) {
@@ -20,10 +21,12 @@ function locateErrorMessage(error: GeolocationPositionError | undefined) {
   return "Could not find your location";
 }
 
-export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
+export function PlaceSearch({ onSelect, onLocate, focus }: PlaceSearchProps) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -45,7 +48,13 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
     const timer = window.setTimeout(async () => {
       setIsSearching(true);
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(trimmed)}`, {
+        const params = new URLSearchParams({ q: trimmed });
+        const currentFocus = focusRef.current;
+        if (currentFocus) {
+          params.set("lat", String(currentFocus.lat));
+          params.set("lng", String(currentFocus.lng));
+        }
+        const response = await fetch(`/api/search?${params}`, {
           signal: controller.signal,
           headers: analyticsHeaders(),
         });
@@ -167,7 +176,7 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
             compact ? "grid md:hidden" : "hidden"
           }`}
           onClick={expandSearch}
-          aria-label="Search Sydney"
+          aria-label="Search places"
           aria-expanded={mobileExpanded}
           aria-controls={listId}
         >
@@ -179,7 +188,7 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
           onChange={(event) => setQuery(event.target.value)}
           onFocus={() => (results.length > 0 || isSearching) && setIsOpen(true)}
           placeholder="Search"
-          aria-label="Search Sydney"
+          aria-label="Search places"
           aria-autocomplete="list"
           aria-controls={listId}
           aria-expanded={isOpen}
@@ -209,9 +218,9 @@ export function PlaceSearch({ onSelect, onLocate }: PlaceSearchProps) {
           }`}
         >
           {isSearching && results.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-white/45">Searching Sydney…</p>
+            <p className="px-3 py-4 text-sm text-white/45">Searching places…</p>
           ) : results.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-white/45">No Sydney places found.</p>
+            <p className="px-3 py-4 text-sm text-white/45">No places found.</p>
           ) : (
             results.map((result) => (
               <button

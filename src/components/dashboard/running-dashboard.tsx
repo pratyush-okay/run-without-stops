@@ -21,6 +21,7 @@ import { useRunnerFeatures } from "@/hooks/use-runner-features";
 import { useSavedRoutes } from "@/hooks/use-saved-routes";
 import { analyticsHeaders, captureEvent } from "@/lib/analytics/client";
 import { analyticsEvents } from "@/lib/analytics/events";
+import { SYDNEY_CENTER, viewportCenter } from "@/lib/geo";
 import type { MapLayerVisibility } from "@/lib/maps/layers";
 import { routeDraftKey } from "@/lib/routes/draft";
 import { shareUrlForSlug } from "@/lib/routes/slug";
@@ -57,7 +58,8 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSaveOpen, setIsSaveOpen] = useState(false);
   const [saveForShare, setSaveForShare] = useState(false);
-  const [suggestedName, setSuggestedName] = useState("Sydney run");
+  const [suggestedName, setSuggestedName] = useState("Untitled run");
+  const [searchFocus, setSearchFocus] = useState<GeoPoint>(SYDNEY_CENTER);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>();
   const [isRoutesOpen, setIsRoutesOpen] = useState(false);
@@ -283,7 +285,10 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
           onAddPoint={planner.addPoint}
           onMovePoint={planner.movePoint}
           onRemovePoint={planner.removePoint}
-          onBoundsChange={featureState.loadForBounds}
+          onBoundsChange={(bounds) => {
+            setSearchFocus(viewportCenter(bounds));
+            featureState.loadForBounds(bounds);
+          }}
         />
       </div>
 
@@ -296,6 +301,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
           </div>
           <div className="pointer-events-auto min-w-0 flex-1 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-1/2 md:w-[clamp(18rem,36vw,28rem)] md:-translate-x-1/2">
             <PlaceSearch
+              focus={searchFocus}
               onSelect={(point, label) => {
                 setFocusPoint(point);
                 planner.addPoint(point, label);

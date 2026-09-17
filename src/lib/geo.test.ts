@@ -1,11 +1,14 @@
 import {
   boundingBoxDiagonalMeters,
+  canLoadRunnerFeatures,
   countFeaturesNearRoute,
+  FEATURES_VIEWPORT_MAX_METERS,
   featureIsCrossedOnRoute,
   featuresNearRoute,
-  isWithinSydney,
   quantizeBoundingBox,
   signalAvoidancePolygons,
+  viewportCenter,
+  WORLD_BOUNDS,
 } from "@/lib/geo";
 import type { RunnerFeature } from "@/lib/schemas/features";
 
@@ -32,8 +35,8 @@ const features: RunnerFeature[] = [
   },
 ];
 
-describe("Sydney geo helpers", () => {
-  it("validates and quantizes bounded Sydney viewports", () => {
+describe("geo helpers", () => {
+  it("validates and quantizes viewports of any city", () => {
     const bounds = {
       south: -33.89,
       west: 151.18,
@@ -41,8 +44,12 @@ describe("Sydney geo helpers", () => {
       east: 151.25,
     };
 
-    expect(isWithinSydney(bounds)).toBe(true);
-    expect(boundingBoxDiagonalMeters(bounds)).toBeLessThan(35_000);
+    expect(canLoadRunnerFeatures(bounds)).toBe(true);
+    expect(boundingBoxDiagonalMeters(bounds)).toBeLessThan(FEATURES_VIEWPORT_MAX_METERS);
+    expect(viewportCenter(bounds)).toEqual({
+      lat: (-33.89 + -33.84) / 2,
+      lng: (151.18 + 151.25) / 2,
+    });
     expect(
       quantizeBoundingBox({
         south: -33.87541,
@@ -56,6 +63,18 @@ describe("Sydney geo helpers", () => {
       north: -33.865,
       east: 151.212,
     });
+  });
+
+  it("loads overlays for Tokyo and skips a world-sized viewport", () => {
+    expect(
+      canLoadRunnerFeatures({
+        south: 35.66,
+        west: 139.69,
+        north: 35.7,
+        east: 139.75,
+      }),
+    ).toBe(true);
+    expect(canLoadRunnerFeatures(WORLD_BOUNDS)).toBe(false);
   });
 
   it("counts only features close to the returned route", () => {

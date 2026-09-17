@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { env } from "@/env";
+import { SYDNEY_CENTER } from "@/lib/geo";
 import { shortPlaceLabel } from "@/lib/maps/place-label";
 import type { GeoPoint } from "@/lib/schemas/features";
 import type { SearchResult } from "@/lib/schemas/search";
@@ -31,14 +32,62 @@ const nominatimResponseSchema = z.array(
   }),
 );
 
-async function searchNominatim(query: string): Promise<SearchResult[]> {
+export function stadiaSearchParams(
+  query: string,
+  apiKey: string,
+  focus?: GeoPoint,
+  options: { localRadiusKm?: number } = {},
+) {
+  const params = new URLSearchParams({
+    text: query,
+    size: "6",
+    api_key: apiKey,
+  });
+  if (focus) {
+    params.set("focus.point.lat", String(focus.lat));
+    params.set("focus.point.lon", String(focus.lng));
+  }
+  if (focus && options.localRadiusKm) {
+    params.set("boundary.circle.lat", String(focus.lat));
+    params.set("boundary.circle.lon", String(focus.lng));
+    params.set("boundary.circle.radius", String(options.localRadiusKm));
+  } else {
+    params.set("layers", "coarse");
+  }
+  return params;
+}
+
+export function nominatimSearchParams(
+  query: string,
+  focus: GeoPoint,
+  options: { bounded?: boolean } = {},
+) {
   const params = new URLSearchParams({
     q: query,
     format: "jsonv2",
     limit: "6",
-    bounded: "1",
-    viewbox: "150.58,-33.48,151.50,-34.22",
   });
+  if (options.bounded) {
+    params.set(
+      "viewbox",
+      [
+        (focus.lng - 0.4).toFixed(4),
+        (focus.lat + 0.4).toFixed(4),
+        (focus.lng + 0.4).toFixed(4),
+        (focus.lat - 0.4).toFixed(4),
+      ].join(","),
+    );
+    params.set("bounded", "1");
+  }
+  return params;
+}
+
+async function fetchNominatim(
+  query: string,
+  focus: GeoPoint,
+  bounded: boolean,
+): Promise<SearchResult[]> {
+  const params = nominatimSearchParams(query, focus, { bounded });
   const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
     headers: { "User-Agent": "RunWithoutStops/0.1 (https://runwithoutstops.app)" },
     signal: AbortSignal.timeout(8_000),
@@ -53,39 +102,69 @@ async function searchNominatim(query: string): Promise<SearchResult[]> {
   }));
 }
 
-export async function searchSydney(query: string): Promise<SearchResult[]> {
-  if (!env.STADIA_MAPS_API_KEY) return searchNominatim(query);
+function mergePlaceResults(local: SearchResult[], worldwide: SearchResult[]) {
+  const seen = new Set<string>();
+  const merged: SearchResult[] = [];
+  for (const result of [...local, ...worldwide]) {
+    if (seen.has(result.id)) continue;
+    seen.add(result.id);
+    merged.push(result);
+    if (merged.length >= 6) break;
+  }
+  return merged;
+}
 
-  const params = new URLSearchParams({
-    text: query,
-    "focus.point.lat": "-33.8688",
-    "focus.point.lon": "151.2093",
-    "boundary.rect.min_lat": "-34.22",
-    "boundary.rect.min_lon": "150.58",
-    "boundary.rect.max_lat": "-33.48",
-    "boundary.rect.max_lon": "151.50",
-    size: "6",
-    api_key: env.STADIA_MAPS_API_KEY,
-  });
-  const response = await fetch(`https://api.stadiamaps.com/geocoding/v1/search?${params}`, {
-    signal: AbortSignal.timeout(8_000),
-    next: { revalidate: 86_400 },
-  });
-  if (!response.ok) throw new Error(`Stadia search failed with ${response.status}`);
+async function searchNominatim(query: string, focus: GeoPoint): Promise<SearchResult[]> {
+  const [local, worldwide] = await Promise.all([
+    fetchNominatim(query, focus, true).catch(() => []),
+    fetchNominatim(query, focus, false),
+  ]);
+  return mergePlaceResults(local.slice(0, 2), worldwide);
+}
 
-  const payload = stadiaResponseSchema.parse(await response.json());
+function parseStadiaResults(payload: z.infer<typeof stadiaResponseSchema>): SearchResult[] {
   return payload.features.map((feature, index) => ({
     id: String(feature.id ?? index),
     label:
       feature.properties.label ??
       feature.properties.formatted ??
       feature.properties.name ??
-      "Sydney result",
+      "Place",
     point: {
       lng: feature.geometry.coordinates[0],
       lat: feature.geometry.coordinates[1],
     },
   }));
+}
+
+async function fetchStadia(
+  query: string,
+  apiKey: string,
+  focus: GeoPoint,
+  localRadiusKm?: number,
+): Promise<SearchResult[]> {
+  const params = localRadiusKm
+    ? stadiaSearchParams(query, apiKey, focus, { localRadiusKm })
+    : stadiaSearchParams(query, apiKey);
+  const response = await fetch(`https://api.stadiamaps.com/geocoding/v1/search?${params}`, {
+    signal: AbortSignal.timeout(8_000),
+    next: { revalidate: 86_400 },
+  });
+  if (!response.ok) throw new Error(`Stadia search failed with ${response.status}`);
+  return parseStadiaResults(stadiaResponseSchema.parse(await response.json()));
+}
+
+export async function searchPlaces(
+  query: string,
+  focus: GeoPoint = SYDNEY_CENTER,
+): Promise<SearchResult[]> {
+  if (!env.STADIA_MAPS_API_KEY) return searchNominatim(query, focus);
+
+  const [local, worldwide] = await Promise.all([
+    fetchStadia(query, env.STADIA_MAPS_API_KEY, focus, 50).catch(() => []),
+    fetchStadia(query, env.STADIA_MAPS_API_KEY, focus),
+  ]);
+  return mergePlaceResults(local.slice(0, 2), worldwide);
 }
 
 const nominatimReverseSchema = z.object({
@@ -101,7 +180,7 @@ const nominatimReverseSchema = z.object({
     .optional(),
 });
 
-export async function reverseSydney(point: GeoPoint): Promise<string> {
+export async function reverseGeocode(point: GeoPoint): Promise<string> {
   if (env.STADIA_MAPS_API_KEY) {
     try {
       const params = new URLSearchParams({

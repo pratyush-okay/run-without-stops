@@ -176,7 +176,7 @@ export function RouteComposer({
           {points.length === 0 ? (
             <div className="shrink-0 rounded-xl border border-dashed border-white/15 px-3 py-3">
               <p className="text-sm leading-5 text-white/55">
-                Click the map, search a Sydney place, or start from where you are.
+                Click the map, search a place, or start from where you are.
               </p>
               <button
                 type="button"

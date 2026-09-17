@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Run Without Stops — quieter Sydney running routes";
+export const alt = "Run Without Stops — quieter running routes";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -60,7 +60,7 @@ export default function Image() {
         <div
           style={{ display: "flex", fontSize: 52, fontWeight: 700, marginTop: 10, maxWidth: 760 }}
         >
-          Quieter Sydney running routes
+          Quieter running routes
         </div>
         <div
           style={{ display: "flex", fontSize: 24, color: "rgba(244,247,245,0.62)", marginTop: 12 }}

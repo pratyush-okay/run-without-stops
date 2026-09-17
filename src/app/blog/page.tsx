@@ -5,7 +5,7 @@ import { listPublishedPosts } from "@/lib/blog/posts";
 
 export const metadata: Metadata = {
   title: "Quieter running route notes",
-  description: "Guides for planning Sydney runs with fewer lights, highways, and busy streets.",
+  description: "Guides for planning runs with fewer lights, highways, and busy streets.",
   alternates: { canonical: "/blog" },
 };
 
@@ -17,7 +17,7 @@ export default function BlogIndexPage() {
       <p className="rws-kicker">Blog</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Quieter running route notes</h1>
       <p className="mt-3 max-w-2xl text-sm leading-6 text-white/65">
-        How to plan a Sydney run you can keep moving on. Start from the{" "}
+        How to plan a run you can keep moving on. Start from the{" "}
         <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/">
           map
         </Link>

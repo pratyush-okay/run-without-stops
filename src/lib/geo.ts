@@ -3,11 +3,12 @@ import type { BoundingBox, GeoPoint, RunnerFeature } from "@/lib/schemas/feature
 const EARTH_RADIUS_METERS = 6_371_000;
 
 export const SYDNEY_CENTER: GeoPoint = { lat: -33.8688, lng: 151.2093 };
-export const SYDNEY_BOUNDS: BoundingBox = {
-  south: -34.22,
-  west: 150.58,
-  north: -33.48,
-  east: 151.5,
+export const FEATURES_VIEWPORT_MAX_METERS = 35_000;
+export const WORLD_BOUNDS: BoundingBox = {
+  south: -85,
+  west: -180,
+  north: 85,
+  east: 180,
 };
 
 function toRadians(value: number) {
@@ -28,13 +29,15 @@ export function boundingBoxDiagonalMeters(box: BoundingBox) {
   return distanceMeters({ lat: box.south, lng: box.west }, { lat: box.north, lng: box.east });
 }
 
-export function isWithinSydney(box: BoundingBox) {
-  return (
-    box.south >= SYDNEY_BOUNDS.south &&
-    box.north <= SYDNEY_BOUNDS.north &&
-    box.west >= SYDNEY_BOUNDS.west &&
-    box.east <= SYDNEY_BOUNDS.east
-  );
+export function canLoadRunnerFeatures(box: BoundingBox) {
+  return boundingBoxDiagonalMeters(box) <= FEATURES_VIEWPORT_MAX_METERS;
+}
+
+export function viewportCenter(box: BoundingBox): GeoPoint {
+  return {
+    lat: (box.south + box.north) / 2,
+    lng: (box.west + box.east) / 2,
+  };
 }
 
 export function quantizeBoundingBox(box: BoundingBox, precision = 3): BoundingBox {
