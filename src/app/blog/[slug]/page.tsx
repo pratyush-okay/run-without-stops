@@ -1,0 +1,84 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { BlogMarkdown } from "@/components/blog/blog-markdown";
+import { BlogShell } from "@/components/blog/blog-shell";
+import { getPostBySlug, listPublishedPosts } from "@/lib/blog/posts";
+import { JsonLd } from "@/lib/seo/json-ld";
+import { absoluteUrl, SITE_NAME } from "@/lib/seo/site";
+
+type BlogPostPageProps = PageProps<"/blog/[slug]">;
+
+export function generateStaticParams() {
+  return listPublishedPosts().map((post) => ({ slug: post.slug }));
+}
+
+export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
+  if (!post) {
+    return { title: "Note not found" };
+  }
+  return {
+    title: post.title,
+    description: post.description,
+    alternates: { canonical: `/blog/${post.slug}` },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.description,
+      publishedTime: post.date,
+    },
+  };
+}
+
+export default async function BlogPostPage({ params }: BlogPostPageProps) {
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
+  if (!post) {
+    notFound();
+  }
+
+  const url = absoluteUrl(`/blog/${post.slug}`);
+  const jsonLd: Record<string, unknown>[] = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: post.title,
+      datePublished: post.date,
+      dateModified: post.date,
+      description: post.description,
+      mainEntityOfPage: url,
+      image: absoluteUrl("/opengraph-image"),
+      author: { "@type": "Organization", name: SITE_NAME },
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME,
+        logo: { "@type": "ImageObject", url: absoluteUrl("/icon-512.png") },
+      },
+    },
+  ];
+
+  if (post.faqs.length > 0) {
+    jsonLd.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: post.faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: { "@type": "Answer", text: faq.answer },
+      })),
+    });
+  }
+
+  return (
+    <BlogShell>
+      <JsonLd data={jsonLd} />
+      <p className="rws-kicker">{post.date}</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">{post.title}</h1>
+      <p className="mt-3 text-sm leading-6 text-white/65">{post.description}</p>
+      <article className="mt-8">
+        <BlogMarkdown markdown={post.body} />
+      </article>
+    </BlogShell>
+  );
+}

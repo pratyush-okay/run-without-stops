@@ -314,3 +314,68 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
     --rws-metrics-clearance: 6.25rem;
   }
 }
+
+.blog-prose {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: rgb(244 247 245 / 78%);
+}
+
+.blog-prose > *:first-child {
+  margin-top: 0;
+}
+
+.blog-prose h2 {
+  margin: 2rem 0 0.7rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #f4f7f5;
+}
+
+.blog-prose h3 {
+  margin: 1.4rem 0 0.5rem;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #f4f7f5;
+}
+
+.blog-prose p,
+.blog-prose ul,
+.blog-prose ol,
+.blog-prose table {
+  margin: 0.85rem 0;
+}
+
+.blog-prose ul,
+.blog-prose ol {
+  padding-left: 1.2rem;
+}
+
+.blog-prose li + li {
+  margin-top: 0.35rem;
+}
+
+.blog-prose strong {
+  color: #f4f7f5;
+  font-weight: 600;
+}
+
+.blog-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.blog-prose th,
+.blog-prose td {
+  border: 1px solid rgb(255 255 255 / 10%);
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.blog-prose th {
+  color: #f4f7f5;
+  background: rgb(16 21 18 / 70%);
+}

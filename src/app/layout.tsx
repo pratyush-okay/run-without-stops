@@ -2,8 +2,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { IdentifyUser } from "@/components/analytics/identify-user";
-import { env } from "@/env";
 import { clerkAppearance } from "@/lib/auth/appearance";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteOrigin } from "@/lib/seo/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,12 +16,25 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const appUrl = env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
 export const metadata: Metadata = {
-  title: "Run Without Stops",
-  description: "Plan quieter running routes",
-  metadataBase: new URL(appUrl),
+  metadataBase: new URL(siteOrigin()),
+  title: {
+    default: SITE_TITLE,
+    template: "%s | Run Without Stops",
+  },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    locale: "en_AU",
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
   manifest: "/site.webmanifest",
 };
 

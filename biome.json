@@ -15,6 +15,7 @@
       "!pnpm-lock.yaml",
       "!public",
       "!assets",
+      "!content",
       "!.pnpm-store"
     ]
   },

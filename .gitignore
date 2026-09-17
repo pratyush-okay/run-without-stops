@@ -43,6 +43,12 @@ yarn-error.log*
 .agents/
 skills-lock.json
 
+# SEOAgent (local/cloud workspace — not app code)
+.seoagent/
+.claude/skills/seoagent
+.claude/settings.json
+public/llms.txt
+
 # /brag video output (renders, composition, audio, snapshots)
 /brag-output/
 /brag-output-*/

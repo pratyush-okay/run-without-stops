@@ -1,0 +1,13 @@
+---
+description: SEOAgent — persistent AI SEO agent for audits, keywords, content, and technical SEO; state in .seoagent/. Load this (and .agents/skills/seoagent/SKILL.md) before any SEO, sitemap, schema, meta, robots, or content work for runwithoutstops.com.
+globs: .seoagent/**,AGENTS.md,src/app/**/{sitemap,robots,layout}.{ts,tsx},content/**,src/app/blog/**
+alwaysApply: false
+---
+
+# SEOAgent
+
+This repo uses SEOAgent. Its state lives in `.seoagent/`.
+
+- For any SEO, content, or search-ranking task, first read `.agents/skills/seoagent/SKILL.md` — it is the working contract.
+- Each session: run `seoagent sync`, then triage `.seoagent/inbox/` for pending actions.
+- Run `seoagent ack <id>` after completing each inbox action.
