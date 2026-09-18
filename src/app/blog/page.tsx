@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { BlogBreadcrumbs } from "@/components/blog/blog-breadcrumbs";
 import { BlogShell } from "@/components/blog/blog-shell";
@@ -86,6 +87,19 @@ export default function BlogIndexPage() {
           you are. Low-stop routing can skip traffic lights, highways, and busy roads. The notes
           explain what those layers mean before you draw a line you will actually run.
         </p>
+        <figure>
+          <Image
+            src="/screenshots/homepage-hero.jpg"
+            alt="Run Without Stops Route builder on Low stops over the Sydney map, with Avoid hills Off"
+            width={1600}
+            height={900}
+            className="mt-2 h-auto w-full rounded-lg border border-white/10"
+          />
+          <figcaption className="mt-2 text-xs text-white/45">
+            The same map the notes describe. Low stops is selected; Avoid hills stays Off until you
+            turn it on.
+          </figcaption>
+        </figure>
         <p>
           A short path on a generic map still sends you through every signal on the shortest legal
           walk. The wait is on the watch even if you never count it. These pages treat that wait as
@@ -100,8 +114,8 @@ export default function BlogIndexPage() {
           >
             the complete guide to building a run without stops
           </Link>
-          . It covers low-stop versus direct, avoid elevation, overlays, and how to save or share a
-          line if you want a link later. Then read{" "}
+          . It covers low-stop versus Direct, Avoid hills, overlays, and how to save or share a line
+          if you want a link later. Then read{" "}
           <Link
             className="text-[#c8ff52] underline-offset-2 hover:underline"
             href="/blog/a-runners-guide-to-traffic-lights-crossings-and-route-intelligence"

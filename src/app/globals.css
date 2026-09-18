@@ -333,6 +333,14 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
   color: #f4f7f5;
 }
 
+.blog-prose img {
+  margin: 1rem 0 0.35rem;
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+}
+
 .blog-prose h3 {
   margin: 1.4rem 0 0.5rem;
   font-size: 1.02rem;

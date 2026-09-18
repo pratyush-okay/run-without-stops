@@ -63,6 +63,8 @@ The custom running route map is the same homepage for every city. Search a subur
 
 ## How to use the Route builder
 
+![Run Without Stops Route builder on Low stops, Avoid hills Off, over the Sydney Harbour map](/screenshots/homepage-hero.jpg)
+
 1. Open the [map](/). Search a city, zoom until streets appear, or start from where you are. The camera still opens on Sydney if the browser has no location yet.
 2. Set a start. Click the map, pick a search result, or use **Use my location**. Reverse-geocoded labels show in the point list when a name exists.
 3. Add a finish. One extra click is a point-to-point start and finish running route. The line appears after the second point.

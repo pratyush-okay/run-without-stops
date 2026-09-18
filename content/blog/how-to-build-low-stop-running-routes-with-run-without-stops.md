@@ -32,7 +32,7 @@ howTo:
     - name: Choose low-stop
       text: Leave direct for a loop you already run and do not want rerouted.
     - name: Turn on lights and busy roads
-      text: Enable traffic lights, highways, and busy roads. Use avoid elevation if the profile matters.
+      text: Enable traffic lights, highways, and busy roads. Use Avoid hills only under Low stops if the profile matters.
     - name: Edit remaining waits
       text: Move a waypoint if you can drop lights. Keep a crossing if it is the only way over a six-lane road.
     - name: Export or save
@@ -59,17 +59,19 @@ An 8 km line with six lights is a different run from 8 km along a park edge. You
 
 Busy roads add a second cost even when the light is green: a pinched footpath, buses, a corner you take wide. Highways are the next step up. The legal pedestrian option may be a shoulder, an overpass, or a long fence the shortest-path engine still likes because the geometry is clean.
 
-Hill avoidance is a separate switch. Use it with low-stop when the profile matters. A flat highway shoulder is still a bad run. The useful default in most inner suburbs is low-stop on, avoid elevation on if you care about climbing, and lights plus busy roads visible. Direct does not show Avoid hills. The comparison is in [flat running routes vs Direct](/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run).
+Hill avoidance is a separate switch. Use it with Low stops when the profile matters. A flat highway shoulder is still a bad run. The useful default in most inner suburbs is Low stops on, Avoid hills on if you care about climbing, and lights plus busy roads visible. Direct does not show Avoid hills. The comparison is in [flat running routes vs Direct](/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run).
 
 For how those marks differ (signal vs crossing vs arterial), stay on the [traffic lights and crossings note](/blog/a-runners-guide-to-traffic-lights-crossings-and-route-intelligence). This page is the click sequence.
 
 ## How to build a low-stop line
 
+![Run Without Stops map with Low stops selected and traffic light, crossing, and water layers on](/screenshots/homepage-hero.jpg)
+
 1. Open the [map](/). Search a city, zoom until streets appear, or start from where you are. Layers and routing load for the viewport, not for a whole country.
 2. Set a start. Click the map, pick a search result, or use current location. The camera still opens on Sydney if the browser has no location yet.
 3. Add a finish. One extra click is enough for a point-to-point. Add more clicks if you already know a park gate, a fountain, or a street you trust.
 4. Choose **low-stop**. Leave **direct** for a loop you already run and do not want rerouted through extra parks.
-5. If the session should stay flatter, turn on **avoid elevation** before the line comes back.
+5. If the session should stay flatter, turn on **Avoid hills** before the line comes back.
 6. Turn on **traffic lights**, **highways**, and **busy roads**. Parks, crossings, and drinking water help once the bones of the line look right.
 7. Count remaining light marks on the path. If you can move one waypoint and drop two lights, do that. If the remaining mark is the only way across a six-lane road, keep it.
 8. Close a loop only when you actually want to finish where you started. Closing on the same arterial you arrived on doubles the signals.
@@ -111,7 +113,7 @@ Export is GPX or an image. Save and share wait until you sign in. Shared `/r/` l
 2. **Hiding the traffic-light layer after the line appears.** The line is a proposal. The marks are the evidence.
 3. **Two clicks 12 km apart with no park or grid waypoint.** The router picks a legal path. It may not pick your park.
 4. **Closing the loop on the arrival arterial.** You just ran the same lights twice.
-5. **Using avoid elevation as the only switch.** Flat plus a highway is still a chopped run.
+5. **Using Avoid hills as the only switch.** Flat plus a highway is still a chopped run.
 6. **Expecting lights for a whole country.** Zoom to the streets you will run.
 7. **Treating a missing OSM mark as a missing pole.** If you can see the signal, count the wait even when the layer is late.
 

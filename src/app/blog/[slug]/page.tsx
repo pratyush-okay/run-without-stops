@@ -95,6 +95,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       "@type": "HowTo",
       name: howTo.name,
       description: post.description,
+      image: absoluteUrl("/screenshots/homepage-hero.jpg"),
       step: howTo.steps.map((step) => ({
         "@type": "HowToStep",
         name: step.name,

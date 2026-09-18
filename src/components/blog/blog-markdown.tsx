@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
@@ -46,6 +47,20 @@ export function BlogMarkdown({ markdown }: { markdown: string }) {
               >
                 {children}
               </a>
+            );
+          },
+          img: ({ src, alt }) => {
+            if (typeof src !== "string" || !src.startsWith("/")) {
+              return null;
+            }
+            return (
+              <Image
+                src={src}
+                alt={alt ?? ""}
+                width={1600}
+                height={900}
+                className="h-auto w-full"
+              />
             );
           },
         }}
