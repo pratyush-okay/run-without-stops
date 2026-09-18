@@ -1,5 +1,6 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
+import { applyHomepageIndexRobotsTag } from "@/lib/seo/public-robots-header";
 import { isSearchCrawler, markSearchCrawlerHeaders } from "@/lib/seo/search-crawler";
 
 // Public-first: the map works without an account. Protect future signed-in
@@ -8,13 +9,23 @@ import { isSearchCrawler, markSearchCrawlerHeaders } from "@/lib/seo/search-craw
 // Keep matcher strings in sync with CLERK_PROXY_MATCHER in clerk-proxy-matcher.ts
 const clerk = clerkMiddleware();
 
-export default function proxy(request: NextRequest, event: NextFetchEvent) {
+export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+  const pathname = request.nextUrl.pathname;
+
   if (isSearchCrawler(request.headers.get("user-agent"))) {
-    return NextResponse.next({
+    const response = NextResponse.next({
       request: { headers: markSearchCrawlerHeaders(request.headers) },
     });
+    applyHomepageIndexRobotsTag(pathname, response.headers);
+    return response;
   }
-  return clerk(request, event);
+
+  const response = await clerk(request, event);
+  if (!response) {
+    return response;
+  }
+  applyHomepageIndexRobotsTag(pathname, response.headers);
+  return response;
 }
 
 export const config = {
