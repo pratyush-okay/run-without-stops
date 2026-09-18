@@ -1,6 +1,6 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
-import { isSearchCrawler } from "@/lib/seo/search-crawler";
+import { isSearchCrawler, markSearchCrawlerHeaders } from "@/lib/seo/search-crawler";
 
 // Public-first: the map works without an account. Protect future signed-in
 // routes individually with `auth.protect()`.
@@ -10,7 +10,9 @@ const clerk = clerkMiddleware();
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
   if (isSearchCrawler(request.headers.get("user-agent"))) {
-    return NextResponse.next();
+    return NextResponse.next({
+      request: { headers: markSearchCrawlerHeaders(request.headers) },
+    });
   }
   return clerk(request, event);
 }

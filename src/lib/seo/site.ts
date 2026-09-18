@@ -9,6 +9,7 @@ export const SSO_DISALLOW_PATHS = ["/sso-callback", "/sso-continue"] as const;
 export const OG_IMAGE_PATH = "/opengraph-image";
 export const OG_IMAGE_ALT = "Run Without Stops — quieter running routes";
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
+export const PUBLIC_PAGE_ROBOTS = { index: true, follow: true } as const;
 
 export function defaultSocialImages() {
   return [

@@ -1,6 +1,10 @@
 import { headers } from "next/headers";
-import { isSearchCrawler } from "@/lib/seo/search-crawler";
+import { requestLooksLikeSearchCrawler, SEARCH_CRAWLER_HEADER } from "@/lib/seo/search-crawler";
 
 export async function requestIsSearchCrawler() {
-  return isSearchCrawler((await headers()).get("user-agent"));
+  const requestHeaders = await headers();
+  return requestLooksLikeSearchCrawler({
+    userAgent: requestHeaders.get("user-agent"),
+    crawlerHeader: requestHeaders.get(SEARCH_CRAWLER_HEADER),
+  });
 }

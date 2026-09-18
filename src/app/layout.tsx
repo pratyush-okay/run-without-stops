@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import {
   defaultSocialImages,
+  PUBLIC_PAGE_ROBOTS,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_TITLE,
@@ -26,6 +27,7 @@ export const metadata: Metadata = {
     template: "%s | Run Without Stops",
   },
   description: SITE_DESCRIPTION,
+  robots: PUBLIC_PAGE_ROBOTS,
   openGraph: {
     type: "website",
     locale: "en_AU",

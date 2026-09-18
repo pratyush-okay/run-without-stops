@@ -22,8 +22,11 @@ const nextConfig: NextConfig = {
       key: "Strict-Transport-Security",
       value: "max-age=63072000; includeSubDomains; preload",
     };
+    const indexFollow = { key: "X-Robots-Tag", value: "index, follow" };
     return [
-      { source: "/", headers: [hsts] },
+      { source: "/", headers: [hsts, indexFollow] },
+      { source: "/blog", headers: [hsts, indexFollow] },
+      { source: "/blog/:path*", headers: [hsts, indexFollow] },
       { source: "/:path*", headers: [hsts] },
     ];
   },

@@ -7,7 +7,7 @@ import { BlogShell } from "@/components/blog/blog-shell";
 import { getPostBySlug, listPublishedPosts, postDocumentTitle } from "@/lib/blog/posts";
 import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
 import { JsonLd } from "@/lib/seo/json-ld";
-import { absoluteUrl, defaultSocialImages, SITE_NAME } from "@/lib/seo/site";
+import { absoluteUrl, defaultSocialImages, PUBLIC_PAGE_ROBOTS, SITE_NAME } from "@/lib/seo/site";
 
 type BlogPostPageProps = PageProps<"/blog/[slug]">;
 
@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   return {
     title: postDocumentTitle(post),
     description: post.description,
+    robots: PUBLIC_PAGE_ROBOTS,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
       type: "article",

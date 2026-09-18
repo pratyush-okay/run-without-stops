@@ -4,6 +4,7 @@ import {
   OG_IMAGE_ALT,
   OG_IMAGE_PATH,
   PRODUCTION_SITE_ORIGIN,
+  PUBLIC_PAGE_ROBOTS,
   resolveSiteOrigin,
   SSO_DISALLOW_PATHS,
   sitemapPaths,
@@ -49,6 +50,10 @@ describe("public URL lists", () => {
   it("joins origin and path without a double slash", () => {
     expect(absoluteUrl("/", PRODUCTION_SITE_ORIGIN)).toBe(PRODUCTION_SITE_ORIGIN);
     expect(absoluteUrl("/blog", PRODUCTION_SITE_ORIGIN)).toBe(`${PRODUCTION_SITE_ORIGIN}/blog`);
+  });
+
+  it("asks Google to index public pages", () => {
+    expect(PUBLIC_PAGE_ROBOTS).toEqual({ index: true, follow: true });
   });
 
   it("exposes a shared Open Graph image for article pages", () => {

@@ -11,11 +11,12 @@ export async function generateMetadata({ params }: PageProps<"/r/[slug]">) {
   const parsed = shareSlugSchema.safeParse(slug);
   const saved = parsed.success ? await getSavedRouteBySlug(parsed.data) : null;
   if (!saved) {
-    return { title: "Shared route · Run Without Stops" };
+    return { title: "Shared route · Run Without Stops", robots: { index: false, follow: false } };
   }
   return {
     title: `${saved.name} · Run Without Stops`,
     description: "Open this running route in Run Without Stops.",
+    robots: { index: false, follow: false },
   };
 }
 

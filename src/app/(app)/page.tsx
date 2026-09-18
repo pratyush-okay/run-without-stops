@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RunningDashboard } from "@/components/dashboard/running-dashboard";
+import { AllowPublicIndexing } from "@/components/seo/allow-public-indexing";
 import { HomeDetails } from "@/components/seo/home-details";
 import { HomeIntro } from "@/components/seo/home-intro";
 import { env } from "@/env";
@@ -9,6 +10,7 @@ import { requestIsSearchCrawler } from "@/lib/seo/request-crawler";
 import {
   absoluteUrl,
   defaultSocialImages,
+  PUBLIC_PAGE_ROBOTS,
   SITE_DESCRIPTION,
   SITE_NAME,
   SITE_TITLE,
@@ -18,6 +20,7 @@ import {
 export const metadata: Metadata = {
   title: { absolute: SITE_TITLE },
   description: SITE_DESCRIPTION,
+  robots: PUBLIC_PAGE_ROBOTS,
   alternates: { canonical: absoluteUrl("/") },
   openGraph: {
     type: "website",
@@ -39,6 +42,7 @@ export default async function Home() {
   const crawler = await requestIsSearchCrawler();
   return (
     <div className="bg-[#0a0d0b]">
+      {crawler ? null : <AllowPublicIndexing />}
       <div className="relative h-dvh min-h-dvh overflow-hidden">
         <JsonLd
           data={{
