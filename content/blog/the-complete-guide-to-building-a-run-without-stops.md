@@ -2,7 +2,7 @@
 title: "The Complete Guide to Building a Run Without Stops"
 seoTitle: "Fewer-stop running route planner"
 description: "Plan a run with fewer traffic lights, highways, and busy streets. How low-stop routing, hill avoidance, and map layers work in Run Without Stops."
-date: "2026-09-17"
+date: "2026-09-18"
 slug: the-complete-guide-to-building-a-run-without-stops
 tags:
   - routing
@@ -18,7 +18,7 @@ faqs:
   - question: When should I use the direct route builder?
     answer: Use direct when the shortest legal pedestrian line is the point, such as a known path through a park. Use low-stop when red lights and highways would chop the same distance into waits.
   - question: Can I flatten hills on a planned run?
-    answer: Turn on avoid elevation before you route. The line will trade some extra metres for less climbing. Confirm the result on the elevation marks, then move a point if a remaining climb is still too steep.
+    answer: Choose Low stops, then turn Avoid hills on before you route. The line will trade some extra metres for less climbing. Confirm the result on the elevation marks, then move a point if a remaining climb is still too steep.
   - question: Does Run Without Stops work outside Sydney?
     answer: Yes. Search a city, zoom the map, or start from where you are. Lights, crossings, and routing load for the streets you are looking at.
 ---
@@ -29,7 +29,7 @@ A run without stops is a pedestrian line you can keep moving on: fewer red light
 
 A run without stops is a route that treats waiting as part of the distance. The clock on your watch includes the minute you spend at a pedestrian crossing on Anzac Parade. A map that only minimises metres will still send you through those lights if they sit on the shortest legal path.
 
-Run Without Stops is a free, map-first planner. You click the map, search a place, or start from where you are. The map still opens on Sydney if the browser has no location yet. Low-stop mode asks the router to prefer streets with fewer traffic lights and to keep off highways and busy roads when a quieter alternative exists. Direct mode draws the more literal pedestrian line. Avoid elevation is a separate switch for hills.
+Run Without Stops is a free, map-first planner. You click the map, search a place, or start from where you are. The map still opens on Sydney if the browser has no location yet. Low-stop mode asks the router to prefer streets with fewer traffic lights and to keep off highways and busy roads when a quieter alternative exists. Direct mode draws the more literal pedestrian line. Avoid hills is a separate switch, and it only appears after Low stops is selected.
 
 The product name is literal. The job is not a training plan, a race predictor, or a social feed. It is a line on a dark map that you can follow without collecting a string of reds.
 
@@ -56,15 +56,17 @@ Busy roads add a second cost. Even when the light is green, you are sharing a pi
 
 Traffic lights, crossings, parks, and drinking water are on the map as layers because they are the objects that decide whether a Sydney line feels like a run or a sequence of intersections. You can hide parks if you already know the green. You should leave lights visible until you have walked the line once.
 
-Hill avoidance is the same idea on the vertical axis. A “flat” looking street in the inner west can still climb. Avoid elevation asks the router to spend extra distance to keep the profile calmer. It will not erase every rise in Sydney sandstone. It will stop the line from treating a short steep pinch as free.
+Hill avoidance is the same idea on the vertical axis. A “flat” looking street in the inner west can still climb. Avoid hills asks the router to spend extra distance to keep the profile calmer. It will not erase every rise in Sydney sandstone. It will stop the line from treating a short steep pinch as free.
 
 ## How to plan a nonstop running route
+
+![Run Without Stops Route builder on Low stops over the Sydney Harbour map, Avoid hills Off](/screenshots/homepage-hero.jpg)
 
 1. Open the [map](/). Search a city or zoom until you can see the streets you want.
 2. Set a start. Click the map, pick a search result, or use your location.
 3. Add a finish. One more click is enough for a point-to-point. Add extra clicks if you need a park gate, a water fountain, or a street you already trust.
 4. Choose **low-stop** unless you already know the exact path and want **direct**.
-5. If the run should stay flatter, turn on **avoid elevation** before the line comes back.
+5. If the run should stay flatter, turn on **Avoid hills** before the line comes back. It only appears under Low stops.
 6. Turn on **traffic lights**, **highways**, and **busy roads**. Parks, crossings, and water help once the bones of the line look right.
 7. Read the line against those marks. If it still clips a junction you hate, drag or add a waypoint around it and let it reroute.
 8. Close the loop only if you actually want to finish where you started. Closing a loop through the same arterial twice is how you collect the same lights again.
@@ -88,11 +90,11 @@ For a tighter pass on lights, crossings, and busy-road marks, read [A Runner's G
 
 ## Using running route hill avoidance
 
-Avoid elevation is a constraint, not a promise of pancake-flat kilometres. Sydney has ridges. The option tells the router that climbing has a cost, so a longer flatter street can win.
+Avoid hills is a constraint, not a promise of pancake-flat kilometres. Sydney has ridges. The option tells the router that climbing has a cost, so a longer flatter street can win.
 
 Turn it on before you route, then read the elevation marks on the line. If a climb still sits on a section you care about, add a waypoint on the lower street you actually want. The router cannot guess that you would rather run an extra 400 m than take the pinch up to the ridge.
 
-Use it with low-stop, not as a substitute. A flat highway shoulder is still a bad run. Flat plus lights plus buses is still a chopped run. The useful combination in most inner suburbs is low-stop on, avoid elevation on, lights and busy roads visible.
+Use it with Low stops, not as a substitute. A flat highway shoulder is still a bad run. Flat plus lights plus buses is still a chopped run. The useful combination in most inner suburbs is Low stops on, Avoid hills on, lights and busy roads visible.
 
 Avoid hills only appears when Low stops is selected. Direct does not show that switch. For when a flatter line is the better request than Direct, read [flat running routes vs Direct](/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run).
 
@@ -140,7 +142,7 @@ Interruptions also include hills you did not ask for, a missing water tap, and a
 1. **Leaving low-stop off because direct looks cleaner.** Direct is cleaner because it ignored the lights. You will meet them later.
 2. **Hiding the traffic-light layer after the line appears.** The line is a proposal. The marks are the evidence.
 3. **Closing a loop on the same arterial you arrived on.** You just doubled the signals.
-4. **Using avoid elevation as the only switch.** Flat plus a highway is still a bad run.
+4. **Using Avoid hills as the only switch.** Flat plus a highway is still a bad run.
 5. **Dropping two points 12 km apart with no intermediate click through a park you actually want.** The router will pick a legal path. It may not pick your park.
 6. **Expecting lights to load for a whole country.** Zoom into the streets you will run before you trust the layers.
 
@@ -164,7 +166,7 @@ When you already know the streets and want the clicks respected. Park loops you 
 
 ### Can I flatten hills on a planned run?
 
-Turn on avoid elevation, regenerate, and read the elevation marks. Add a waypoint on the lower street if a pinch remains. It reduces climbing. It does not iron Sydney.
+Choose Low stops, turn Avoid hills on, regenerate, and read the elevation marks. Add a waypoint on the lower street if a pinch remains. It reduces climbing. It does not iron Sydney.
 
 ### Does Run Without Stops work outside Sydney?
 
