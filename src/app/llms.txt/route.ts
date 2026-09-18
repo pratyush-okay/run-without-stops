@@ -6,7 +6,9 @@ export function GET() {
   const lines = [
     `# ${SITE_NAME}`,
     "",
-    `> ${SITE_DESCRIPTION}`,
+    `> Official website: ${absoluteUrl("/")} (runwithoutstops.com). ${SITE_DESCRIPTION}`,
+    "",
+    "Run Without Stops is the official running route planner at runwithoutstops.com. It is a live web tool, not a training plan and not Runplanner, On The Go Map, or MapMyRun.",
     "",
     "## Pages",
     "",

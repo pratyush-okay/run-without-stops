@@ -1,5 +1,6 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { type NextFetchEvent, type NextRequest, NextResponse } from "next/server";
+import { applyHsts } from "@/lib/seo/hsts";
 import { applyHomepageIndexRobotsTag } from "@/lib/seo/public-robots-header";
 import { isSearchCrawler, markSearchCrawlerHeaders } from "@/lib/seo/search-crawler";
 
@@ -20,6 +21,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     const response = NextResponse.next({
       request: { headers: markSearchCrawlerHeaders(request.headers) },
     });
+    applyHsts(response.headers);
     applyHomepageIndexRobotsTag(pathname, response.headers);
     return response;
   }
@@ -29,6 +31,7 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     NextResponse.next({
       request: { headers: markSearchCrawlerHeaders(request.headers) },
     });
+  applyHsts(response.headers);
   applyHomepageIndexRobotsTag(pathname, response.headers);
   return response;
 }

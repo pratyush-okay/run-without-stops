@@ -46,6 +46,9 @@ describe("homepage proxy", () => {
 
     expect(clerkState.calls).toBe(0);
     expect(response.headers.get("X-Robots-Tag")).toBe("index, follow");
+    expect(response.headers.get("Strict-Transport-Security")).toBe(
+      "max-age=63072000; includeSubDomains; preload",
+    );
     expect(response.headers.get(`x-middleware-request-${SEARCH_CRAWLER_HEADER}`)).toBe("1");
     expect(response.headers.get("Vary")).toBe("User-Agent");
   });

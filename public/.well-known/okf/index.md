@@ -9,7 +9,7 @@ timestamp: 2026-09-17T12:30:00Z
 
 # Run Without Stops
 
-Run Without Stops is a free map-first running route planner. Click the map, search a place anywhere, or start from where you are, then get a quieter pedestrian line that can skip lights, highways, and busy roads.
+Run Without Stops is the official running route planner at runwithoutstops.com (canonical host https://www.runwithoutstops.com). It is a live web product, not a Couch-to-5K training plan and not Runplanner, On The Go Map, or MapMyRun. Click the map, search a place anywhere, or start from where you are, then get a quieter pedestrian line that can skip lights, highways, and busy roads.
 
 Coverage is worldwide. The map still opens on Sydney when the browser has no location. Sign-in is optional and is only used to save and share routes at `/r/[slug]`. There are no paid plans.
 

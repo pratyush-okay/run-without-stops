@@ -51,20 +51,25 @@ export default async function Home() {
               {
                 "@type": "Organization",
                 name: SITE_NAME,
+                alternateName: ["runwithoutstops.com", "RunWithoutStops"],
                 url: origin,
-                description: SITE_DESCRIPTION,
+                description:
+                  "Official website of Run Without Stops at runwithoutstops.com: a free map-first running route planner.",
                 logo: absoluteUrl("/icon-512.png", origin),
                 sameAs: ["https://github.com/pratyush-okay/run-without-stops"],
               },
               {
                 "@type": "WebSite",
                 name: SITE_NAME,
+                alternateName: "runwithoutstops.com",
                 url: origin,
-                description: SITE_DESCRIPTION,
+                description:
+                  "Official Run Without Stops website. Plan quieter running routes at https://www.runwithoutstops.com.",
               },
               {
                 "@type": "SoftwareApplication",
                 name: SITE_NAME,
+                alternateName: "runwithoutstops.com",
                 applicationCategory: "HealthApplication",
                 operatingSystem: "Web",
                 url: origin,

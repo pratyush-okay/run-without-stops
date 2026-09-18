@@ -1,6 +1,7 @@
 import path from "node:path";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
+import { HSTS_HEADER } from "./src/lib/seo/hsts";
 
 const projectRoot = import.meta.dirname;
 const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com";
@@ -20,7 +21,7 @@ const nextConfig: NextConfig = {
   async headers() {
     const hsts = {
       key: "Strict-Transport-Security",
-      value: "max-age=63072000; includeSubDomains; preload",
+      value: HSTS_HEADER,
     };
     const indexFollow = { key: "X-Robots-Tag", value: "index, follow" };
     return [
