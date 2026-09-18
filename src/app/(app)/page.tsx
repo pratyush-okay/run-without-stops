@@ -91,11 +91,15 @@ export default async function Home() {
             ],
           }}
         />
-        <HomeIntro />
         {crawler ? (
-          <div className="h-full w-full bg-[#0a0d0b]" />
+          <>
+            <HomeIntro />
+            <div className="h-full w-full bg-[#0a0d0b]" />
+          </>
         ) : (
-          <RunningDashboard mapboxToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN} />
+          <RunningDashboard mapboxToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}>
+            <HomeIntro />
+          </RunningDashboard>
         )}
       </div>
       <HomeDetails />

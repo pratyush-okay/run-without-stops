@@ -58,6 +58,7 @@ export type RouteEditActionsProps = {
   onClear: () => void;
   onReverse: () => void;
   onCloseLoop: () => void;
+  layout?: "row" | "stack";
 };
 
 function ActionTile({
@@ -78,18 +79,18 @@ function ActionTile({
   return (
     <button
       type="button"
-      className={`flex h-full min-h-11 w-full min-w-16 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border bg-white/[0.04] px-1.5 py-1.5 text-white/75 transition hover:border-white/16 hover:bg-white/[0.07] hover:text-white disabled:opacity-30 ${
+      className={`flex h-full min-h-11 w-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border bg-white/[0.04] px-1 py-1.5 text-white/75 transition hover:border-white/16 hover:bg-white/[0.07] hover:text-white disabled:opacity-30 ${
         expanded ? "border-white/20 bg-white/[0.08] text-white" : "border-white/10"
       }`}
       onClick={onClick}
       disabled={disabled}
-      aria-label={label}
+      aria-label={title ?? label}
       aria-expanded={expanded}
       aria-haspopup={expanded === undefined ? undefined : "menu"}
       title={title ?? label}
     >
       {children}
-      <span className="text-[9px] leading-3 text-white/55">{label}</span>
+      <span className="max-w-full truncate text-[9px] leading-3 text-white/55">{label}</span>
     </button>
   );
 }
@@ -103,10 +104,19 @@ export function RouteEditActions({
   onClear,
   onReverse,
   onCloseLoop,
+  layout = "stack",
 }: RouteEditActionsProps) {
+  const stacked = layout === "stack";
   return (
-    <section className="rws-panel rounded-xl px-1 py-1" aria-label="Action">
-      <div className="flex items-stretch gap-1">
+    <section
+      className={
+        stacked
+          ? "rws-panel w-[var(--rws-edit-stack-width)] rounded-xl p-1"
+          : "rws-panel rounded-xl px-1 py-1"
+      }
+      aria-label="Action"
+    >
+      <div className={stacked ? "grid grid-cols-2 gap-1" : "flex items-stretch gap-1"}>
         <ActionTile label="Undo" onClick={onUndo} disabled={points.length === 0}>
           <UndoGlyph />
         </ActionTile>
@@ -114,10 +124,10 @@ export function RouteEditActions({
           <RedoGlyph />
         </ActionTile>
         <ActionTile
-          label="Loop back"
+          label={stacked ? "Loop" : "Loop back"}
           onClick={onCloseLoop}
           disabled={!canCloseLoop}
-          title="Draw the route back to the start pin"
+          title="Loop back"
         >
           <LoopGlyph />
         </ActionTile>

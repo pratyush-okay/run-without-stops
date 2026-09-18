@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { AuthControls } from "@/components/auth/auth-controls";
 import { type AuthIntent, AuthModal } from "@/components/auth/auth-modal";
 import { AppLogo } from "@/components/brand/app-logo";
@@ -38,6 +38,7 @@ const RunningMap = dynamic(
 type RunningDashboardProps = {
   mapboxToken: string | undefined;
   sharedRoute?: SavedRoute;
+  children?: ReactNode;
 };
 
 const INITIAL_LAYERS: MapLayerVisibility = {
@@ -49,7 +50,7 @@ const INITIAL_LAYERS: MapLayerVisibility = {
   busy_roads: false,
 };
 
-export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardProps) {
+export function RunningDashboard({ mapboxToken, sharedRoute, children }: RunningDashboardProps) {
   const [layers, setLayers] = useState(INITIAL_LAYERS);
   const [focusPoint, setFocusPoint] = useState<GeoPoint | undefined>(sharedRoute?.points[0]);
   const [userLocation, setUserLocation] = useState<GeoPoint>();
@@ -263,6 +264,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
           : "[--rws-metrics-clearance:11.5rem] md:[--rws-metrics-clearance:6.25rem]"
       }`}
     >
+      {children}
       <div className="absolute inset-0">
         <RunningMap
           accessToken={mapboxToken}
@@ -381,9 +383,10 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex flex-col gap-1 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] md:grid md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end md:gap-3">
-        <div className="pointer-events-auto hidden w-max max-w-full md:block md:justify-self-start">
+      <div className="pointer-events-none absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-[6] hidden md:block">
+        <div className="pointer-events-auto">
           <RouteEditActions
+            layout="stack"
             points={planner.points}
             canCloseLoop={planner.canCloseLoop}
             canRedo={planner.canRedo}
@@ -397,42 +400,46 @@ export function RunningDashboard({ mapboxToken, sharedRoute }: RunningDashboardP
             onCloseLoop={planner.closeLoop}
           />
         </div>
+      </div>
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex flex-col gap-1 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] md:pl-[calc(var(--rws-edit-stack-width)+1.5rem)]">
         <div
-          className={`flex min-w-0 w-full flex-col gap-1 md:col-start-2 md:w-max md:max-w-[min(56rem,calc(100vw-3rem))] md:justify-self-center ${
-            metricsExpanded ? "md:max-w-[min(68rem,calc(100vw-2rem))]" : ""
+          className={`pointer-events-auto min-w-0 w-full overflow-hidden overscroll-none md:w-max md:max-w-[min(56rem,calc(100vw-var(--rws-edit-stack-width)-3rem))] md:self-center ${
+            metricsExpanded
+              ? "md:max-w-[min(68rem,calc(100vw-var(--rws-edit-stack-width)-3rem))]"
+              : ""
           }`}
         >
-          <div className="pointer-events-auto min-w-0 w-full overflow-hidden overscroll-none">
-            <RouteSummary
-              route={planner.route}
-              error={planner.error}
-              isRouting={planner.isRouting}
-              unit={unit}
-              paceSecondsPerKm={effort.secondsPerKm}
-              durationSeconds={effort.durationSeconds}
-              expanded={metricsExpanded}
-              onExpandedChange={setMetricsExpanded}
-              onNudgePace={(delta) => effort.nudgePace(delta, unit)}
-              onNudgeTime={effort.nudgeTime}
-              scrub={scrub}
-              onScrubChange={updateScrub}
-            />
-          </div>
-          <div className="pointer-events-auto w-full md:hidden">
-            <RouteEditActions
-              points={planner.points}
-              canCloseLoop={planner.canCloseLoop}
-              canRedo={planner.canRedo}
-              onUndo={planner.undo}
-              onRedo={planner.redo}
-              onClear={() => {
-                planner.clear();
-                setCurrentSaved(undefined);
-              }}
-              onReverse={planner.reversePoints}
-              onCloseLoop={planner.closeLoop}
-            />
-          </div>
+          <RouteSummary
+            route={planner.route}
+            error={planner.error}
+            isRouting={planner.isRouting}
+            unit={unit}
+            paceSecondsPerKm={effort.secondsPerKm}
+            durationSeconds={effort.durationSeconds}
+            expanded={metricsExpanded}
+            onExpandedChange={setMetricsExpanded}
+            onNudgePace={(delta) => effort.nudgePace(delta, unit)}
+            onNudgeTime={effort.nudgeTime}
+            scrub={scrub}
+            onScrubChange={updateScrub}
+          />
+        </div>
+        <div className="pointer-events-auto w-full md:hidden">
+          <RouteEditActions
+            layout="row"
+            points={planner.points}
+            canCloseLoop={planner.canCloseLoop}
+            canRedo={planner.canRedo}
+            onUndo={planner.undo}
+            onRedo={planner.redo}
+            onClear={() => {
+              planner.clear();
+              setCurrentSaved(undefined);
+            }}
+            onReverse={planner.reversePoints}
+            onCloseLoop={planner.closeLoop}
+          />
         </div>
       </div>
 

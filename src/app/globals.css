@@ -6,6 +6,7 @@
   --foreground: #f4f7f5;
   --rws-metrics-clearance: 10.25rem;
   --rws-intro-clearance: 3rem;
+  --rws-edit-stack-width: 8.25rem;
 }
 
 @theme inline {
@@ -61,6 +62,10 @@ button:disabled {
   background: rgb(16 21 18 / 82%);
   padding: 0 0.15rem 0 0;
   backdrop-filter: blur(18px) saturate(130%);
+}
+
+details.rws-intro:not([open]) > :not(summary) {
+  display: none;
 }
 
 .rws-kicker {
@@ -317,6 +322,10 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
 @media (min-width: 768px) {
   :root {
     --rws-metrics-clearance: 6.25rem;
+  }
+
+  .mapboxgl-ctrl-bottom-left {
+    left: calc(0.75rem + var(--rws-edit-stack-width));
   }
 }
 

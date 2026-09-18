@@ -21,6 +21,45 @@ function AccountIcon() {
   );
 }
 
+function SavedRoutesIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden>
+      <path
+        d="M5 2.6h6v10.6L8 11.2 5 13.2V2.6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden>
+      <path
+        d="M6.2 3.2H3.8A1.2 1.2 0 0 0 2.6 4.4v7.2a1.2 1.2 0 0 0 1.2 1.2h2.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.8 8h6.4M10.6 5.4 13.4 8l-2.8 2.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const menuItemClass =
+  "flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-xs transition";
+
 type AuthControlsProps = {
   menuPlacement?: "up" | "down";
   onSignIn: () => void;
@@ -101,33 +140,41 @@ export function AuthControls({
       {isMenuOpen ? (
         <div
           role="menu"
-          className={`rws-panel absolute right-0 z-30 w-48 overflow-hidden p-1.5 ${
+          className={`rws-panel absolute right-0 z-30 w-52 overflow-hidden p-1.5 ${
             menuPlacement === "down" ? "top-full mt-2" : "bottom-full mb-2"
           }`}
         >
-          <p className="truncate px-2.5 py-2 text-[11px] text-[#c8ff52]/80">{username}</p>
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-[#c8ff52]/10 font-mono text-[11px] font-semibold text-[#c8ff52]">
+              {initial}
+            </span>
+            <p className="min-w-0 truncate text-xs font-medium text-white/85">{username}</p>
+          </div>
+          <div className="mx-1 my-1 h-px bg-white/8" />
           {onOpenSavedRoutes ? (
             <button
               type="button"
               role="menuitem"
-              className="rws-button w-full text-left"
+              className={`${menuItemClass} text-white/80 hover:bg-white/[0.06] hover:text-white`}
               onClick={() => {
                 setIsMenuOpen(false);
                 onOpenSavedRoutes();
               }}
             >
+              <SavedRoutesIcon />
               Saved routes
             </button>
           ) : null}
           <button
             type="button"
             role="menuitem"
-            className="mt-1 flex min-h-10 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] text-xs text-white/80 transition hover:bg-white/10 hover:text-white"
+            className={`${menuItemClass} text-[#ff6b6b] hover:bg-[#ff6b6b]/10 hover:text-[#ff8b8b]`}
             onClick={() => {
               setIsMenuOpen(false);
               void signOut({ redirectUrl: "/" });
             }}
           >
+            <LogoutIcon />
             Log out
           </button>
         </div>
