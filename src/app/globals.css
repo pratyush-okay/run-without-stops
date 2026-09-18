@@ -5,6 +5,7 @@
   --background: #0a0d0b;
   --foreground: #f4f7f5;
   --rws-metrics-clearance: 10.25rem;
+  --rws-intro-clearance: 3rem;
 }
 
 @theme inline {
@@ -294,7 +295,11 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
 
 .mapboxgl-ctrl-bottom-right {
   right: 0.75rem;
-  bottom: calc(var(--rws-metrics-clearance) + env(safe-area-inset-bottom));
+  bottom: calc(
+    var(--rws-metrics-clearance) +
+    var(--rws-intro-clearance) +
+    env(safe-area-inset-bottom)
+  );
 }
 
 .mapboxgl-ctrl-bottom-left {

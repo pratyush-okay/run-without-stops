@@ -1,21 +1,20 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/brand/app-logo";
 
 export function HomeIntro() {
   return (
     <section
       aria-label="About Run Without Stops"
-      className="pointer-events-none absolute z-20 inset-x-[max(0.75rem,env(safe-area-inset-left))] top-[calc(env(safe-area-inset-top)+4.75rem)] right-[max(0.75rem,env(safe-area-inset-right))] md:inset-auto md:right-4 md:top-auto md:bottom-[calc(var(--rws-metrics-clearance)+0.75rem)] md:max-w-sm"
+      className="pointer-events-none absolute z-20 right-[max(0.75rem,env(safe-area-inset-right))] bottom-[calc(var(--rws-metrics-clearance)+env(safe-area-inset-bottom))] md:max-w-sm"
     >
-      <details className="rws-panel group pointer-events-auto overflow-hidden">
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-medium text-white/80 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52] [&::-webkit-details-marker]:hidden">
-          <span className="group-open:hidden">About this planner</span>
-          <span className="hidden group-open:inline">Hide planner intro</span>
-          <span aria-hidden="true" className="text-base leading-none text-[#c8ff52]">
-            <span className="group-open:hidden">+</span>
-            <span className="hidden group-open:inline">×</span>
-          </span>
+      <details className="group pointer-events-auto flex max-h-[min(70dvh,28rem)] flex-col-reverse items-end">
+        <summary className="rws-panel mt-2 flex size-9 cursor-pointer list-none items-center justify-center text-[#c8ff52] transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52] [&::-webkit-details-marker]:hidden md:h-auto md:w-auto md:gap-2 md:px-3 md:py-2 md:text-xs md:font-medium md:text-white/80 md:hover:text-white">
+          <span className="sr-only md:hidden">About this planner</span>
+          <span className="hidden md:inline md:group-open:hidden">About this planner</span>
+          <span className="hidden md:group-open:inline">Hide planner intro</span>
+          <BrandMark className="size-5 md:size-4" />
         </summary>
-        <div className="border-t border-white/10 p-3 md:p-4">
+        <div className="rws-panel w-[min(24rem,calc(100vw-1.5rem))] overflow-auto p-3 md:p-4">
           <p className="rws-kicker">Anywhere</p>
           <h1 className="mt-1 text-base font-semibold tracking-tight">
             Plan quieter running routes
