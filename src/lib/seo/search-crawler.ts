@@ -16,6 +16,9 @@ export function requestLooksLikeSearchCrawler(input: {
 
 export function markSearchCrawlerHeaders(headers: Headers) {
   const next = new Headers(headers);
+  // Never trust a marker supplied by the client. The proxy sets it only after
+  // matching the request's User-Agent.
+  next.delete(SEARCH_CRAWLER_HEADER);
   if (isSearchCrawler(headers.get("user-agent"))) {
     next.set(SEARCH_CRAWLER_HEADER, "1");
   }

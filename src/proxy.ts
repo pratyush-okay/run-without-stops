@@ -7,7 +7,11 @@ import { isSearchCrawler, markSearchCrawlerHeaders } from "@/lib/seo/search-craw
 // routes individually with `auth.protect()`.
 // Search crawlers skip Clerk so the development handshake cannot 307 Googlebot.
 // Keep matcher strings in sync with CLERK_PROXY_MATCHER in clerk-proxy-matcher.ts
-const clerk = clerkMiddleware();
+const clerk = clerkMiddleware((_auth, request) =>
+  NextResponse.next({
+    request: { headers: markSearchCrawlerHeaders(request.headers) },
+  }),
+);
 
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
   const pathname = request.nextUrl.pathname;
@@ -20,10 +24,11 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     return response;
   }
 
-  const response = await clerk(request, event);
-  if (!response) {
-    return response;
-  }
+  const response =
+    (await clerk(request, event)) ??
+    NextResponse.next({
+      request: { headers: markSearchCrawlerHeaders(request.headers) },
+    });
   applyHomepageIndexRobotsTag(pathname, response.headers);
   return response;
 }

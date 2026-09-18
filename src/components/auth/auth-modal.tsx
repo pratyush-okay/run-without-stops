@@ -32,10 +32,14 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
   const [code, setCode] = useState("");
   const [formError, setFormError] = useState<string>();
 
-  const isVerifying =
+  const isSignUpVerifying =
     mode === "sign-up" &&
     signUp.status === "missing_requirements" &&
     signUp.unverifiedFields.includes("email_address");
+  const isSignInVerifying =
+    mode === "sign-in" &&
+    (signIn.status === "needs_client_trust" || signIn.status === "needs_second_factor");
+  const isVerifying = isSignUpVerifying || isSignInVerifying;
   const isBusy = signInStatus === "fetching" || signUpStatus === "fetching";
 
   useEffect(() => {
@@ -71,6 +75,11 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
     }
     if (signIn.status === "complete") {
       await signIn.finalize({ navigate: async () => undefined });
+      return;
+    }
+    if (signIn.status === "needs_client_trust" || signIn.status === "needs_second_factor") {
+      const { error: verificationError } = await signIn.mfa.sendEmailCode();
+      if (verificationError) setFormError(verificationError.message);
     }
   }
 
@@ -96,14 +105,28 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
   async function submitVerification(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(undefined);
-    const { error } = await signUp.verifications.verifyEmailCode({ code });
+    const { error } = isSignInVerifying
+      ? await signIn.mfa.verifyEmailCode({ code })
+      : await signUp.verifications.verifyEmailCode({ code });
     if (error) {
       setFormError(error.message);
       return;
     }
-    if (signUp.status === "complete") {
+    if (mode === "sign-in") {
+      if (signIn.status === "complete") {
+        await signIn.finalize({ navigate: async () => undefined });
+      }
+    } else if (signUp.status === "complete") {
       await signUp.finalize({ navigate: async () => undefined });
     }
+  }
+
+  async function resendVerificationCode() {
+    setFormError(undefined);
+    const { error } = isSignInVerifying
+      ? await signIn.mfa.sendEmailCode()
+      : await signUp.verifications.sendEmailCode();
+    if (error) setFormError(error.message);
   }
 
   const activeError =
@@ -171,7 +194,7 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
             <button
               type="button"
               className="text-xs text-white/45 underline-offset-2 hover:text-white hover:underline"
-              onClick={() => void signUp.verifications.sendEmailCode()}
+              onClick={() => void resendVerificationCode()}
             >
               Send a new code
             </button>

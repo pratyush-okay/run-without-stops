@@ -33,6 +33,16 @@ describe("search crawler detection", () => {
     expect(headers.get(SEARCH_CRAWLER_HEADER)).toBe("1");
   });
 
+  it("removes a crawler marker supplied by a normal browser", () => {
+    const headers = markSearchCrawlerHeaders(
+      new Headers({
+        "user-agent": "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36",
+        [SEARCH_CRAWLER_HEADER]: "1",
+      }),
+    );
+    expect(headers.has(SEARCH_CRAWLER_HEADER)).toBe(false);
+  });
+
   it("mounts Clerk for browsers and skips it for Googlebot", () => {
     expect(
       shouldMountClerkProvider(

@@ -1,6 +1,21 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+function clerkKey(prefix: "pk" | "sk") {
+  return z
+    .string()
+    .min(1)
+    .optional()
+    .superRefine((value, context) => {
+      if (process.env.VERCEL_ENV === "production" && value?.startsWith(`${prefix}_test_`)) {
+        context.addIssue({
+          code: "custom",
+          message: `Production cannot use a Clerk ${prefix}_test_ development key`,
+        });
+      }
+    });
+}
+
 export const env = createEnv({
   shared: {
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -13,7 +28,7 @@ export const env = createEnv({
     TRACESTRACK_API_KEY: z.string().min(1).optional(),
     TRACESTRACK_OVERPASS_URL: z.string().url().default("https://api.tracestrack.com/overpass"),
     OVERPASS_API_URL: z.string().url().default("https://overpass-api.de/api/interpreter"),
-    CLERK_SECRET_KEY: z.string().min(1).optional(),
+    CLERK_SECRET_KEY: clerkKey("sk"),
     CLERK_WEBHOOK_SIGNING_SECRET: z.string().min(1).optional(),
     SUPABASE_URL: z.string().url().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
@@ -23,7 +38,7 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
     NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: z.string().min(1).optional(),
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1).optional(),
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: clerkKey("pk"),
     NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional(),
     NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: z.string().min(1).optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().url().default("https://eu.i.posthog.com"),
