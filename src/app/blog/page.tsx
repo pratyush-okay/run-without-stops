@@ -79,13 +79,12 @@ export default function BlogIndexPage() {
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Quieter running route notes</h1>
       <div className="mt-3 max-w-2xl space-y-4 text-sm leading-6 text-white/65">
         <p>
-          These notes sit next to the{" "}
+          This index is the reading order for the{" "}
           <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/">
             Run Without Stops map
           </Link>
-          . The planner is free and worldwide: click the map, search a place, or start from where
-          you are. Low-stop routing can skip traffic lights, highways, and busy roads. The notes
-          explain what those layers mean before you draw a line you will actually run.
+          . Each note names a panel state: Direct, Low stops, Avoid hills, or a layer. The map still
+          draws the line. The notes tell you which switch to touch before the second click.
         </p>
         <figure>
           <Image
@@ -158,18 +157,10 @@ export default function BlogIndexPage() {
           Which note to open first
         </h2>
         <p>
-          Use the complete guide if you have not drawn a line here yet. It names Direct, Low stops,
-          Avoid hills, and the overlays, then sends you back to the map. Use the traffic-lights note
-          when the remaining marks on a line are the question: which objects are signals, which are
-          crossings, and which busy-road or highway layer you should turn on before you move a
-          waypoint.
-        </p>
-        <p>
-          Use the low-stop how-to when the weekday request is fewer waits, not a park loop you
-          already run. Use the Route builder how-to when start, finish, and Direct are enough, and
-          you only need waypoints if the legal walk is ugly. Use the flat-vs-Direct note when the
-          climb is the decision: Avoid hills lives under Low stops only, so a Direct line will not
-          flatten a hill for you.
+          If this is the first line you will draw here, start with the complete guide. If you
+          already have a line and a remaining mark you cannot name, skip to the traffic-lights note.
+          The table below is the panel-to-note map when you are already looking at Direct, Low
+          stops, or Avoid hills.
         </p>
       </div>
       <div className="mt-10 max-w-2xl space-y-4 text-sm leading-6 text-white/65">
@@ -187,6 +178,95 @@ export default function BlogIndexPage() {
           and out of search. The notes link the public map and each other. If a sentence in a note
           and a toggle on the panel disagree, trust the panel: Avoid hills is hidden until Low stops
           is selected.
+        </p>
+      </div>
+      <div className="mt-10 max-w-2xl space-y-4 text-sm leading-6 text-white/65">
+        <h2 className="text-xl font-semibold tracking-tight text-[#f4f7f5]">
+          Match the panel to a note
+        </h2>
+        <p>
+          Open the map first if the streets are already on screen. Come here when a control on that
+          panel does not match the run you meant. The table is the short path; the full notes are
+          under it.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-white/15 text-[#f4f7f5]">
+                <th className="py-2 pr-4 font-medium">On the panel</th>
+                <th className="py-2 font-medium">Read</th>
+              </tr>
+            </thead>
+            <tbody className="align-top">
+              <tr className="border-b border-white/10">
+                <td className="py-2 pr-4">Empty Route builder, Direct selected</td>
+                <td className="py-2">
+                  <Link
+                    className="text-[#c8ff52] underline-offset-2 hover:underline"
+                    href="/blog/how-to-use-the-run-without-stops-route-builder"
+                  >
+                    How to use the Route builder
+                  </Link>
+                </td>
+              </tr>
+              <tr className="border-b border-white/10">
+                <td className="py-2 pr-4">Low stops on, remaining light marks on the line</td>
+                <td className="py-2">
+                  <Link
+                    className="text-[#c8ff52] underline-offset-2 hover:underline"
+                    href="/blog/how-to-build-low-stop-running-routes-with-run-without-stops"
+                  >
+                    How to build a low-stop line
+                  </Link>
+                </td>
+              </tr>
+              <tr className="border-b border-white/10">
+                <td className="py-2 pr-4">A mark you cannot name: signal, crossing, or arterial</td>
+                <td className="py-2">
+                  <Link
+                    className="text-[#c8ff52] underline-offset-2 hover:underline"
+                    href="/blog/a-runners-guide-to-traffic-lights-crossings-and-route-intelligence"
+                  >
+                    Traffic lights and crossings
+                  </Link>
+                </td>
+              </tr>
+              <tr className="border-b border-white/10">
+                <td className="py-2 pr-4">Avoid hills missing, or a pinch you did not ask for</td>
+                <td className="py-2">
+                  <Link
+                    className="text-[#c8ff52] underline-offset-2 hover:underline"
+                    href="/blog/flat-running-routes-vs-direct-routes-which-is-right-for-your-run"
+                  >
+                    Flat running routes vs Direct
+                  </Link>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4">First line on this map, no panel habit yet</td>
+                <td className="py-2">
+                  <Link
+                    className="text-[#c8ff52] underline-offset-2 hover:underline"
+                    href="/blog/the-complete-guide-to-building-a-run-without-stops"
+                  >
+                    Complete guide
+                  </Link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Overlays load for the streets in the viewport. Read a note, then zoom until you can see
+          corners you would wait at. A country-scale camera will not show the lights that note
+          named. The camera still opens on Sydney if the browser has no location yet. Search a
+          suburb if that is not the run.
+        </p>
+        <p>
+          If you have about ten minutes before you lace up, skip the complete guide. Open the map,
+          choose Low stops, turn traffic lights on, drop two points in the neighbourhood you will
+          actually run. If a remaining mark is unnamed, come back to the traffic-lights note after
+          the line exists.
         </p>
       </div>
       {posts.length === 0 ? (
