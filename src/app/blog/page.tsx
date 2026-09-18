@@ -139,6 +139,42 @@ export default function BlogIndexPage() {
           account.
         </p>
       </div>
+      <div className="mt-10 max-w-2xl space-y-4 text-sm leading-6 text-white/65">
+        <h2 className="text-xl font-semibold tracking-tight text-[#f4f7f5]">
+          Which note to open first
+        </h2>
+        <p>
+          Use the complete guide if you have not drawn a line here yet. It names Direct, Low stops,
+          Avoid hills, and the overlays, then sends you back to the map. Use the traffic-lights note
+          when the remaining marks on a line are the question: which objects are signals, which are
+          crossings, and which busy-road or highway layer you should turn on before you move a
+          waypoint.
+        </p>
+        <p>
+          Use the low-stop how-to when the weekday request is fewer waits, not a park loop you
+          already run. Use the Route builder how-to when start, finish, and Direct are enough, and
+          you only need waypoints if the legal walk is ugly. Use the flat-vs-Direct note when the
+          climb is the decision: Avoid hills lives under Low stops only, so a Direct line will not
+          flatten a hill for you.
+        </p>
+      </div>
+      <div className="mt-10 max-w-2xl space-y-4 text-sm leading-6 text-white/65">
+        <h2 className="text-xl font-semibold tracking-tight text-[#f4f7f5]">
+          What these notes will not do
+        </h2>
+        <p>
+          They do not replace the map. Routing still runs on the streets in the viewport. A
+          country-scale view will not load lights you can actually wait at. The marks are
+          OpenStreetMap objects for that view, not a live countdown on the pole. A remaining light
+          after Low stops is a wait you should expect, not a bug in the note.
+        </p>
+        <p>
+          Private share URLs at <code className="text-white/80">/r/</code> stay out of this index
+          and out of search. The notes link the public map and each other. If a sentence in a note
+          and a toggle on the panel disagree, trust the panel: Avoid hills is hidden until Low stops
+          is selected.
+        </p>
+      </div>
       {posts.length === 0 ? (
         <p className="mt-10 text-sm text-white/55">No notes yet.</p>
       ) : (
