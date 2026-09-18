@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { HOME_FAQS } from "@/lib/seo/home-faqs";
 
@@ -27,6 +28,19 @@ export function HomeDetails() {
               on the line. That number is a hint. The marks on the map are the review.
             </p>
           </div>
+          <figure className="mt-6">
+            <Image
+              src="/screenshots/homepage-hero.jpg"
+              alt="Run Without Stops map over Sydney Harbour with Route builder on Low stops, Avoid hills Off, and traffic light, crossing, and water layers on"
+              width={1600}
+              height={900}
+              className="h-auto w-full rounded-lg border border-white/10"
+            />
+            <figcaption className="mt-2 text-xs text-white/45">
+              Route builder on Low stops. Avoid hills stays Off until you turn it on. Light and
+              crossing marks load for the streets on screen.
+            </figcaption>
+          </figure>
         </div>
 
         <div>
