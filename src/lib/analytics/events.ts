@@ -1,6 +1,7 @@
 export const analyticsEvents = {
   dashboardOpened: "dashboard_opened",
   mapLayerToggled: "map_layer_toggled",
+  mapStyleChanged: "map_style_changed",
   metricUnitChanged: "metric_unit_changed",
   placeSearched: "place_searched",
   placeSelected: "place_selected",

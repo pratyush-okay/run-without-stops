@@ -7,6 +7,7 @@ import { AuthControls } from "@/components/auth/auth-controls";
 import { type AuthIntent, AuthModal } from "@/components/auth/auth-modal";
 import { AppLogo } from "@/components/brand/app-logo";
 import { LayerControls } from "@/components/dashboard/layer-controls";
+import { MapStyleControls } from "@/components/dashboard/map-style-controls";
 import { MetricsToggle } from "@/components/dashboard/metrics-toggle";
 import { PlaceSearch } from "@/components/dashboard/place-search";
 import { RouteEditActions } from "@/components/dashboard/route-actions";
@@ -23,6 +24,13 @@ import { analyticsHeaders, captureEvent } from "@/lib/analytics/client";
 import { analyticsEvents } from "@/lib/analytics/events";
 import { SYDNEY_CENTER, viewportCenter } from "@/lib/geo";
 import type { MapLayerVisibility } from "@/lib/maps/layers";
+import {
+  DEFAULT_MAP_STYLE_ID,
+  type MapStyleId,
+  mapStyleUrl,
+  readStoredMapStyle,
+  writeStoredMapStyle,
+} from "@/lib/maps/styles";
 import { routeDraftKey } from "@/lib/routes/draft";
 import { shareUrlForSlug } from "@/lib/routes/slug";
 import type { MetricUnit } from "@/lib/routing/format";
@@ -52,6 +60,7 @@ const INITIAL_LAYERS: MapLayerVisibility = {
 
 export function RunningDashboard({ mapboxToken, sharedRoute, children }: RunningDashboardProps) {
   const [layers, setLayers] = useState(INITIAL_LAYERS);
+  const [mapStyleId, setMapStyleId] = useState<MapStyleId>(DEFAULT_MAP_STYLE_ID);
   const [focusPoint, setFocusPoint] = useState<GeoPoint | undefined>(sharedRoute?.points[0]);
   const [userLocation, setUserLocation] = useState<GeoPoint>();
   const [unit, setUnit] = useState<MetricUnit>("metric");
@@ -89,6 +98,10 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
   );
   const { isSignedIn } = useUser();
   const savedRoutes = useSavedRoutes(Boolean(isSignedIn));
+
+  useEffect(() => {
+    setMapStyleId(readStoredMapStyle());
+  }, []);
 
   useEffect(() => {
     captureEvent(analyticsEvents.dashboardOpened, {
@@ -144,6 +157,12 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
       captureEvent(analyticsEvents.mapLayerToggled, { layer, enabled });
       return { ...current, [layer]: enabled };
     });
+  }
+
+  function changeMapStyle(id: MapStyleId) {
+    setMapStyleId(id);
+    writeStoredMapStyle(id);
+    captureEvent(analyticsEvents.mapStyleChanged, { style: id });
   }
 
   function useMyLocation() {
@@ -282,6 +301,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
           unit={unit}
           features={featureState.features}
           layers={layers}
+          styleUrl={mapStyleUrl(mapStyleId)}
           focusPoint={focusPoint}
           userLocation={userLocation}
           onAddPoint={planner.addPoint}
@@ -380,6 +400,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
             onToggle={toggleLayer}
             isLoading={featureState.isLoading}
           />
+          <MapStyleControls styleId={mapStyleId} onChange={changeMapStyle} />
         </div>
       </div>
 
@@ -454,7 +475,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
         <div
           className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[10px] text-white/70 backdrop-blur ${"bottom-[calc(var(--rws-metrics-clearance)+0.35rem)]"}`}
         >
-          Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to load the dark map
+          Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to load the map
         </div>
       ) : null}
 

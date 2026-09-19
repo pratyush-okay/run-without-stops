@@ -10,7 +10,7 @@ export type MapLayerVisibility = {
   busy_roads: boolean;
 };
 
-export const MAPBOX_DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
+export { MAPBOX_DARK_STYLE } from "@/lib/maps/styles";
 
 export const HIGHWAY_ALERT = "#ff5a2a";
 export const BUSY_ROAD = "#f0b429";

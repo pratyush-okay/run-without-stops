@@ -56,6 +56,7 @@ type RunningMapProps = {
   unit?: MetricUnit;
   features: RunnerFeature[];
   layers: MapLayerVisibility;
+  styleUrl?: string;
   focusPoint: GeoPoint | undefined;
   userLocation: GeoPoint | undefined;
   onAddPoint: (point: GeoPoint, label?: string) => void;
@@ -292,6 +293,7 @@ function addSourceOnce(map: mapboxgl.Map, id: string, source: mapboxgl.SourceSpe
 
 function addLayerOnce(map: mapboxgl.Map, layer: mapboxgl.LayerSpecification, beforeId?: string) {
   if (map.getLayer(layer.id)) return;
+  if ("source" in layer && layer.source && !map.getSource(layer.source)) return;
   map.addLayer(layer, beforeId && map.getLayer(beforeId) ? beforeId : undefined);
 }
 
@@ -389,9 +391,11 @@ function addRunnerLayers(map: mapboxgl.Map) {
     },
   });
 
-  const overlayBefore = map.getLayer(CONTEXT_OVERLAY_BEFORE) ? CONTEXT_OVERLAY_BEFORE : undefined;
-  for (const overlay of contextOverlayLayers()) {
-    addLayerOnce(map, overlay, overlayBefore);
+  if (map.getSource("composite")) {
+    const overlayBefore = map.getLayer(CONTEXT_OVERLAY_BEFORE) ? CONTEXT_OVERLAY_BEFORE : undefined;
+    for (const overlay of contextOverlayLayers()) {
+      addLayerOnce(map, overlay, overlayBefore);
+    }
   }
 
   addOverlayImages(map);
@@ -588,6 +592,7 @@ export function RunningMap({
   unit = "metric",
   features,
   layers,
+  styleUrl = MAPBOX_DARK_STYLE,
   focusPoint,
   userLocation,
   onAddPoint,
@@ -608,6 +613,8 @@ export function RunningMap({
   const isRoutePreviewRef = useRef(isRoutePreview);
   const featuresRef = useRef(features);
   const layersRef = useRef(layers);
+  const appliedStyleRef = useRef(styleUrl);
+  const styleUrlRef = useRef(styleUrl);
   const userLocationRef = useRef(userLocation);
   const pointerRef = useRef<{ index: number; x: number; y: number } | null>(null);
   const didDragRef = useRef(false);
@@ -632,6 +639,7 @@ export function RunningMap({
   isRoutePreviewRef.current = isRoutePreview;
   featuresRef.current = features;
   layersRef.current = layers;
+  styleUrlRef.current = styleUrl;
   userLocationRef.current = userLocation;
 
   useEffect(() => {
@@ -639,9 +647,10 @@ export function RunningMap({
 
     mapboxgl.accessToken = accessToken;
     const start = userLocationRef.current;
+    const initialStyleUrl = styleUrlRef.current;
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: MAPBOX_DARK_STYLE,
+      style: initialStyleUrl,
       center: start ? [start.lng, start.lat] : [DEFAULT_MAP_CENTER.lng, DEFAULT_MAP_CENTER.lat],
       zoom: start ? FOCUS_MAP_ZOOM : DEFAULT_MAP_ZOOM,
       pitch: 0,
@@ -657,6 +666,7 @@ export function RunningMap({
       antialias: false,
     });
     mapRef.current = map;
+    appliedStyleRef.current = initialStyleUrl;
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
 
@@ -919,6 +929,14 @@ export function RunningMap({
       mapRef.current = null;
     };
   }, [accessToken]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || appliedStyleRef.current === styleUrl) return;
+    appliedStyleRef.current = styleUrl;
+    setMapReady(false);
+    map.setStyle(styleUrl);
+  }, [styleUrl]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -75,6 +75,12 @@ describe("Mapbox 2D dark basemap", () => {
     expect(isBusyRoadBasemapLayer("road-street")).toBe(false);
   });
 
+  it("skips park and road overlays when the style has no composite source", () => {
+    expect(
+      contextOverlayLayers().every((layer) => "source" in layer && layer.source === "composite"),
+    ).toBe(true);
+  });
+
   it("paints parks, highways, and busy roads as overlays on top of the basemap", () => {
     const overlays = contextOverlayLayers();
     expect(CONTEXT_OVERLAY_BEFORE).toBe("runner-route-glow");
