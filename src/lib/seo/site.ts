@@ -51,7 +51,7 @@ export function siteOrigin() {
 }
 
 export function sitemapPaths(postSlugs: string[]) {
-  return ["/", "/blog", ...postSlugs.map((slug) => `/blog/${slug}`)];
+  return ["/", "/blog", "/terms", ...postSlugs.map((slug) => `/blog/${slug}`)];
 }
 
 export function absoluteUrl(path: string, origin = siteOrigin()) {

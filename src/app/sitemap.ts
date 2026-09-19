@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const hubDates: Record<string, string> = {
     "/": "2026-09-18",
     "/blog": "2026-09-18",
+    "/terms": "2026-09-19",
   };
 
   return sitemapPaths(posts.map((post) => post.slug)).map((path) => {

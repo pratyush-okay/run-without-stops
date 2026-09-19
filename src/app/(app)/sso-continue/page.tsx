@@ -1,6 +1,7 @@
 "use client";
 
 import { useSignUp } from "@clerk/nextjs";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLogo } from "@/components/brand/app-logo";
@@ -123,6 +124,16 @@ export default function SsoContinuePage() {
           </button>
         </form>
         <div id="clerk-captcha" className="mt-4" />
+        <p className="mt-4 text-[11px] leading-5 text-white/35">
+          Finishing this account means you agree to the{" "}
+          <Link
+            className="text-white/70 underline-offset-2 hover:text-white hover:underline"
+            href="/terms"
+          >
+            terms
+          </Link>
+          .
+        </p>
       </section>
     </main>
   );

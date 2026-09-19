@@ -347,6 +347,15 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
   color: #f4f7f5;
 }
 
+html .blog-prose a {
+  color: #c8ff52;
+  text-underline-offset: 2px;
+}
+
+html .blog-prose a:hover {
+  text-decoration: underline;
+}
+
 .blog-prose img {
   margin: 1rem 0 0.35rem;
   width: 100%;
@@ -372,6 +381,14 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
 .blog-prose ul,
 .blog-prose ol {
   padding-left: 1.2rem;
+}
+
+.blog-prose ul {
+  list-style: disc;
+}
+
+.blog-prose ol {
+  list-style: decimal;
 }
 
 .blog-prose li + li {

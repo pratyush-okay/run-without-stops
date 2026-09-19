@@ -1,18 +1,39 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { MapStyleMark } from "@/components/dashboard/map-style-marks";
 import { MAP_STYLES, type MapStyleId } from "@/lib/maps/styles";
 
 type MapStyleControlsProps = {
   styleId: MapStyleId;
+  locked?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onLockedClick?: () => void;
   onChange: (id: MapStyleId) => void;
 };
 
-export function MapStyleControls({ styleId, onChange }: MapStyleControlsProps) {
+export function MapStyleControls({
+  styleId,
+  locked = false,
+  open: openProp,
+  onOpenChange,
+  onLockedClick,
+  onChange,
+}: MapStyleControlsProps) {
   const listId = useId();
   const rootRef = useRef<HTMLElement>(null);
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = openProp !== undefined;
+  const open = locked ? false : isControlled ? openProp : uncontrolledOpen;
+
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -28,7 +49,7 @@ export function MapStyleControls({ styleId, onChange }: MapStyleControlsProps) {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, setOpen]);
 
   function choose(id: MapStyleId) {
     onChange(id);
@@ -44,13 +65,19 @@ export function MapStyleControls({ styleId, onChange }: MapStyleControlsProps) {
       <button
         type="button"
         className="grid size-11 shrink-0 place-items-center rounded-lg text-white/55 transition hover:bg-white/[0.06] hover:text-white/85"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (locked) {
+            onLockedClick?.();
+            return;
+          }
+          setOpen(!open);
+        }}
         aria-expanded={open}
-        aria-controls={listId}
-        aria-label={open ? "Hide map looks" : "Show map looks"}
+        aria-controls={locked ? undefined : listId}
+        aria-label={locked ? "Map look" : open ? "Hide map looks" : "Show map looks"}
         title="Map look"
       >
-        <MapStyleMark id={styleId} />
+        <MapStyleMark id={locked ? "dark" : styleId} />
       </button>
       <div
         id={listId}

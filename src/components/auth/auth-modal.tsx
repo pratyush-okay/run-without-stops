@@ -2,6 +2,7 @@
 
 import { useSignIn, useSignUp, useUser } from "@clerk/nextjs";
 import type { OAuthStrategy } from "@clerk/nextjs/types";
+import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { SocialAuthButtons } from "@/components/auth/social-auth-buttons";
 import { AppLogo } from "@/components/brand/app-logo";
@@ -9,18 +10,17 @@ import { SSO_CALLBACK_PATH, SSO_COMPLETE_PATH, ssoErrorMessage } from "@/lib/aut
 import { usernameSchema } from "@/lib/schemas/profile";
 
 type AuthMode = "sign-in" | "sign-up";
-export type AuthIntent = "save" | "share";
+export type AuthIntent = "save" | "share" | "style";
 
 type AuthModalProps = {
   onClose: () => void;
-  intent?: AuthIntent | undefined;
 };
 
 function fieldError(error: { message?: string } | null | undefined) {
   return error?.message;
 }
 
-export function AuthModal({ onClose, intent }: AuthModalProps) {
+export function AuthModal({ onClose }: AuthModalProps) {
   const titleId = useId();
   const { isSignedIn } = useUser();
   const { signIn, errors: signInErrors, fetchStatus: signInStatus } = useSignIn();
@@ -141,7 +141,7 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
     signUpErrors.global?.[0]?.message;
 
   return (
-    <div className="fixed inset-0 z-50 grid items-end justify-center bg-[#050806]/72 px-0 backdrop-blur-sm md:place-items-center md:items-center md:px-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#050806]/72 px-0 backdrop-blur-sm md:items-center md:px-4">
       <button
         type="button"
         className="absolute inset-0 cursor-default"
@@ -152,7 +152,7 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="rws-panel rws-sheet relative z-10 max-h-[min(36rem,calc(100dvh-env(safe-area-inset-top)-1rem))] w-full overflow-y-auto p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:max-w-md md:pb-5"
+        className="rws-panel rws-sheet relative z-10 max-h-[min(36rem,calc(100dvh-env(safe-area-inset-top)-1rem))] w-full max-w-none shrink-0 overflow-y-auto p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:max-w-md md:pb-5"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
@@ -161,6 +161,13 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
             <h2 id={titleId} className="text-lg font-semibold tracking-tight">
               {isVerifying ? "Check your email" : mode === "sign-in" ? "Sign in" : "Create account"}
             </h2>
+            {isVerifying ? null : (
+              <p className="mt-1 max-w-[16rem] text-xs leading-5 text-white/55">
+                {mode === "sign-up"
+                  ? "Pick a username and confirm your email. An account keeps named routes, share links, and map looks."
+                  : "Your named routes, share links, and map looks stay on this account."}
+              </p>
+            )}
           </div>
           <button type="button" className="rws-button px-2.5" onClick={onClose}>
             Close
@@ -284,16 +291,21 @@ export function AuthModal({ onClose, intent }: AuthModalProps) {
                 {isBusy ? "Working..." : mode === "sign-in" ? "Sign in" : "Create account"}
               </button>
             </form>
+            <p className="mt-4 text-[11px] leading-5 text-white/35">
+              Planning and GPX, SVG, or image export stay available without an account.{" "}
+              {mode === "sign-up"
+                ? "Creating an account means you agree to the "
+                : "By signing in you agree to the "}
+              <Link
+                className="text-white/70 underline-offset-2 hover:text-white hover:underline"
+                href="/terms"
+              >
+                terms
+              </Link>
+              .
+            </p>
           </>
         )}
-
-        <p className="mt-4 text-[11px] leading-5 text-white/35">
-          {intent === "share"
-            ? "Shareable links open in the app for anyone. That needs an account and a saved named route. You can still export GPX, images, and SVG without signing in."
-            : intent === "save"
-              ? "Saving lets you keep multiple named routes and share them as links. Exporting files does not need an account."
-              : "You can keep planning and exporting routes without an account. Sign in to save routes and create shareable links."}
-        </p>
       </section>
     </div>
   );

@@ -16,6 +16,10 @@ export function BlogShell({ children }: { children: ReactNode }) {
           <Link className="text-sm text-white/70 hover:text-white" href="/blog">
             Notes on quieter routes
           </Link>
+          <span className="text-white/25"> · </span>
+          <Link className="text-sm text-white/70 hover:text-white" href="/terms">
+            Terms
+          </Link>
         </div>
       </header>
       <div className="mx-auto w-full max-w-3xl px-4 pb-16">{children}</div>

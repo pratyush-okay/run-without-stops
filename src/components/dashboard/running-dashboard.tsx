@@ -64,8 +64,8 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
   const [focusPoint, setFocusPoint] = useState<GeoPoint | undefined>(sharedRoute?.points[0]);
   const [userLocation, setUserLocation] = useState<GeoPoint>();
   const [unit, setUnit] = useState<MetricUnit>("metric");
-  const [authIntent, setAuthIntent] = useState<AuthIntent>();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [stylePickerOpen, setStylePickerOpen] = useState(false);
   const [isSaveOpen, setIsSaveOpen] = useState(false);
   const [saveForShare, setSaveForShare] = useState(false);
   const [suggestedName, setSuggestedName] = useState("Untitled run");
@@ -100,10 +100,6 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
   const savedRoutes = useSavedRoutes(Boolean(isSignedIn));
 
   useEffect(() => {
-    setMapStyleId(readStoredMapStyle());
-  }, []);
-
-  useEffect(() => {
     captureEvent(analyticsEvents.dashboardOpened, {
       shared: Boolean(sharedRoute),
     });
@@ -125,7 +121,12 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
   const activeSaved = savedDraftKey === currentDraftKey ? currentSaved : undefined;
 
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isSignedIn) {
+      setMapStyleId(DEFAULT_MAP_STYLE_ID);
+      setStylePickerOpen(false);
+      return;
+    }
+    setMapStyleId(readStoredMapStyle());
     void fetch("/api/me", { method: "POST", headers: analyticsHeaders() });
     setIsAuthOpen(false);
     const pending = pendingAuthRef.current;
@@ -136,6 +137,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
       setShareError(undefined);
       setIsSaveOpen(true);
     }
+    if (pending === "style") setStylePickerOpen(true);
   }, [isSignedIn]);
 
   useEffect(() => {
@@ -182,7 +184,6 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
 
   function openAuth(intent?: AuthIntent) {
     pendingAuthRef.current = intent;
-    setAuthIntent(intent);
     setIsAuthOpen(true);
     captureEvent(analyticsEvents.signInOpened, { intent: intent ?? "account" });
   }
@@ -400,7 +401,14 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
             onToggle={toggleLayer}
             isLoading={featureState.isLoading}
           />
-          <MapStyleControls styleId={mapStyleId} onChange={changeMapStyle} />
+          <MapStyleControls
+            styleId={mapStyleId}
+            locked={!isSignedIn}
+            open={stylePickerOpen}
+            onOpenChange={setStylePickerOpen}
+            onLockedClick={() => openAuth("style")}
+            onChange={changeMapStyle}
+          />
         </div>
       </div>
 
@@ -481,7 +489,6 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
 
       {isAuthOpen ? (
         <AuthModal
-          intent={authIntent}
           onClose={() => {
             pendingAuthRef.current = undefined;
             setIsAuthOpen(false);

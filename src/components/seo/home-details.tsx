@@ -129,7 +129,11 @@ export function HomeDetails() {
             >
               the traffic-lights note
             </Link>
-            .
+            . Map, routing, and sign-in credits are on the{" "}
+            <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/terms">
+              terms
+            </Link>{" "}
+            page.
           </p>
         </div>
 

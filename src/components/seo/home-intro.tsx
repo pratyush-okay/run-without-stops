@@ -59,7 +59,11 @@ export function HomeIntro() {
               >
                 how to use the Route builder
               </Link>
-              .
+              . Terms and credits for the map, routing, and sign-in services sit on the{" "}
+              <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/terms">
+                terms
+              </Link>{" "}
+              page.
             </p>
           </div>
         </div>
