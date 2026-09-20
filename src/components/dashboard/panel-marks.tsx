@@ -231,9 +231,8 @@ export function LayersGlyph({ className = "size-4" }: { className?: string }) {
 export function MapLookGlyph({ className = "size-4" }: { className?: string }) {
   return (
     <Glyph className={className} color="#c8ff52">
-      <rect x="2.5" y="2.5" width="11" height="11" rx="1.8" />
-      <path d="M2.5 6.4h11M2.5 10h11M6.4 2.5v11M10 2.5v11" />
-      <path d="M11.35 4.25a1.85 1.85 0 1 1-2.15 2.2 1.5 1.5 0 0 0 2.15-2.2Z" />
+      <path d="M2.4 4.2 6.2 2.5l3.6 1.7 3.8-1.7v9.6l-3.8 1.7-3.6-1.7-3.8 1.7V4.2Z" />
+      <path d="M6.2 2.5v9.6M9.8 4.2v9.6" />
     </Glyph>
   );
 }

@@ -5,18 +5,16 @@ export function HomeIntro() {
   return (
     <section
       aria-label="About Run Without Stops"
-      className="pointer-events-none absolute z-20 right-[max(0.75rem,env(safe-area-inset-right))] bottom-[calc(var(--rws-metrics-clearance)+env(safe-area-inset-bottom))] md:max-w-sm"
+      className="pointer-events-none absolute z-20 right-[max(0.75rem,env(safe-area-inset-right))] bottom-[calc(var(--rws-chrome-clearance)+env(safe-area-inset-bottom))] md:max-w-sm"
     >
       <details className="rws-intro group pointer-events-auto relative">
-        <summary className="rws-panel flex size-9 cursor-pointer list-none items-center justify-center text-[#c8ff52] transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52] [&::-webkit-details-marker]:hidden md:h-auto md:w-auto md:gap-2 md:px-3 md:py-2 md:text-xs md:font-medium md:text-white/80 md:hover:text-white">
-          <span className="sr-only md:hidden">About this planner</span>
-          <span className="hidden md:inline md:group-open:hidden">About this planner</span>
-          <span className="hidden md:group-open:inline">Hide planner intro</span>
-          <BrandMark className="size-5 md:size-4" />
+        <summary className="rws-panel flex size-9 cursor-pointer list-none items-center justify-center text-[#c8ff52] transition hover:text-[#d6ff7a] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52] [&::-webkit-details-marker]:hidden">
+          <span className="sr-only">About this planner</span>
+          <BrandMark className="size-5" />
         </summary>
         <div className="absolute right-0 bottom-[calc(100%+0.5rem)] hidden w-[min(24rem,calc(100vw-1.5rem))] group-open:block">
           <div className="rws-panel max-h-[min(60dvh,24rem)] overflow-auto p-3 md:p-4">
-            <p className="rws-kicker">Anywhere</p>
+            <p className="rws-kicker">Run Without Stops | Run Planner</p>
             <h1 className="mt-1 text-base font-semibold tracking-tight">
               Plan quieter running routes
             </h1>

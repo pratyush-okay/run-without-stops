@@ -6,6 +6,7 @@ import {
   PRODUCTION_SITE_ORIGIN,
   PUBLIC_PAGE_ROBOTS,
   resolveSiteOrigin,
+  SITE_TITLE,
   SSO_DISALLOW_PATHS,
   sitemapPaths,
 } from "@/lib/seo/site";
@@ -51,6 +52,10 @@ describe("public URL lists", () => {
   it("joins origin and path without a double slash", () => {
     expect(absoluteUrl("/", PRODUCTION_SITE_ORIGIN)).toBe(PRODUCTION_SITE_ORIGIN);
     expect(absoluteUrl("/blog", PRODUCTION_SITE_ORIGIN)).toBe(`${PRODUCTION_SITE_ORIGIN}/blog`);
+  });
+
+  it("uses Run Planner as the homepage tab title", () => {
+    expect(SITE_TITLE).toBe("Run Planner | Run Without Stops");
   });
 
   it("asks Google to index public pages", () => {

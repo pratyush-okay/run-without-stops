@@ -5,6 +5,7 @@
   --background: #0a0d0b;
   --foreground: #f4f7f5;
   --rws-metrics-clearance: 10.25rem;
+  --rws-chrome-clearance: 11.5rem;
   --rws-intro-clearance: 3rem;
   --rws-edit-stack-width: 8.25rem;
 }
@@ -301,7 +302,7 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
 .mapboxgl-ctrl-bottom-right {
   right: 0.75rem;
   bottom: calc(
-    var(--rws-metrics-clearance) +
+    var(--rws-chrome-clearance) +
     var(--rws-intro-clearance) +
     env(safe-area-inset-bottom)
   );
@@ -309,7 +310,7 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
 
 .mapboxgl-ctrl-bottom-left {
   left: 0.75rem;
-  bottom: calc(var(--rws-metrics-clearance) + env(safe-area-inset-bottom));
+  bottom: calc(var(--rws-chrome-clearance) + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 767px) {
@@ -322,6 +323,7 @@ html .mapboxgl-ctrl.mapboxgl-ctrl-attrib.mapboxgl-compact-show .mapboxgl-ctrl-at
 @media (min-width: 768px) {
   :root {
     --rws-metrics-clearance: 6.25rem;
+    --rws-chrome-clearance: 6.25rem;
   }
 
   .mapboxgl-ctrl-bottom-left {

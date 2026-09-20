@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { AuthControls } from "@/components/auth/auth-controls";
 import { type AuthIntent, AuthModal } from "@/components/auth/auth-modal";
-import { AppLogo } from "@/components/brand/app-logo";
+import { AppLogo, BrandMark } from "@/components/brand/app-logo";
 import { LayerControls } from "@/components/dashboard/layer-controls";
 import { MapStyleControls } from "@/components/dashboard/map-style-controls";
 import { MetricsToggle } from "@/components/dashboard/metrics-toggle";
@@ -278,7 +278,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
 
   return (
     <main
-      className={`relative h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white ${
+      className={`relative h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white [--rws-chrome-clearance:11.5rem] md:[--rws-chrome-clearance:6.25rem] ${
         metricsExpanded
           ? "[--rws-metrics-clearance:11.5rem] md:[--rws-metrics-clearance:11rem]"
           : "[--rws-metrics-clearance:11.5rem] md:[--rws-metrics-clearance:6.25rem]"
@@ -318,9 +318,19 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
       <div className="pointer-events-none absolute inset-x-0 top-0 z-30 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="flex items-center gap-2 md:block md:h-10">
           <div className="pointer-events-auto shrink-0 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-[max(1rem,env(safe-area-inset-left))]">
-            <div className="rws-panel grid size-11 place-items-center md:size-10">
+            <div className="rws-panel grid size-11 place-items-center md:hidden">
               <AppLogo className="size-full" />
             </div>
+            <a
+              href="/"
+              className="rws-panel hidden h-10 items-center gap-2 px-2 pr-3 text-[#A8FF35] transition hover:text-[#d6ff7a] md:flex"
+              aria-label="Run Without Stops"
+            >
+              <BrandMark className="size-5" />
+              <span className="text-[13px] font-medium tracking-tight text-white">
+                Run Without Stops
+              </span>
+            </a>
           </div>
           <div className="pointer-events-auto min-w-0 flex-1 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-1/2 md:w-[clamp(18rem,36vw,28rem)] md:-translate-x-1/2">
             <PlaceSearch
