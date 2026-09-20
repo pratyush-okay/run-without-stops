@@ -61,7 +61,7 @@ export function LayerControls({ layers, onToggle, isLoading }: LayerControlsProp
     >
       <button
         type="button"
-        className="grid size-11 place-items-center rounded-lg text-white/55 transition hover:bg-white/[0.06] hover:text-white/85 md:hidden"
+        className="grid size-11 place-items-center rounded-lg text-[#c8ff52] transition hover:bg-white/[0.06] hover:text-[#d6ff7a] md:hidden"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls={listId}
@@ -71,7 +71,8 @@ export function LayerControls({ layers, onToggle, isLoading }: LayerControlsProp
         <LayersGlyph />
       </button>
       <div id={listId} className={open ? "mt-1 md:mt-0" : "hidden md:block"}>
-        <div className="hidden items-center justify-between px-2 pt-1 pb-2 md:flex">
+        <div className="hidden items-center gap-2 px-2 pt-1 pb-2 md:flex">
+          <LayersGlyph className="size-3.5" />
           <p className="rws-kicker">On the map</p>
         </div>
         <div className="flex flex-col gap-0.5">

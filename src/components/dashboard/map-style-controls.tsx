@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { MapStyleMark } from "@/components/dashboard/map-style-marks";
+import { MapLookGlyph } from "@/components/dashboard/panel-marks";
 import { MAP_STYLES, type MapStyleId } from "@/lib/maps/styles";
 
 type MapStyleControlsProps = {
@@ -64,7 +65,7 @@ export function MapStyleControls({
     >
       <button
         type="button"
-        className="grid size-11 shrink-0 place-items-center rounded-lg text-white/55 transition hover:bg-white/[0.06] hover:text-white/85"
+        className="grid size-11 shrink-0 place-items-center rounded-lg text-[#c8ff52] transition hover:bg-white/[0.06] hover:text-[#d6ff7a]"
         onClick={() => {
           if (locked) {
             onLockedClick?.();
@@ -77,7 +78,7 @@ export function MapStyleControls({
         aria-label={locked ? "Map look" : open ? "Hide map looks" : "Show map looks"}
         title="Map look"
       >
-        <MapStyleMark id={locked ? "dark" : styleId} />
+        <MapLookGlyph />
       </button>
       <div
         id={listId}

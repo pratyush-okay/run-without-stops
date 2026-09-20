@@ -220,10 +220,20 @@ export function SearchGlyph({ className = "size-3.5" }: { className?: string }) 
 
 export function LayersGlyph({ className = "size-4" }: { className?: string }) {
   return (
-    <Glyph className={className}>
+    <Glyph className={className} color="#c8ff52">
       <path d="M8 2.3 2.7 5.2 8 8.1l5.3-2.9L8 2.3Z" />
       <path d="M2.7 8.1 8 11l5.3-2.9" />
       <path d="M2.7 11 8 13.9 13.3 11" />
+    </Glyph>
+  );
+}
+
+export function MapLookGlyph({ className = "size-4" }: { className?: string }) {
+  return (
+    <Glyph className={className} color="#c8ff52">
+      <rect x="2.5" y="2.5" width="11" height="11" rx="1.8" />
+      <path d="M2.5 6.4h11M2.5 10h11M6.4 2.5v11M10 2.5v11" />
+      <path d="M11.35 4.25a1.85 1.85 0 1 1-2.15 2.2 1.5 1.5 0 0 0 2.15-2.2Z" />
     </Glyph>
   );
 }

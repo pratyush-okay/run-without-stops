@@ -13,8 +13,8 @@ export function DarkStyleMark() {
   return (
     <Mark>
       <rect width="16" height="16" rx="3.2" fill="#161a18" />
-      <path d="M2 7.2h12M2 10.4h12M5.2 2v12M10.4 2v12" stroke="#3a4440" strokeWidth="1.1" />
-      <circle cx="11.1" cy="4.6" r="2.15" fill="#d7decc" />
+      <path d="M2 7.2h12M2 10.4h12M5.2 2v12M10.4 2v12" stroke="#c8ff52" strokeWidth="1.1" />
+      <circle cx="11.1" cy="4.6" r="2.15" fill="#c8ff52" />
       <circle cx="12.15" cy="4.15" r="1.55" fill="#161a18" />
     </Mark>
   );

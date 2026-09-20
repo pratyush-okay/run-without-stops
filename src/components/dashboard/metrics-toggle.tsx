@@ -23,7 +23,9 @@ export function MetricsToggle({ unit, onChange }: MetricsToggleProps) {
           key={value}
           type="button"
           className={`min-h-8 rounded-lg px-2.5 text-[11px] font-semibold tracking-wider uppercase transition ${
-            unit === value ? "bg-white text-[#101512]" : "text-white/45 hover:text-white"
+            unit === value
+              ? "bg-[#c8ff52] text-[#101512]"
+              : "text-[#c8ff52]/55 hover:text-[#c8ff52]"
           }`}
           aria-pressed={unit === value}
           onClick={() => onChange(value)}

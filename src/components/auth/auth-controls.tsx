@@ -95,7 +95,9 @@ export function AuthControls({
   if (!isLoaded) {
     return (
       <div className={profileShellClass} aria-hidden>
-        <div className={`${profileTileClass} bg-white/[0.04]`} />
+        <div className={`${profileTileClass} text-[#c8ff52]`}>
+          <AccountIcon />
+        </div>
       </div>
     );
   }
@@ -105,7 +107,7 @@ export function AuthControls({
       <div className={profileShellClass}>
         <button
           type="button"
-          className={`${profileTileClass} text-white/50 hover:bg-white/[0.06] hover:text-white/85`}
+          className={`${profileTileClass} text-[#c8ff52] hover:bg-white/[0.06] hover:text-[#d6ff7a]`}
           onClick={onSignIn}
           aria-label="Sign in"
         >
