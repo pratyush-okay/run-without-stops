@@ -57,7 +57,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
   async function startSso(strategy: OAuthStrategy) {
     setFormError(undefined);
-    const { error } = await signIn.sso({
+    const flow = mode === "sign-up" ? signUp : signIn;
+    const { error } = await flow.sso({
       strategy,
       redirectUrl: SSO_COMPLETE_PATH,
       redirectCallbackUrl: SSO_CALLBACK_PATH,

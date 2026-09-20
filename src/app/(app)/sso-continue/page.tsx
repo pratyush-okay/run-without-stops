@@ -1,8 +1,7 @@
 "use client";
 
-import { useSignUp } from "@clerk/nextjs";
+import { useSignUp, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppLogo } from "@/components/brand/app-logo";
 import { SSO_COMPLETE_PATH } from "@/lib/auth/oauth";
@@ -10,7 +9,7 @@ import { navigateAfterSso } from "@/lib/auth/sso-navigation";
 import { usernameSchema } from "@/lib/schemas/profile";
 
 export default function SsoContinuePage() {
-  const router = useRouter();
+  const { isSignedIn } = useUser();
   const { signUp, errors, fetchStatus } = useSignUp();
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -24,10 +23,10 @@ export default function SsoContinuePage() {
   const isBusy = fetchStatus === "fetching";
 
   useEffect(() => {
-    if (signUp.status === "complete") {
-      router.push(SSO_COMPLETE_PATH);
+    if (isSignedIn || signUp.status === "complete") {
+      window.location.assign(SSO_COMPLETE_PATH);
     }
-  }, [router, signUp.status]);
+  }, [isSignedIn, signUp.status]);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,7 +53,7 @@ export default function SsoContinuePage() {
     if (signUp.status === "complete") {
       await signUp.finalize({
         navigate: async ({ session, decorateUrl }) => {
-          navigateAfterSso({ session, decorateUrl, router });
+          navigateAfterSso({ session, decorateUrl });
         },
       });
     }

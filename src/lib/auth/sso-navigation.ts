@@ -1,21 +1,12 @@
-import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { SSO_COMPLETE_PATH } from "@/lib/auth/oauth";
 
 type SsoNavigateArgs = {
-  session?: { currentTask?: { key: string } | null } | null;
+  session?: { currentTask?: { key: string } | null | undefined } | null | undefined;
   decorateUrl: (url: string) => string;
-  router: AppRouterInstance;
+  assign?: (url: string) => void;
 };
 
-export function navigateAfterSso({ session, decorateUrl, router }: SsoNavigateArgs) {
-  if (session?.currentTask) {
-    return;
-  }
-
+export function navigateAfterSso({ decorateUrl, assign }: SsoNavigateArgs) {
   const url = decorateUrl(SSO_COMPLETE_PATH);
-  if (url.startsWith("http")) {
-    window.location.href = url;
-    return;
-  }
-  router.push(url);
+  (assign ?? ((next) => window.location.assign(next)))(url);
 }
