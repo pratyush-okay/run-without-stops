@@ -8,6 +8,7 @@ import {
   PRODUCTION_SITE_ORIGIN,
   PUBLIC_PAGE_ROBOTS,
   resolveSiteOrigin,
+  SITE_DESCRIPTION,
   SITE_TITLE,
   SSO_DISALLOW_PATHS,
   sitemapPaths,
@@ -62,8 +63,15 @@ describe("public URL lists", () => {
     expect(absoluteUrl("/blog", PRODUCTION_SITE_ORIGIN)).toBe(`${PRODUCTION_SITE_ORIGIN}/blog`);
   });
 
-  it("uses Run Planner as the homepage tab title", () => {
-    expect(SITE_TITLE).toBe("Run Planner | Run Without Stops");
+  it("uses a 50-60 character homepage tab title", () => {
+    expect(SITE_TITLE).toBe("Free quieter running route planner | Run Without Stops");
+    expect(SITE_TITLE.length).toBeGreaterThanOrEqual(50);
+    expect(SITE_TITLE.length).toBeLessThanOrEqual(60);
+  });
+
+  it("keeps the homepage meta description in the 150-160 character window", () => {
+    expect(SITE_DESCRIPTION.length).toBeGreaterThanOrEqual(150);
+    expect(SITE_DESCRIPTION.length).toBeLessThanOrEqual(160);
   });
 
   it("asks Google to index public pages", () => {

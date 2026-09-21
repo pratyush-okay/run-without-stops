@@ -4,11 +4,11 @@ import { BlogBreadcrumbs } from "@/components/blog/blog-breadcrumbs";
 import { BlogShell } from "@/components/blog/blog-shell";
 import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
 import { JsonLd } from "@/lib/seo/json-ld";
+import { TERMS_DESCRIPTION, TERMS_TITLE } from "@/lib/seo/public-copy";
 import { absoluteUrl, defaultSocialImages, PUBLIC_PAGE_ROBOTS, SITE_NAME } from "@/lib/seo/site";
 
-const TITLE = "Terms and credits";
-const DESCRIPTION =
-  "How Run Without Stops accounts, saved routes, and map data work, plus credit for the maps, routing, and sign-in services the planner uses.";
+const TITLE = TERMS_TITLE;
+const DESCRIPTION = TERMS_DESCRIPTION;
 
 export const metadata: Metadata = {
   title: TITLE,

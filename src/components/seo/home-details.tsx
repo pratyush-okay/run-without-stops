@@ -73,11 +73,43 @@ export function HomeDetails() {
           <h2 className="text-xl font-semibold tracking-tight">What the layers mark</h2>
           <div className="mt-4 space-y-4 text-sm leading-6 text-white/65">
             <p>
-              Layers come from OpenStreetMap for the streets on screen: traffic lights, crossings,
-              parks, drinking water, highways, and busy roads. They are mapped objects, not a live
-              countdown. If a remaining light sits on a corner you will not wait at, move a waypoint
-              and route again. Zoom to streets before you trust overlays. A country-scale view will
-              not load lights you can run.
+              Layers come from{" "}
+              <a
+                className="text-[#c8ff52] underline-offset-2 hover:underline"
+                href="https://www.openstreetmap.org/copyright"
+                rel="noopener"
+              >
+                OpenStreetMap
+              </a>{" "}
+              for the streets on screen: traffic lights, crossings, parks, drinking water, highways,
+              and busy roads. They are mapped objects, not a live countdown. If a remaining light
+              sits on a corner you will not wait at, move a waypoint and route again. Zoom to
+              streets before you trust overlays. A country-scale view will not load lights you can
+              run. Pedestrian routing is{" "}
+              <a
+                className="text-[#c8ff52] underline-offset-2 hover:underline"
+                href="https://www.graphhopper.com"
+                rel="noopener"
+              >
+                GraphHopper
+              </a>{" "}
+              and{" "}
+              <a
+                className="text-[#c8ff52] underline-offset-2 hover:underline"
+                href="https://valhalla.github.io/valhalla"
+                rel="noopener"
+              >
+                Valhalla
+              </a>
+              . The basemap credit is{" "}
+              <a
+                className="text-[#c8ff52] underline-offset-2 hover:underline"
+                href="https://www.mapbox.com/about/maps"
+                rel="noopener"
+              >
+                Mapbox
+              </a>
+              .
             </p>
             <p>
               Click within about 60 m of the start after two or more points to close a loop. Closing

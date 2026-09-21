@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { CLERK_PROXY_MATCHER, isClerkProxyPath } from "@/lib/auth/clerk-proxy-matcher";
+import {
+  APEX_HOST_REDIRECT_MATCHER,
+  CLERK_PROXY_MATCHER,
+  isClerkProxyPath,
+} from "@/lib/auth/clerk-proxy-matcher";
 
 describe("clerk proxy matcher", () => {
   it("runs Clerk on the homepage, SSO, APIs, and share links", () => {
@@ -28,6 +32,9 @@ describe("clerk proxy matcher", () => {
   it("keeps proxy.ts matcher strings identical to the helper", () => {
     const source = readFileSync(path.join(process.cwd(), "src/proxy.ts"), "utf8");
     for (const matcher of CLERK_PROXY_MATCHER) {
+      expect(source).toContain(JSON.stringify(matcher).slice(1, -1));
+    }
+    for (const matcher of APEX_HOST_REDIRECT_MATCHER) {
       expect(source).toContain(JSON.stringify(matcher).slice(1, -1));
     }
   });

@@ -1,6 +1,6 @@
 ---
 title: "How to Use the Run Without Stops Route Builder"
-seoTitle: "Direct-path running routes"
+seoTitle: "Direct-path running route planner"
 description: "Click start and finish on the custom running route map, choose Direct for the literal pedestrian line, then edit waypoints. How to use the Route builder."
 date: "2026-09-18"
 slug: how-to-use-the-run-without-stops-route-builder

@@ -7,6 +7,15 @@ export const CLERK_PROXY_MATCHER = [
   "/(api|trpc)(.*)",
 ] as const;
 
+export const APEX_HOST_REDIRECT_MATCHER = [
+  "/blog",
+  "/blog/:path*",
+  "/terms",
+  "/sitemap.xml",
+  "/robots.txt",
+  "/llms.txt",
+] as const;
+
 export function isClerkProxyPath(pathname: string) {
   const first = new RegExp(`^/((?!${CLERK_PROXY_EXCLUSION}).*)$`);
   const api = /^\/(api|trpc)(.*)$/;

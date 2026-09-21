@@ -1,14 +1,12 @@
 import path from "node:path";
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
+import { apexToWwwRedirects } from "./src/lib/seo/host-redirect";
 import { HSTS_HEADER } from "./src/lib/seo/hsts";
 
 const projectRoot = import.meta.dirname;
 const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://eu.i.posthog.com";
 const posthogAssetsHost = posthogHost.replace(".i.posthog.com", "-assets.i.posthog.com");
-
-const apexHost = "runwithoutstops.com";
-const wwwOrigin = "https://www.runwithoutstops.com";
 
 const nextConfig: NextConfig = {
   agentRules: false,
@@ -32,20 +30,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [
-      {
-        source: "/",
-        has: [{ type: "host", value: apexHost }],
-        destination: `${wwwOrigin}/`,
-        permanent: true,
-      },
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: apexHost }],
-        destination: `${wwwOrigin}/:path*`,
-        permanent: true,
-      },
-    ];
+    return apexToWwwRedirects;
   },
   async rewrites() {
     return [

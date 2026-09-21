@@ -69,4 +69,32 @@ describe("homepage proxy", () => {
     expect(response.headers.has(`x-middleware-request-${SEARCH_CRAWLER_HEADER}`)).toBe(false);
     expect(response.headers.get("x-middleware-override-headers")).toBe("user-agent");
   });
+
+  it("301s the apex host to www before Clerk runs", async () => {
+    const request = new NextRequest("https://runwithoutstops.com/blog?ref=1", {
+      headers: {
+        host: "runwithoutstops.com",
+        "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      },
+    });
+
+    const response = await proxy(request, event);
+
+    expect(clerkState.calls).toBe(0);
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe("https://www.runwithoutstops.com/blog?ref=1");
+  });
+
+  it("does not send public blog requests through Clerk", async () => {
+    const request = new NextRequest("https://www.runwithoutstops.com/blog", {
+      headers: {
+        "user-agent": "Mozilla/5.0 Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+
+    const response = await proxy(request, event);
+
+    expect(clerkState.calls).toBe(0);
+    expect(response.status).toBe(200);
+  });
 });

@@ -2,9 +2,9 @@ import { env } from "@/env";
 
 export const PRODUCTION_SITE_ORIGIN = "https://www.runwithoutstops.com";
 export const SITE_NAME = "Run Without Stops";
-export const SITE_TITLE = "Run Planner | Run Without Stops";
+export const SITE_TITLE = "Free quieter running route planner | Run Without Stops";
 export const SITE_DESCRIPTION =
-  "Free running route planner. Click the map or search a place anywhere, then skip traffic lights, highways, and busy roads. Optional save and share.";
+  "Free running route planner. Click the map or search a place anywhere, then skip traffic lights, highways, and busy roads. Save or share a private line.";
 export const SSO_DISALLOW_PATHS = ["/sso-callback", "/sso-continue"] as const;
 export const ADMIN_DISALLOW_PATHS = ["/admin"] as const;
 export const PRIVATE_DISALLOW_PATHS = [...SSO_DISALLOW_PATHS, ...ADMIN_DISALLOW_PATHS] as const;

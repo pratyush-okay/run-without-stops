@@ -1,4 +1,5 @@
 import { listPublishedPosts, parsePostMarkdown, postDocumentTitle } from "@/lib/blog/posts";
+import { withBrandTitle } from "@/lib/seo/meta-length";
 
 const SAMPLE = `---
 title: Sample post
@@ -89,7 +90,13 @@ describe("listPublishedPosts", () => {
     ).toBe(true);
     expect(posts.every((post) => !post.slug.startsWith("sso-"))).toBe(true);
     expect(
-      posts.every((post) => `${postDocumentTitle(post)} | Run Without Stops`.length <= 60),
+      posts.every((post) => {
+        const titleLength = withBrandTitle(postDocumentTitle(post)).length;
+        return titleLength >= 50 && titleLength <= 60;
+      }),
+    ).toBe(true);
+    expect(
+      posts.every((post) => post.description.length >= 150 && post.description.length <= 160),
     ).toBe(true);
   });
 });

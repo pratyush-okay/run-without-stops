@@ -6,6 +6,7 @@ import { BlogShell } from "@/components/blog/blog-shell";
 import { listPublishedPosts } from "@/lib/blog/posts";
 import { breadcrumbListJsonLd } from "@/lib/seo/breadcrumbs";
 import { JsonLd } from "@/lib/seo/json-ld";
+import { BLOG_INDEX_DESCRIPTION, BLOG_INDEX_TITLE } from "@/lib/seo/public-copy";
 import {
   absoluteUrl,
   defaultSocialImages,
@@ -14,24 +15,24 @@ import {
   SITE_NAME,
 } from "@/lib/seo/site";
 
+const TITLE = BLOG_INDEX_TITLE;
+const DESCRIPTION = BLOG_INDEX_DESCRIPTION;
+
 export const metadata: Metadata = {
-  title: "Quieter running route notes",
-  description:
-    "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
+  title: TITLE,
+  description: DESCRIPTION,
   robots: PUBLIC_PAGE_ROBOTS,
   alternates: { canonical: "/blog" },
   openGraph: {
     url: "/blog",
-    title: "Quieter running route notes",
-    description:
-      "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
+    title: TITLE,
+    description: DESCRIPTION,
     images: defaultSocialImages(),
   },
   twitter: {
     card: "summary_large_image",
-    title: "Quieter running route notes",
-    description:
-      "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
+    title: TITLE,
+    description: DESCRIPTION,
     images: defaultSocialImages(),
   },
 };
@@ -51,9 +52,8 @@ export default function BlogIndexPage() {
           {
             "@context": "https://schema.org",
             "@type": "CollectionPage",
-            name: "Quieter running route notes",
-            description:
-              "Notes on planning runs with fewer traffic lights, highways, and busy streets, then drawing the line on the Run Without Stops map.",
+            name: TITLE,
+            description: DESCRIPTION,
             url: blogUrl,
             isPartOf: {
               "@type": "WebSite",

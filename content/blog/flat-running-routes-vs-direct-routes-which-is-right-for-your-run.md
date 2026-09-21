@@ -1,6 +1,6 @@
 ---
 title: "Flat Running Routes vs Direct Routes: Which Is Right for Your Run?"
-seoTitle: "Flat running route planner"
+seoTitle: "Flat vs direct running route planner"
 description: "Direct follows your clicks. A flat running route planner is Low stops plus Avoid hills: extra metres can win if they cut the climb. How to choose on the map."
 date: "2026-09-18"
 slug: flat-running-routes-vs-direct-routes-which-is-right-for-your-run
