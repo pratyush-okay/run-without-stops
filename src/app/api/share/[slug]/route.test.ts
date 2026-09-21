@@ -12,6 +12,9 @@ const saved = {
   sharePath: "/r/abc12def34",
   mode: "low_stops" as const,
   distanceMeters: 1200,
+  trafficSignals: 1,
+  crossings: 2,
+  majorRoadMeters: 80,
   createdAt: "2026-09-16T00:00:00.000Z",
   updatedAt: "2026-09-16T00:00:00.000Z",
   points: [

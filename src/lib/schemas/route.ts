@@ -20,7 +20,9 @@ export const routeMetricsSchema = z.object({
   maxElevationMeters: z.number().optional(),
   trafficSignals: z.number().int().nonnegative(),
   crossings: z.number().int().nonnegative(),
+  drinkingWater: z.number().int().nonnegative().optional(),
   majorRoadMeters: z.number().nonnegative(),
+  paceSecondsPerKm: z.number().min(150).max(720).optional(),
 });
 
 export const elevationMarkSchema = z.object({

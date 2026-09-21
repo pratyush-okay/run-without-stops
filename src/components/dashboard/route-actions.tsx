@@ -15,7 +15,7 @@ import {
 import { usePointLabels } from "@/hooks/use-point-labels";
 import { captureEvent } from "@/lib/analytics/client";
 import { analyticsEvents } from "@/lib/analytics/events";
-import { featuresNearRoute } from "@/lib/geo";
+import { displayedRouteFeatureCounts } from "@/lib/maps/route-feature-counts";
 import { suggestedRouteName } from "@/lib/routes/name";
 import { fileSafeName } from "@/lib/routes/slug";
 import { downloadPngFromSvg, downloadText } from "@/lib/routing/download";
@@ -37,6 +37,7 @@ type RouteShareProps = {
   mode: RouteMode;
   route: RouteResponse | undefined;
   features: RunnerFeature[];
+  layers: Partial<Record<RunnerFeature["kind"], boolean>>;
   unit: MetricUnit;
   durationSeconds: number | undefined;
   savedRouteName?: string | undefined;
@@ -148,6 +149,7 @@ export function RoutePersistActions({
   mode,
   route,
   features,
+  layers,
   unit,
   durationSeconds,
   savedRouteName,
@@ -162,13 +164,12 @@ export function RoutePersistActions({
   const [exportError, setExportError] = useState<string>();
   const exportRef = useRef<HTMLDivElement>(null);
   const labels = usePointLabels(points, knownLabels);
-  const routePoints = (route?.coordinates ?? []).map(([lng, lat]) => ({ lng, lat }));
-  const nearbyWater =
-    routePoints.length >= 2
-      ? featuresNearRoute(features, routePoints).filter(
-          (feature) => feature.kind === "drinking_water",
-        ).length
-      : 0;
+  const onRoute = displayedRouteFeatureCounts(
+    features,
+    (route?.coordinates ?? []).map(([lng, lat]) => ({ lng, lat })),
+    layers,
+    points,
+  );
 
   useEffect(() => {
     if (!exportOpen) return;
@@ -193,7 +194,7 @@ export function RoutePersistActions({
       durationSeconds
         ? `${formatDistance(route.metrics.distanceMeters, unit)} · ${formatEffortDuration(durationSeconds)}`
         : formatDistance(route.metrics.distanceMeters, unit),
-      `${route.metrics.trafficSignals} lights · ${route.metrics.crossings} crossings · ${nearbyWater} water`,
+      `${onRoute.trafficSignals} lights · ${onRoute.crossings} crossings · ${onRoute.drinkingWater} water`,
       route.metrics.ascentMeters === undefined
         ? undefined
         : `${formatElevation(route.metrics.ascentMeters, unit)} gain`,

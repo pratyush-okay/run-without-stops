@@ -12,6 +12,7 @@ import {
   SignalsGlyph,
   TimeGlyph,
 } from "@/components/dashboard/panel-marks";
+import { displayedRouteFeatureCounts } from "@/lib/maps/route-feature-counts";
 import {
   displayPaceSeconds,
   distanceParts,
@@ -23,10 +24,14 @@ import {
   paceUnitLabel,
 } from "@/lib/routing/format";
 import type { RouteScrub } from "@/lib/routing/route-scrub";
+import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import type { RouteResponse } from "@/lib/schemas/route";
 
 type RouteSummaryProps = {
   route: RouteResponse | undefined;
+  points: GeoPoint[];
+  features: RunnerFeature[];
+  layers: Partial<Record<RunnerFeature["kind"], boolean>>;
   error: string | undefined;
   isRouting: boolean;
   unit: MetricUnit;
@@ -138,6 +143,9 @@ function ExpandButton({ expanded, onToggle }: { expanded: boolean; onToggle: () 
 
 export function RouteSummary({
   route,
+  points,
+  features,
+  layers,
   error,
   isRouting,
   unit,
@@ -176,6 +184,12 @@ export function RouteSummary({
     );
   }
 
+  const onRoute = displayedRouteFeatureCounts(
+    features,
+    route.coordinates.map(([lng, lat]) => ({ lng, lat })),
+    layers,
+    points,
+  );
   const distance = distanceParts(route.metrics.distanceMeters, unit);
   const major = distanceParts(route.metrics.majorRoadMeters, unit);
   const gain = elevationParts(route.metrics.ascentMeters ?? 0, unit);
@@ -255,13 +269,13 @@ export function RouteSummary({
               label="Signals"
               icon={<SignalsGlyph />}
               showLabel={expanded}
-              value={String(route.metrics.trafficSignals)}
+              value={String(onRoute.trafficSignals)}
             />
             <Stat
               label="Crossings"
               icon={<CrossingsGlyph />}
               showLabel={expanded}
-              value={String(route.metrics.crossings)}
+              value={String(onRoute.crossings)}
             />
             <Stat
               label="Major road"

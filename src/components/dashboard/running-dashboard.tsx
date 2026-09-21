@@ -26,6 +26,7 @@ import { analyticsHeaders, captureEvent } from "@/lib/analytics/client";
 import { analyticsEvents } from "@/lib/analytics/events";
 import { SYDNEY_CENTER, viewportCenter } from "@/lib/geo";
 import type { MapLayerVisibility } from "@/lib/maps/layers";
+import { displayedRouteFeatureCounts } from "@/lib/maps/route-feature-counts";
 import {
   DEFAULT_MAP_STYLE_ID,
   type MapStyleId,
@@ -35,6 +36,7 @@ import {
 } from "@/lib/maps/styles";
 import { routeDraftKey } from "@/lib/routes/draft";
 import { shareUrlForSlug } from "@/lib/routes/slug";
+import { routeWithDisplayedMetrics } from "@/lib/routes/stored-metrics";
 import type { MetricUnit } from "@/lib/routing/format";
 import { linePreviewCoordinates } from "@/lib/routing/waypoints";
 import type { GeoPoint } from "@/lib/schemas/features";
@@ -94,7 +96,10 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
         }
       : undefined,
   );
-  const effort = useRunEffort(planner.route?.metrics.distanceMeters);
+  const effort = useRunEffort(
+    planner.route?.metrics.distanceMeters,
+    planner.route?.metrics.paceSecondsPerKm,
+  );
   const { scrub, updateScrub } = useRouteScrub(
     planner.route
       ? `${planner.route.coordinates[0]?.join(",")}:${planner.route.metrics.distanceMeters}`
@@ -247,12 +252,18 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
     setIsSaving(true);
     setSaveError(undefined);
     try {
+      const onRoute = displayedRouteFeatureCounts(
+        featureState.features,
+        planner.route.coordinates.map(([lng, lat]) => ({ lng, lat })),
+        layers,
+        planner.points,
+      );
       const saved = await savedRoutes.save({
         name,
         points: planner.points,
         knownLabels: planner.knownLabels,
         mode: planner.mode,
-        route: planner.route,
+        route: routeWithDisplayedMetrics(planner.route, onRoute, effort.secondsPerKm),
       });
       setCurrentSaved(saved);
       setIsSaveOpen(false);
@@ -388,6 +399,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
               error={planner.error}
               isRouting={planner.isRouting}
               features={featureState.features}
+              layers={layers}
               onModeChange={planner.setMode}
               onAvoidElevationChange={planner.setAvoidElevation}
               onRemovePoint={planner.removePoint}
@@ -472,6 +484,9 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
           >
             <RouteSummary
               route={planner.route}
+              points={planner.points}
+              features={featureState.features}
+              layers={layers}
               error={planner.error}
               isRouting={planner.isRouting}
               unit={unit}

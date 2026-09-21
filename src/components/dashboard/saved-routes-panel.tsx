@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { formatDistance, type MetricUnit } from "@/lib/routing/format";
+import { savedRouteStatLine } from "@/lib/routes/saved-route-stats";
+import type { MetricUnit } from "@/lib/routing/format";
 import type { SavedRouteSummary } from "@/lib/schemas/saved-route";
 
 type SavedRoutesPanelProps = {
@@ -117,9 +118,8 @@ export function SavedRoutesPanel({
                         }}
                       >
                         <p className="truncate text-sm font-medium text-white">{route.name}</p>
-                        <p className="mt-0.5 text-[11px] text-white/40">
-                          {formatDistance(route.distanceMeters, unit)} ·{" "}
-                          {route.mode === "low_stops" ? "Low stops" : "Direct"}
+                        <p className="mt-0.5 text-[11px] leading-relaxed text-white/40">
+                          {savedRouteStatLine(route, unit)}
                         </p>
                       </button>
                       <div className="mt-2 flex gap-2">

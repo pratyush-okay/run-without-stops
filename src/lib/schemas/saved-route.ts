@@ -47,6 +47,13 @@ export const savedRouteSummarySchema = z.object({
   sharePath: z.string().min(1),
   mode: routeModeSchema,
   distanceMeters: z.number().nonnegative(),
+  trafficSignals: z.number().int().nonnegative(),
+  crossings: z.number().int().nonnegative(),
+  drinkingWater: z.number().int().nonnegative().optional(),
+  ascentMeters: z.number().nonnegative().optional(),
+  descentMeters: z.number().nonnegative().optional(),
+  majorRoadMeters: z.number().nonnegative(),
+  paceSecondsPerKm: z.number().min(150).max(720).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

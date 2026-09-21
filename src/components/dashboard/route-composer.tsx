@@ -5,7 +5,7 @@ import { LocationGlyph, MetricsExpandGlyph } from "@/components/dashboard/panel-
 import { RoutePersistActions } from "@/components/dashboard/route-actions";
 import { WaypointBadge } from "@/components/dashboard/waypoint-marks";
 import { pointLabelKey, usePointLabels } from "@/hooks/use-point-labels";
-import { featuresNearRoute } from "@/lib/geo";
+import { displayedRouteFeatureCounts } from "@/lib/maps/route-feature-counts";
 import { formatDistance, type MetricUnit } from "@/lib/routing/format";
 import { MAX_ROUTE_STOPS } from "@/lib/routing/points";
 import { visibleWaypoints } from "@/lib/routing/waypoints";
@@ -21,6 +21,7 @@ type RouteComposerProps = {
   error: string | undefined;
   isRouting: boolean;
   features: RunnerFeature[];
+  layers: Partial<Record<RunnerFeature["kind"], boolean>>;
   onModeChange: (mode: RouteMode) => void;
   onAvoidElevationChange: (avoid: boolean) => void;
   onRemovePoint: (index: number) => void;
@@ -45,6 +46,7 @@ export function RouteComposer({
   error,
   isRouting,
   features,
+  layers,
   onModeChange,
   onAvoidElevationChange,
   onRemovePoint,
@@ -63,13 +65,12 @@ export function RouteComposer({
   const detailsRef = useRef<HTMLDivElement>(null);
   const labels = usePointLabels(points, knownLabels);
   const marks = visibleWaypoints(points);
-  const routePoints = (route?.coordinates ?? []).map(([lng, lat]) => ({ lng, lat }));
-  const nearbyWater =
-    routePoints.length >= 2
-      ? featuresNearRoute(features, routePoints).filter(
-          (feature) => feature.kind === "drinking_water",
-        ).length
-      : 0;
+  const onRoute = displayedRouteFeatureCounts(
+    features,
+    (route?.coordinates ?? []).map(([lng, lat]) => ({ lng, lat })),
+    layers,
+    points,
+  );
 
   const headline =
     points.length === 0
@@ -79,7 +80,7 @@ export function RouteComposer({
         : isRouting
           ? "Finding your line…"
           : route
-            ? `${formatDistance(route.metrics.distanceMeters, unit)} · ${route.metrics.trafficSignals} lights`
+            ? `${formatDistance(route.metrics.distanceMeters, unit)} · ${onRoute.trafficSignals} lights`
             : `${points.length} points`;
 
   return (
@@ -229,7 +230,7 @@ export function RouteComposer({
 
           {route ? (
             <p className="mt-2 shrink-0 text-[11px] text-white/40">
-              {nearbyWater} drinking water near this line.
+              {onRoute.drinkingWater} drinking water near this line.
             </p>
           ) : null}
 
@@ -242,6 +243,7 @@ export function RouteComposer({
           mode={mode}
           route={route}
           features={features}
+          layers={layers}
           unit={unit}
           durationSeconds={durationSeconds}
           savedRouteName={savedRouteName}

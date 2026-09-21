@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_PACE_SECONDS_PER_KM,
   displayPaceSeconds,
@@ -10,8 +10,19 @@ import {
   storePaceSeconds,
 } from "@/lib/routing/format";
 
-export function useRunEffort(distanceMeters: number | undefined) {
-  const [secondsPerKm, setSecondsPerKm] = useState(DEFAULT_PACE_SECONDS_PER_KM);
+export function useRunEffort(distanceMeters: number | undefined, savedPaceSecondsPerKm?: number) {
+  const [secondsPerKm, setSecondsPerKm] = useState(
+    savedPaceSecondsPerKm ?? DEFAULT_PACE_SECONDS_PER_KM,
+  );
+  const appliedPace = useRef(savedPaceSecondsPerKm);
+
+  useEffect(() => {
+    if (savedPaceSecondsPerKm === undefined || appliedPace.current === savedPaceSecondsPerKm) {
+      return;
+    }
+    appliedPace.current = savedPaceSecondsPerKm;
+    setSecondsPerKm(savedPaceSecondsPerKm);
+  }, [savedPaceSecondsPerKm]);
 
   const durationSeconds = useMemo(
     () => (distanceMeters ? durationFromPace(distanceMeters, secondsPerKm) : undefined),

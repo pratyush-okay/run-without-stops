@@ -1,6 +1,7 @@
 import { createShareSlug, sharePathForSlug } from "@/lib/routes/slug";
+import { metricsForStorage, routePartsFromStoredMetrics } from "@/lib/routes/stored-metrics";
 import type { GeoPoint } from "@/lib/schemas/features";
-import type { RouteMetrics, RouteMode, RouteResponse } from "@/lib/schemas/route";
+import type { RouteMode, RouteResponse } from "@/lib/schemas/route";
 import {
   type SavedRoute,
   type SavedRouteSummary,
@@ -19,7 +20,7 @@ type SavedRouteRow = {
   known_labels: Record<string, string>;
   mode: RouteMode;
   coordinates: [number, number][];
-  metrics: RouteMetrics;
+  metrics: ReturnType<typeof metricsForStorage>;
   provider: RouteResponse["provider"];
   warnings: string[];
   created_at: string;
@@ -27,26 +28,38 @@ type SavedRouteRow = {
 };
 
 function toSummary(row: SavedRouteRow): SavedRouteSummary {
+  const { metrics } = routePartsFromStoredMetrics(row.metrics);
   return savedRouteSummarySchema.parse({
     id: row.id,
     name: row.name,
     shareSlug: row.share_slug,
     sharePath: sharePathForSlug(row.share_slug),
     mode: row.mode,
-    distanceMeters: row.metrics.distanceMeters,
+    distanceMeters: metrics.distanceMeters,
+    trafficSignals: metrics.trafficSignals,
+    crossings: metrics.crossings,
+    ...(metrics.drinkingWater === undefined ? {} : { drinkingWater: metrics.drinkingWater }),
+    ...(metrics.ascentMeters === undefined ? {} : { ascentMeters: metrics.ascentMeters }),
+    ...(metrics.descentMeters === undefined ? {} : { descentMeters: metrics.descentMeters }),
+    majorRoadMeters: metrics.majorRoadMeters,
+    ...(metrics.paceSecondsPerKm === undefined
+      ? {}
+      : { paceSecondsPerKm: metrics.paceSecondsPerKm }),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
 }
 
 function toSavedRoute(row: SavedRouteRow): SavedRoute {
+  const stored = routePartsFromStoredMetrics(row.metrics);
   return savedRouteSchema.parse({
     ...toSummary(row),
     points: row.points,
     knownLabels: row.known_labels ?? {},
     route: {
       coordinates: row.coordinates,
-      metrics: row.metrics,
+      metrics: stored.metrics,
+      ...(stored.elevation ? { elevation: stored.elevation } : {}),
       provider: row.provider,
       warnings: row.warnings ?? [],
     },
@@ -118,7 +131,7 @@ export async function createSavedRoute(ownerClerkId: string, input: SaveRouteReq
         known_labels: input.knownLabels,
         mode: input.mode,
         coordinates: input.route.coordinates,
-        metrics: input.route.metrics,
+        metrics: metricsForStorage(input.route),
         provider: input.route.provider,
         warnings: input.route.warnings,
       })
