@@ -71,7 +71,7 @@ describe("POST /api/agent/chat", () => {
     await expect(response.json()).resolves.toEqual({ error: "Chat is not configured" });
   });
 
-  it("rejects a disabled model", async () => {
+  it("rejects when no model is active", async () => {
     vi.mocked(currentUser).mockResolvedValue({ id: "user_123" } as never);
     vi.mocked(canUseAgentChat).mockReturnValue(true);
     vi.mocked(hasOpenRouterKey).mockReturnValue(true);
@@ -84,7 +84,7 @@ describe("POST /api/agent/chat", () => {
     const response = await POST(chatRequest());
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "That model is not available" });
+    await expect(response.json()).resolves.toEqual({ error: "No models are active" });
     expect(createAgentModel).not.toHaveBeenCalled();
   });
 
@@ -96,6 +96,6 @@ describe("POST /api/agent/chat", () => {
     const response = await POST(chatRequest({}));
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "Send a message and a model" });
+    await expect(response.json()).resolves.toEqual({ error: "Send a message" });
   });
 });

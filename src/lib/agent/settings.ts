@@ -39,6 +39,27 @@ export function isEnabledModelId(modelId: string, settings: ResolvedAgentSetting
   return settings.enabledModels.some((model) => model.id === modelId);
 }
 
+export function runtimeModelId(settings: ResolvedAgentSettings) {
+  const requested = settings.defaultModelId;
+  if (requested && !requested.endsWith(":free") && isEnabledModelId(requested, settings)) {
+    return requested;
+  }
+  return settings.enabledModels.find((model) => !model.id.endsWith(":free"))?.id ?? requested;
+}
+
+export function fallbackModelIds(modelId: string, settings: ResolvedAgentSettings) {
+  return settings.enabledModels
+    .map((model) => model.id)
+    .filter((id) => id !== modelId)
+    .sort((left, right) => Number(left.endsWith(":free")) - Number(right.endsWith(":free")));
+}
+
+export function agentChatErrorMessage(error: unknown) {
+  const text = error instanceof Error ? error.message : "";
+  if (/rate-limited|429/i.test(text)) return "That model is busy. Try again in a moment.";
+  return "Chat could not reply.";
+}
+
 export function sanitizeStoredSettings(
   input: { enabledModelIds: string[]; defaultModelId?: string | undefined },
   catalog: readonly AgentModel[] = AGENT_MODEL_CATALOG,

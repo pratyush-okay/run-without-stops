@@ -1,7 +1,10 @@
 import { AGENT_MODEL_CATALOG } from "@/lib/agent/catalog";
 import {
+  agentChatErrorMessage,
+  fallbackModelIds,
   isEnabledModelId,
   resolveAgentSettings,
+  runtimeModelId,
   sanitizeStoredSettings,
 } from "@/lib/agent/settings";
 
@@ -40,6 +43,38 @@ describe("resolveAgentSettings", () => {
     expect(resolved.enabledModels.map((model) => model.id)).toEqual(["google/gemma-4-31b-it:free"]);
     expect(resolved.defaultModelId).toBe("google/gemma-4-31b-it:free");
     expect(isEnabledModelId("ibm-granite/granite-4.0-h-micro", resolved)).toBe(false);
+  });
+});
+
+describe("runtimeModelId", () => {
+  it("prefers a paid enabled model over a free default", () => {
+    const resolved = resolveAgentSettings(
+      {
+        enabledModelIds: ["google/gemma-4-31b-it:free", "mistralai/mistral-nemo"],
+        defaultModelId: "google/gemma-4-31b-it:free",
+      },
+      catalog,
+    );
+
+    expect(runtimeModelId(resolved)).toBe("mistralai/mistral-nemo");
+  });
+});
+
+describe("fallbackModelIds", () => {
+  it("puts paid models ahead of free ones", () => {
+    const resolved = resolveAgentSettings(null, catalog);
+    expect(fallbackModelIds("mistralai/mistral-nemo", resolved)).toEqual([
+      "google/gemma-4-31b-it:free",
+      "qwen/qwen3.8-27b:free",
+    ]);
+  });
+});
+
+describe("agentChatErrorMessage", () => {
+  it("maps rate limits to a short retry message", () => {
+    expect(
+      agentChatErrorMessage(new Error("google/gemma-4-31b-it:free is temporarily rate-limited")),
+    ).toBe("That model is busy. Try again in a moment.");
   });
 });
 

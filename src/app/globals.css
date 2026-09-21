@@ -420,3 +420,94 @@ html .blog-prose a:hover {
   color: #f4f7f5;
   background: rgb(16 21 18 / 70%);
 }
+
+.rws-chat-md {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.rws-chat-md > *:first-child {
+  margin-top: 0;
+}
+
+.rws-chat-md > *:last-child {
+  margin-bottom: 0;
+}
+
+.rws-chat-md p,
+.rws-chat-md ul,
+.rws-chat-md ol,
+.rws-chat-md pre,
+.rws-chat-md blockquote,
+.rws-chat-md table {
+  margin: 0.45rem 0;
+}
+
+.rws-chat-md h1,
+.rws-chat-md h2,
+.rws-chat-md h3 {
+  margin: 0.65rem 0 0.3rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #f4f7f5;
+}
+
+.rws-chat-md ul,
+.rws-chat-md ol {
+  padding-left: 1.15rem;
+}
+
+.rws-chat-md ul {
+  list-style: disc;
+}
+
+.rws-chat-md ol {
+  list-style: decimal;
+}
+
+.rws-chat-md li + li {
+  margin-top: 0.2rem;
+}
+
+.rws-chat-md li > ul,
+.rws-chat-md li > ol {
+  margin: 0.2rem 0 0;
+}
+
+.rws-chat-md strong {
+  color: #f4f7f5;
+  font-weight: 600;
+}
+
+.rws-chat-md code {
+  border-radius: 0.3rem;
+  background: rgb(0 0 0 / 28%);
+  padding: 0.05rem 0.28rem;
+  font-size: 0.74rem;
+}
+
+.rws-chat-md pre {
+  overflow-x: auto;
+  border-radius: 0.65rem;
+  background: rgb(0 0 0 / 28%);
+  padding: 0.55rem 0.7rem;
+}
+
+.rws-chat-md pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.rws-chat-md table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.74rem;
+}
+
+.rws-chat-md th,
+.rws-chat-md td {
+  border: 1px solid rgb(255 255 255 / 10%);
+  padding: 0.3rem 0.45rem;
+  text-align: left;
+}

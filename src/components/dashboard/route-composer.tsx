@@ -84,10 +84,10 @@ export function RouteComposer({
 
   return (
     <section
-      className={`rws-panel flex flex-col overflow-hidden md:max-h-[min(32rem,calc(100dvh-13rem))] md:w-[min(24rem,calc(100vw-2rem))] md:p-4 ${
+      className={`rws-panel flex flex-col overflow-hidden md:max-h-[min(32rem,calc(100dvh-13rem))] md:w-full md:p-4 ${
         expanded
-          ? "max-h-[min(34rem,calc(100dvh-11rem))] w-[min(24rem,calc(100vw-5.25rem))] p-3"
-          : "w-max max-w-[min(18rem,calc(100vw-5.25rem))] p-1.5"
+          ? "max-h-[min(34rem,calc(100dvh-11rem))] w-[min(24rem,calc(100cqi-5.25rem))] p-3"
+          : "w-max max-w-[min(18rem,calc(100cqi-5.25rem))] p-1.5"
       }`}
       aria-label="Route builder"
     >

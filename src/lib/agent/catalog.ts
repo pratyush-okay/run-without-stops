@@ -13,20 +13,6 @@ export type AgentModel = {
 
 export const AGENT_MODEL_CATALOG: AgentModel[] = [
   {
-    id: "google/gemma-4-31b-it:free",
-    label: "Gemma 4 31B (free)",
-    appId: AGENT_CHAT_APP_ID,
-    enabledByDefault: true,
-    systemPrompt: AGENT_CHAT_SYSTEM_PROMPT,
-  },
-  {
-    id: "qwen/qwen3.8-27b:free",
-    label: "Qwen3.8 27B (free)",
-    appId: AGENT_CHAT_APP_ID,
-    enabledByDefault: true,
-    systemPrompt: AGENT_CHAT_SYSTEM_PROMPT,
-  },
-  {
     id: "mistralai/mistral-nemo",
     label: "Mistral Nemo",
     appId: AGENT_CHAT_APP_ID,
@@ -38,6 +24,20 @@ export const AGENT_MODEL_CATALOG: AgentModel[] = [
     label: "Granite 4.0 Micro",
     appId: AGENT_CHAT_APP_ID,
     enabledByDefault: false,
+    systemPrompt: AGENT_CHAT_SYSTEM_PROMPT,
+  },
+  {
+    id: "google/gemma-4-31b-it:free",
+    label: "Gemma 4 31B (free)",
+    appId: AGENT_CHAT_APP_ID,
+    enabledByDefault: true,
+    systemPrompt: AGENT_CHAT_SYSTEM_PROMPT,
+  },
+  {
+    id: "qwen/qwen3.8-27b:free",
+    label: "Qwen3.8 27B (free)",
+    appId: AGENT_CHAT_APP_ID,
+    enabledByDefault: true,
     systemPrompt: AGENT_CHAT_SYSTEM_PROMPT,
   },
 ];

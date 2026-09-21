@@ -643,13 +643,14 @@ export function RunningMap({
   userLocationRef.current = userLocation;
 
   useEffect(() => {
-    if (!containerRef.current || !accessToken) return;
+    const container = containerRef.current;
+    if (!container || !accessToken) return;
 
     mapboxgl.accessToken = accessToken;
     const start = userLocationRef.current;
     const initialStyleUrl = styleUrlRef.current;
     const map = new mapboxgl.Map({
-      container: containerRef.current,
+      container,
       style: initialStyleUrl,
       center: start ? [start.lng, start.lat] : [DEFAULT_MAP_CENTER.lng, DEFAULT_MAP_CENTER.lat],
       zoom: start ? FOCUS_MAP_ZOOM : DEFAULT_MAP_ZOOM,
@@ -669,6 +670,10 @@ export function RunningMap({
     appliedStyleRef.current = initialStyleUrl;
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+    });
+    resizeObserver.observe(container);
 
     const emitBounds = () => {
       boundsChangeRef.current(getViewportBounds(map));
@@ -921,6 +926,7 @@ export function RunningMap({
     map.getCanvas().addEventListener("mouseleave", () => finishPointer());
 
     return () => {
+      resizeObserver.disconnect();
       closeMapPopups();
       scrubberRef.current?.remove();
       scrubberRef.current = null;

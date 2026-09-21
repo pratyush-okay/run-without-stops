@@ -12,7 +12,7 @@ export function HomeIntro() {
           <span className="sr-only">About this planner</span>
           <BrandMark className="size-5" />
         </summary>
-        <div className="absolute right-0 bottom-[calc(100%+0.5rem)] hidden w-[min(24rem,calc(100vw-1.5rem))] group-open:block">
+        <div className="absolute right-0 bottom-[calc(100%+0.5rem)] hidden w-[min(24rem,calc(100%-1.5rem))] group-open:block">
           <div className="rws-panel max-h-[min(60dvh,24rem)] overflow-auto p-3 md:p-4">
             <p className="rws-kicker">Run Without Stops | Run Planner</p>
             <h1 className="mt-1 text-base font-semibold tracking-tight">

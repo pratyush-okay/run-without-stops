@@ -2,6 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { canUseAgentChat } from "@/lib/agent/admin";
 import { getResolvedAgentSettings } from "@/lib/agent/runtime";
+import { runtimeModelId } from "@/lib/agent/settings";
 import { reportError } from "@/lib/observability/report-error";
 import { agentPublicModelsResponseSchema } from "@/lib/schemas/agent";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
@@ -27,7 +28,7 @@ export async function GET() {
           id: model.id,
           label: model.label,
         })),
-        defaultModelId: settings.defaultModelId,
+        defaultModelId: runtimeModelId(settings),
       }),
     );
   } catch (error) {

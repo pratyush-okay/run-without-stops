@@ -6,12 +6,14 @@ export function hasOpenRouterKey() {
   return Boolean(env.OPENROUTER_API_KEY);
 }
 
-export function createAgentModel(modelId: string) {
+export function createAgentModel(modelId: string, fallbackIds: string[] = []) {
   if (!env.OPENROUTER_API_KEY) return undefined;
   const openrouter = createOpenRouter({
     apiKey: env.OPENROUTER_API_KEY,
     appName: SITE_NAME,
     appUrl: siteOrigin(),
   });
-  return openrouter(modelId);
+  return openrouter(modelId, {
+    models: fallbackIds.filter((id) => id !== modelId),
+  });
 }

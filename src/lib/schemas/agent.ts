@@ -41,7 +41,7 @@ export const agentUiMessageSchema = z
   .passthrough();
 
 export const agentChatRequestSchema = z.object({
-  modelId: agentModelIdSchema,
+  modelId: agentModelIdSchema.optional(),
   messages: z.array(agentUiMessageSchema).min(1),
 });
 

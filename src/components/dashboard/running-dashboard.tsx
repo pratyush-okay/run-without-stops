@@ -288,284 +288,286 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
 
   return (
     <main
-      className={`relative h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white [--rws-chrome-clearance:11.5rem] md:[--rws-chrome-clearance:6.25rem] ${
+      className={`flex h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white [--rws-chrome-clearance:11.5rem] md:[--rws-chrome-clearance:6.25rem] ${
         metricsExpanded
           ? "[--rws-metrics-clearance:11.5rem] md:[--rws-metrics-clearance:11rem]"
           : "[--rws-metrics-clearance:11.5rem] md:[--rws-metrics-clearance:6.25rem]"
       }`}
     >
-      {children}
-      <div className="absolute inset-0">
-        <RunningMap
-          accessToken={mapboxToken}
-          points={planner.points}
-          routeCoordinates={
-            planner.route && !planner.isRouting
-              ? planner.route.coordinates
-              : linePreviewCoordinates(planner.points)
-          }
-          isRoutePreview={!planner.route || planner.isRouting}
-          elevationMarks={planner.route?.elevation?.marks ?? []}
-          elevationSamples={planner.route?.elevation?.samples ?? []}
-          scrub={planner.route && !planner.isRouting ? scrub : undefined}
-          onScrubChange={updateScrub}
-          unit={unit}
-          features={featureState.features}
-          layers={layers}
-          styleUrl={mapStyleUrl(mapStyleId)}
-          focusPoint={focusPoint}
-          userLocation={userLocation}
-          onAddPoint={planner.addPoint}
-          onMovePoint={planner.movePoint}
-          onRemovePoint={planner.removePoint}
-          onBoundsChange={(bounds) => {
-            setSearchFocus(viewportCenter(bounds));
-            featureState.loadForBounds(bounds);
-          }}
-        />
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="flex items-center gap-2 md:block md:h-10">
-          <div className="pointer-events-auto shrink-0 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-[max(1rem,env(safe-area-inset-left))]">
-            <div className="rws-panel grid size-11 place-items-center md:hidden">
-              <AppLogo className="size-full" />
-            </div>
-            <a
-              href="/"
-              className="rws-panel hidden h-10 items-center gap-2 px-2 pr-3 text-[#A8FF35] transition hover:text-[#d6ff7a] md:flex"
-              aria-label="Run Without Stops"
-            >
-              <BrandMark className="size-5" />
-              <span className="text-[13px] font-medium tracking-tight text-white">
-                Run Without Stops
-              </span>
-            </a>
-          </div>
-          <div className="pointer-events-auto min-w-0 flex-1 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-1/2 md:w-[clamp(18rem,36vw,28rem)] md:-translate-x-1/2">
-            <PlaceSearch
-              focus={searchFocus}
-              onSelect={(point, label) => {
-                setFocusPoint(point);
-                planner.addPoint(point, label);
-                captureEvent(analyticsEvents.placeSelected, { source: "search" });
-              }}
-              onLocate={(point) => {
-                setFocusPoint(point);
-                setUserLocation(point);
-                planner.addPoint(point, "My location");
-                captureEvent(analyticsEvents.myLocationUsed, { source: "search" });
-              }}
-            />
-          </div>
-          <div className="pointer-events-auto shrink-0 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:right-[max(1rem,env(safe-area-inset-right))]">
-            <MetricsToggle
-              unit={unit}
-              onChange={(next) => {
-                setUnit(next);
-                captureEvent(analyticsEvents.metricUnitChanged, { unit: next });
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {sharedRoute ? (
-        <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] left-1/2 z-[6] max-w-[min(22rem,calc(100vw-6rem))] -translate-x-1/2 md:top-[4.6rem]">
-          <p className="pointer-events-auto rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[11px] text-white/70 backdrop-blur">
-            Shared route · {sharedRoute.name}
-          </p>
-        </div>
-      ) : null}
-
-      <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-[12] md:top-[4.6rem] md:left-4">
-        <div className="pointer-events-auto">
-          <RouteComposer
+      <div className="relative min-w-0 flex-1 overflow-hidden [container-type:inline-size]">
+        {children}
+        <div className="absolute inset-0">
+          <RunningMap
+            accessToken={mapboxToken}
             points={planner.points}
-            knownLabels={planner.knownLabels}
-            mode={planner.mode}
-            avoidElevation={planner.avoidElevation}
-            route={planner.route}
-            error={planner.error}
-            isRouting={planner.isRouting}
-            features={featureState.features}
-            onModeChange={planner.setMode}
-            onAvoidElevationChange={planner.setAvoidElevation}
-            onRemovePoint={planner.removePoint}
-            onFocusPoint={setFocusPoint}
-            onUseLocation={useMyLocation}
-            unit={unit}
-            durationSeconds={effort.durationSeconds}
-            savedRouteName={activeSaved?.name}
-            shareReady={Boolean(activeSaved)}
-            shareCopied={shareCopied}
-            shareError={shareError}
-            onRequestSave={requestSave}
-            onRequestShare={requestShare}
-          />
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] right-[max(0.75rem,env(safe-area-inset-right))] z-[5] md:top-[4.6rem] md:right-4">
-        <div className="pointer-events-auto flex flex-col items-end gap-2">
-          <AuthControls
-            menuPlacement="down"
-            onSignIn={() => openAuth()}
-            onOpenSavedRoutes={() => {
-              setIsRoutesOpen(true);
-              captureEvent(analyticsEvents.savedRoutesOpened);
-            }}
-          />
-          <LayerControls
-            layers={layers}
-            onToggle={toggleLayer}
-            isLoading={featureState.isLoading}
-          />
-          <MapStyleControls
-            styleId={mapStyleId}
-            locked={!isSignedIn}
-            open={stylePickerOpen}
-            onOpenChange={setStylePickerOpen}
-            onLockedClick={() => openAuth("style")}
-            onChange={changeMapStyle}
-          />
-          {canUseAgentChat ? (
-            <ChatToggle
-              open={isChatOpen}
-              onToggle={() => {
-                setIsChatOpen((current) => {
-                  const next = !current;
-                  if (next) captureEvent(analyticsEvents.agentChatOpened);
-                  return next;
-                });
-              }}
-            />
-          ) : null}
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-[6] hidden md:block">
-        <div className="pointer-events-auto">
-          <RouteEditActions
-            layout="stack"
-            points={planner.points}
-            canCloseLoop={planner.canCloseLoop}
-            canRedo={planner.canRedo}
-            onUndo={planner.undo}
-            onRedo={planner.redo}
-            onClear={() => {
-              planner.clear();
-              setCurrentSaved(undefined);
-            }}
-            onReverse={planner.reversePoints}
-            onCloseLoop={planner.closeLoop}
-          />
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex flex-col gap-1 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] md:pl-[calc(var(--rws-edit-stack-width)+1.5rem)]">
-        <div
-          className={`pointer-events-auto min-w-0 w-full overflow-hidden overscroll-none md:w-max md:max-w-[min(56rem,calc(100vw-var(--rws-edit-stack-width)-3rem))] md:self-center ${
-            metricsExpanded
-              ? "md:max-w-[min(68rem,calc(100vw-var(--rws-edit-stack-width)-3rem))]"
-              : ""
-          }`}
-        >
-          <RouteSummary
-            route={planner.route}
-            error={planner.error}
-            isRouting={planner.isRouting}
-            unit={unit}
-            paceSecondsPerKm={effort.secondsPerKm}
-            durationSeconds={effort.durationSeconds}
-            expanded={metricsExpanded}
-            onExpandedChange={setMetricsExpanded}
-            onNudgePace={(delta) => effort.nudgePace(delta, unit)}
-            onNudgeTime={effort.nudgeTime}
-            scrub={scrub}
+            routeCoordinates={
+              planner.route && !planner.isRouting
+                ? planner.route.coordinates
+                : linePreviewCoordinates(planner.points)
+            }
+            isRoutePreview={!planner.route || planner.isRouting}
+            elevationMarks={planner.route?.elevation?.marks ?? []}
+            elevationSamples={planner.route?.elevation?.samples ?? []}
+            scrub={planner.route && !planner.isRouting ? scrub : undefined}
             onScrubChange={updateScrub}
-          />
-        </div>
-        <div className="pointer-events-auto w-full md:hidden">
-          <RouteEditActions
-            layout="row"
-            points={planner.points}
-            canCloseLoop={planner.canCloseLoop}
-            canRedo={planner.canRedo}
-            onUndo={planner.undo}
-            onRedo={planner.redo}
-            onClear={() => {
-              planner.clear();
-              setCurrentSaved(undefined);
+            unit={unit}
+            features={featureState.features}
+            layers={layers}
+            styleUrl={mapStyleUrl(mapStyleId)}
+            focusPoint={focusPoint}
+            userLocation={userLocation}
+            onAddPoint={planner.addPoint}
+            onMovePoint={planner.movePoint}
+            onRemovePoint={planner.removePoint}
+            onBoundsChange={(bounds) => {
+              setSearchFocus(viewportCenter(bounds));
+              featureState.loadForBounds(bounds);
             }}
-            onReverse={planner.reversePoints}
-            onCloseLoop={planner.closeLoop}
           />
         </div>
+
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 p-3 pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
+          <div className="flex items-center gap-2 md:block md:h-10">
+            <div className="pointer-events-auto shrink-0 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-[max(1rem,env(safe-area-inset-left))]">
+              <div className="rws-panel grid size-11 place-items-center md:hidden">
+                <AppLogo className="size-full" />
+              </div>
+              <a
+                href="/"
+                className="rws-panel hidden h-10 items-center gap-2 px-2 pr-3 text-[#A8FF35] transition hover:text-[#d6ff7a] md:flex"
+                aria-label="Run Without Stops"
+              >
+                <BrandMark className="size-5" />
+                <span className="text-[13px] font-medium tracking-tight text-white">
+                  Run Without Stops
+                </span>
+              </a>
+            </div>
+            <div className="pointer-events-auto min-w-0 flex-1 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:left-1/2 md:w-[clamp(16rem,36%,28rem)] md:-translate-x-1/2">
+              <PlaceSearch
+                focus={searchFocus}
+                onSelect={(point, label) => {
+                  setFocusPoint(point);
+                  planner.addPoint(point, label);
+                  captureEvent(analyticsEvents.placeSelected, { source: "search" });
+                }}
+                onLocate={(point) => {
+                  setFocusPoint(point);
+                  setUserLocation(point);
+                  planner.addPoint(point, "My location");
+                  captureEvent(analyticsEvents.myLocationUsed, { source: "search" });
+                }}
+              />
+            </div>
+            <div className="pointer-events-auto shrink-0 md:absolute md:top-[max(1rem,env(safe-area-inset-top))] md:right-[max(1rem,env(safe-area-inset-right))]">
+              <MetricsToggle
+                unit={unit}
+                onChange={(next) => {
+                  setUnit(next);
+                  captureEvent(analyticsEvents.metricUnitChanged, { unit: next });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {sharedRoute ? (
+          <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] left-1/2 z-[6] max-w-[min(22rem,calc(100%-6rem))] -translate-x-1/2 md:top-[4.6rem]">
+            <p className="pointer-events-auto rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[11px] text-white/70 backdrop-blur">
+              Shared route · {sharedRoute.name}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-[12] md:top-[4.6rem] md:left-4 md:w-[min(24rem,calc(100%-2rem))]">
+          <div className="pointer-events-auto md:w-full">
+            <RouteComposer
+              points={planner.points}
+              knownLabels={planner.knownLabels}
+              mode={planner.mode}
+              avoidElevation={planner.avoidElevation}
+              route={planner.route}
+              error={planner.error}
+              isRouting={planner.isRouting}
+              features={featureState.features}
+              onModeChange={planner.setMode}
+              onAvoidElevationChange={planner.setAvoidElevation}
+              onRemovePoint={planner.removePoint}
+              onFocusPoint={setFocusPoint}
+              onUseLocation={useMyLocation}
+              unit={unit}
+              durationSeconds={effort.durationSeconds}
+              savedRouteName={activeSaved?.name}
+              shareReady={Boolean(activeSaved)}
+              shareCopied={shareCopied}
+              shareError={shareError}
+              onRequestSave={requestSave}
+              onRequestShare={requestShare}
+            />
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] right-[max(0.75rem,env(safe-area-inset-right))] z-[5] md:top-[4.6rem] md:right-4">
+          <div className="pointer-events-auto flex flex-col items-end gap-2">
+            <AuthControls
+              menuPlacement="down"
+              onSignIn={() => openAuth()}
+              onOpenSavedRoutes={() => {
+                setIsRoutesOpen(true);
+                captureEvent(analyticsEvents.savedRoutesOpened);
+              }}
+            />
+            <LayerControls
+              layers={layers}
+              onToggle={toggleLayer}
+              isLoading={featureState.isLoading}
+            />
+            <MapStyleControls
+              styleId={mapStyleId}
+              locked={!isSignedIn}
+              open={stylePickerOpen}
+              onOpenChange={setStylePickerOpen}
+              onLockedClick={() => openAuth("style")}
+              onChange={changeMapStyle}
+            />
+            {canUseAgentChat ? (
+              <ChatToggle
+                open={isChatOpen}
+                onToggle={() => {
+                  setIsChatOpen((current) => {
+                    const next = !current;
+                    if (next) captureEvent(analyticsEvents.agentChatOpened);
+                    return next;
+                  });
+                }}
+              />
+            ) : null}
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-[6] hidden md:block">
+          <div className="pointer-events-auto">
+            <RouteEditActions
+              layout="stack"
+              points={planner.points}
+              canCloseLoop={planner.canCloseLoop}
+              canRedo={planner.canRedo}
+              onUndo={planner.undo}
+              onRedo={planner.redo}
+              onClear={() => {
+                planner.clear();
+                setCurrentSaved(undefined);
+              }}
+              onReverse={planner.reversePoints}
+              onCloseLoop={planner.closeLoop}
+            />
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] flex flex-col gap-1 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))] md:pl-[calc(var(--rws-edit-stack-width)+1.5rem)]">
+          <div
+            className={`pointer-events-auto min-w-0 w-full overflow-hidden overscroll-none md:w-max md:max-w-[min(56rem,calc(100%-var(--rws-edit-stack-width)-3rem))] md:self-center ${
+              metricsExpanded
+                ? "md:max-w-[min(68rem,calc(100%-var(--rws-edit-stack-width)-3rem))]"
+                : ""
+            }`}
+          >
+            <RouteSummary
+              route={planner.route}
+              error={planner.error}
+              isRouting={planner.isRouting}
+              unit={unit}
+              paceSecondsPerKm={effort.secondsPerKm}
+              durationSeconds={effort.durationSeconds}
+              expanded={metricsExpanded}
+              onExpandedChange={setMetricsExpanded}
+              onNudgePace={(delta) => effort.nudgePace(delta, unit)}
+              onNudgeTime={effort.nudgeTime}
+              scrub={scrub}
+              onScrubChange={updateScrub}
+            />
+          </div>
+          <div className="pointer-events-auto w-full md:hidden">
+            <RouteEditActions
+              layout="row"
+              points={planner.points}
+              canCloseLoop={planner.canCloseLoop}
+              canRedo={planner.canRedo}
+              onUndo={planner.undo}
+              onRedo={planner.redo}
+              onClear={() => {
+                planner.clear();
+                setCurrentSaved(undefined);
+              }}
+              onReverse={planner.reversePoints}
+              onCloseLoop={planner.closeLoop}
+            />
+          </div>
+        </div>
+
+        {featureState.error || featureState.isPartial ? (
+          <div
+            className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100%-5.5rem))] -translate-x-1/2 rounded-full border border-[#ffad91]/20 bg-[#261712]/90 px-3 py-1.5 text-center text-[10px] text-[#ffad91] backdrop-blur ${"bottom-[calc(var(--rws-metrics-clearance)+0.35rem)]"}`}
+          >
+            {featureState.error ?? "Some live OSM details are temporarily unavailable"}
+          </div>
+        ) : null}
+        {!mapboxToken ? (
+          <div
+            className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100%-5.5rem))] -translate-x-1/2 rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[10px] text-white/70 backdrop-blur ${"bottom-[calc(var(--rws-metrics-clearance)+0.35rem)]"}`}
+          >
+            Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to load the map
+          </div>
+        ) : null}
+
+        {isAuthOpen ? (
+          <AuthModal
+            onClose={() => {
+              pendingAuthRef.current = undefined;
+              setIsAuthOpen(false);
+            }}
+          />
+        ) : null}
+        {isSaveOpen ? (
+          <SaveRouteDialog
+            suggestedName={suggestedName}
+            title={saveForShare ? "Save to share this route" : "Save this route"}
+            description={
+              saveForShare
+                ? "Shareable links need a saved named route. You can keep the suggested name or write your own."
+                : "Keep this line in your account. The name can be yours or based on the places on the route."
+            }
+            submitLabel={saveForShare ? "Save and copy link" : "Save route"}
+            isSaving={isSaving}
+            error={saveError}
+            onClose={() => setIsSaveOpen(false)}
+            onSubmit={(name) => void saveRoute(name)}
+          />
+        ) : null}
+        {isRoutesOpen ? (
+          <SavedRoutesPanel
+            routes={savedRoutes.routes}
+            isLoading={savedRoutes.isLoading}
+            error={savedRoutes.error}
+            unit={unit}
+            onClose={() => setIsRoutesOpen(false)}
+            onLoad={(id) => void loadSaved(id)}
+            onDelete={(id) => {
+              void savedRoutes.remove(id);
+              if (currentSaved?.id === id) setCurrentSaved(undefined);
+              captureEvent(analyticsEvents.savedRouteDeleted, { route_id: id });
+            }}
+            onRename={(id, name) => {
+              void savedRoutes.rename(id, name).then((saved) => {
+                if (currentSaved?.id === id) setCurrentSaved(saved);
+                captureEvent(analyticsEvents.savedRouteRenamed, { route_id: id });
+              });
+            }}
+          />
+        ) : null}
       </div>
-
-      {featureState.error || featureState.isPartial ? (
-        <div
-          className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-[#ffad91]/20 bg-[#261712]/90 px-3 py-1.5 text-center text-[10px] text-[#ffad91] backdrop-blur ${"bottom-[calc(var(--rws-metrics-clearance)+0.35rem)]"}`}
-        >
-          {featureState.error ?? "Some live OSM details are temporarily unavailable"}
-        </div>
-      ) : null}
-      {!mapboxToken ? (
-        <div
-          className={`pointer-events-none absolute left-1/2 z-[4] max-w-[min(22rem,calc(100vw-5.5rem))] -translate-x-1/2 rounded-full border border-white/10 bg-[#101512]/80 px-3 py-1.5 text-center text-[10px] text-white/70 backdrop-blur ${"bottom-[calc(var(--rws-metrics-clearance)+0.35rem)]"}`}
-        >
-          Add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to load the map
-        </div>
-      ) : null}
-
-      {isAuthOpen ? (
-        <AuthModal
-          onClose={() => {
-            pendingAuthRef.current = undefined;
-            setIsAuthOpen(false);
-          }}
-        />
-      ) : null}
-      {isSaveOpen ? (
-        <SaveRouteDialog
-          suggestedName={suggestedName}
-          title={saveForShare ? "Save to share this route" : "Save this route"}
-          description={
-            saveForShare
-              ? "Shareable links need a saved named route. You can keep the suggested name or write your own."
-              : "Keep this line in your account. The name can be yours or based on the places on the route."
-          }
-          submitLabel={saveForShare ? "Save and copy link" : "Save route"}
-          isSaving={isSaving}
-          error={saveError}
-          onClose={() => setIsSaveOpen(false)}
-          onSubmit={(name) => void saveRoute(name)}
-        />
-      ) : null}
       {canUseAgentChat ? (
         <ChatPanel open={isChatOpen} onClose={() => setIsChatOpen(false)} />
-      ) : null}
-      {isRoutesOpen ? (
-        <SavedRoutesPanel
-          routes={savedRoutes.routes}
-          isLoading={savedRoutes.isLoading}
-          error={savedRoutes.error}
-          unit={unit}
-          onClose={() => setIsRoutesOpen(false)}
-          onLoad={(id) => void loadSaved(id)}
-          onDelete={(id) => {
-            void savedRoutes.remove(id);
-            if (currentSaved?.id === id) setCurrentSaved(undefined);
-            captureEvent(analyticsEvents.savedRouteDeleted, { route_id: id });
-          }}
-          onRename={(id, name) => {
-            void savedRoutes.rename(id, name).then((saved) => {
-              if (currentSaved?.id === id) setCurrentSaved(saved);
-              captureEvent(analyticsEvents.savedRouteRenamed, { route_id: id });
-            });
-          }}
-        />
       ) : null}
     </main>
   );
