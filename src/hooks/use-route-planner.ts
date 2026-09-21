@@ -22,6 +22,7 @@ export type RouteSeed = {
   knownLabels?: Record<string, string>;
   mode?: RouteMode;
   route?: RouteResponse;
+  avoidElevation?: boolean;
 };
 
 export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
@@ -122,12 +123,18 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     (next: RouteSeed) => {
       const nextMode = next.mode ?? "low_stops";
       frozenDraftKeyRef.current =
-        next.route && next.points.length >= 2 ? routeDraftKey(next.points, nextMode) : undefined;
+        next.route && next.points.length >= 2
+          ? routeDraftKey(
+              next.points,
+              nextMode,
+              nextMode === "low_stops" && (next.avoidElevation ?? false),
+            )
+          : undefined;
       resetRedo();
       setPoints(next.points);
       setKnownLabels(next.knownLabels ?? {});
       setMode(nextMode);
-      setAvoidElevation(false);
+      setAvoidElevation(next.avoidElevation ?? false);
       setRoute(next.route);
       setError(undefined);
     },

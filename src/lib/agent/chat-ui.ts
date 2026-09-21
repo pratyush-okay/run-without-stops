@@ -1,3 +1,5 @@
+import { type AgentRouteProposal, agentRouteProposalSchema } from "@/lib/schemas/agent";
+
 export const DEFAULT_CHAT_WIDTH = 352;
 export const MIN_CHAT_WIDTH = 280;
 export const MAX_CHAT_WIDTH = 640;
@@ -44,9 +46,89 @@ export function chatGreetingName(
   return fromFull || undefined;
 }
 
-export function messageText(parts: readonly { type: string; text?: string }[]) {
-  return parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text ?? "")
-    .join("");
+type ChatTextPart = { type?: string; text?: unknown };
+type ChatTextMessage = {
+  role: string;
+  parts?: readonly ChatTextPart[];
+  content?: unknown;
+};
+
+function partText(part: ChatTextPart) {
+  return typeof part.text === "string" ? part.text : "";
+}
+
+export function messageText(parts: readonly ChatTextPart[] | undefined) {
+  if (!parts?.length) return "";
+  return parts.map(partText).join("");
+}
+
+function userMessageText(message: ChatTextMessage) {
+  const fromParts = messageText(message.parts).trim();
+  if (fromParts) return fromParts;
+  return typeof message.content === "string" ? message.content.trim() : "";
+}
+
+export function lastUserText(messages: readonly ChatTextMessage[]) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role === "user") return userMessageText(message);
+  }
+  return "";
+}
+
+export function combinedUserText(messages: readonly ChatTextMessage[]) {
+  return messages
+    .filter((message) => message.role === "user")
+    .map((message) => userMessageText(message))
+    .filter(Boolean)
+    .join("\n");
+}
+
+function hasRouteIntent(text: string) {
+  return (
+    /\b(loop|route|\brun\b|around me|around here)\b/i.test(text) ||
+    /\d+(?:\.\d+)?\s*(k|km|mi|miles?|min|minutes?)\b/i.test(text) ||
+    /\b(parks?|lakes?|water(?:\s+points?|\s+breaks?|\s+stops?)?|fountains?)\b/i.test(text)
+  );
+}
+
+export function isRouteBuildRequest(text: string, history = "") {
+  if (hasRouteIntent(text)) return true;
+  return /\b(try again|do it again)\b/i.test(text) && hasRouteIntent(history);
+}
+
+export function routeReplyText(proposal: { summary: string }) {
+  return `${proposal.summary} It's on the map.`;
+}
+
+export type ChatToolPart = {
+  type: string;
+  toolName?: string;
+  toolCallId?: string;
+  state?: string;
+  output?: unknown;
+};
+
+function isPlanRunPart(part: ChatToolPart) {
+  return (
+    part.type === "tool-planRun" || (part.type === "dynamic-tool" && part.toolName === "planRun")
+  );
+}
+
+export function isPlanRunInFlight(parts: readonly ChatToolPart[]) {
+  return parts.some(
+    (part) =>
+      isPlanRunPart(part) && (part.state === "input-streaming" || part.state === "input-available"),
+  );
+}
+
+export function planRunProposalsFromParts(parts: readonly ChatToolPart[]) {
+  const proposals: { toolCallId: string; proposal: AgentRouteProposal }[] = [];
+  for (const part of parts) {
+    if (!isPlanRunPart(part) || part.state !== "output-available") continue;
+    const parsed = agentRouteProposalSchema.safeParse(part.output);
+    if (!parsed.success) continue;
+    proposals.push({ toolCallId: part.toolCallId ?? "", proposal: parsed.data });
+  }
+  return proposals;
 }

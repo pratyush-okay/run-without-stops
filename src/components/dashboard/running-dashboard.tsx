@@ -567,7 +567,30 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
         ) : null}
       </div>
       {canUseAgentChat ? (
-        <ChatPanel open={isChatOpen} onClose={() => setIsChatOpen(false)} />
+        <ChatPanel
+          open={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          context={{
+            location: userLocation,
+            mapCenter: searchFocus,
+            unit,
+            paceSecondsPerKm: effort.secondsPerKm,
+            currentDistanceMeters: planner.route?.metrics.distanceMeters,
+          }}
+          onApplyRoute={(proposal) => {
+            planner.loadRoute({
+              points: proposal.points,
+              knownLabels: proposal.knownLabels,
+              mode: proposal.mode,
+              avoidElevation: proposal.avoidElevation,
+              ...(proposal.route ? { route: proposal.route } : {}),
+            });
+            if (proposal.points[0]) setFocusPoint(proposal.points[0]);
+            if (proposal.included.some((place) => place.kind === "park" || place.kind === "lake")) {
+              setLayers((current) => ({ ...current, parks: true }));
+            }
+          }}
+        />
       ) : null}
     </main>
   );

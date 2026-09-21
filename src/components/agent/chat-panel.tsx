@@ -14,19 +14,31 @@ import { ChatMarkdown } from "@/components/agent/chat-markdown";
 import {
   chatGreetingName,
   clampChatWidth,
+  combinedUserText,
   DEFAULT_CHAT_WIDTH,
+  isPlanRunInFlight,
+  isRouteBuildRequest,
   messageText,
+  planRunProposalsFromParts,
   readStoredChatWidth,
+  routeReplyText,
   writeStoredChatWidth,
 } from "@/lib/agent/chat-ui";
-import type { AgentPublicModelsResponse } from "@/lib/schemas/agent";
+import {
+  type AgentChatContext,
+  type AgentPublicModelsResponse,
+  type AgentRouteProposal,
+  agentRouteProposalSchema,
+} from "@/lib/schemas/agent";
 
 type ChatPanelProps = {
   open: boolean;
   onClose: () => void;
+  context?: AgentChatContext;
+  onApplyRoute?: (proposal: AgentRouteProposal) => void;
 };
 
-export function ChatPanel({ open, onClose }: ChatPanelProps) {
+export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelProps) {
   const { user } = useUser();
   const greetingName = chatGreetingName(user);
   const [catalog, setCatalog] = useState<AgentPublicModelsResponse>();
@@ -35,10 +47,14 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [width, setWidth] = useState(DEFAULT_CHAT_WIDTH);
   const [dragging, setDragging] = useState(false);
+  const [planning, setPlanning] = useState(false);
   const modelIdRef = useRef(modelId);
   const widthRef = useRef(width);
+  const contextRef = useRef(context);
+  const appliedToolIds = useRef(new Set<string>());
   modelIdRef.current = modelId;
   widthRef.current = width;
+  contextRef.current = context;
 
   useEffect(() => {
     setWidth(readStoredChatWidth());
@@ -86,11 +102,22 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
     () =>
       new DefaultChatTransport({
         api: "/api/agent/chat",
-        body: () => ({ modelId: modelIdRef.current }),
+        body: () => ({ modelId: modelIdRef.current, context: contextRef.current }),
       }),
     [],
   );
-  const { messages, sendMessage, status, error } = useChat({ transport });
+  const { messages, sendMessage, setMessages, status, error } = useChat({ transport });
+
+  useEffect(() => {
+    if (!onApplyRoute) return;
+    for (const message of messages) {
+      for (const found of planRunProposalsFromParts(message.parts)) {
+        if (!found.toolCallId || appliedToolIds.current.has(found.toolCallId)) continue;
+        appliedToolIds.current.add(found.toolCallId);
+        onApplyRoute(found.proposal);
+      }
+    }
+  }, [messages, onApplyRoute]);
 
   useEffect(() => {
     if (!open) return;
@@ -124,7 +151,68 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
     window.addEventListener("pointerup", onUp);
   }
 
-  const busy = status === "submitted" || status === "streaming";
+  const busy = status === "submitted" || status === "streaming" || planning;
+  const buildingRoute = planning || messages.some((message) => isPlanRunInFlight(message.parts));
+  const historyText = combinedUserText(messages);
+  const draftIsRoute = isRouteBuildRequest(input.trim(), historyText);
+
+  async function buildRouteFromChat(text: string) {
+    const combined = [historyText, text].filter(Boolean).join("\n");
+    setMessages((current) => [
+      ...current,
+      { id: crypto.randomUUID(), role: "user", parts: [{ type: "text", text }] },
+    ]);
+    setPlanning(true);
+    try {
+      const response = await fetch("/api/agent/plan-run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: combined, context: contextRef.current }),
+      });
+      const body = (await response.json()) as AgentRouteProposal & { error?: string };
+      const parsed = agentRouteProposalSchema.safeParse(body);
+      if (!response.ok || !parsed.success) {
+        throw new Error(body.error ?? "I could not build that loop.");
+      }
+      const proposal = parsed.data;
+      const toolCallId = crypto.randomUUID();
+      appliedToolIds.current.add(toolCallId);
+      onApplyRoute?.(proposal);
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-planRun",
+              toolCallId,
+              state: "output-available",
+              input: {},
+              output: proposal,
+            },
+            { type: "text", text: routeReplyText(proposal) },
+          ],
+        },
+      ]);
+    } catch (caught: unknown) {
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: caught instanceof Error ? caught.message : "I could not build that loop.",
+            },
+          ],
+        },
+      ]);
+    } finally {
+      setPlanning(false);
+    }
+  }
 
   return (
     <aside
@@ -171,18 +259,21 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
             <p className="mt-1 text-sm text-white/55">How can I help you today?</p>
           </div>
         ) : null}
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           {messages.map((message) => {
             const text = messageText(message.parts);
             const isUser = message.role === "user";
             return (
-              <div key={message.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+              <div
+                key={message.id}
+                className={`flex min-w-0 ${isUser ? "justify-end" : "justify-start"}`}
+              >
                 {isUser ? (
-                  <div className="max-w-[85%] rounded-2xl rounded-br-md bg-[#c8ff52] px-3 py-2 text-sm leading-relaxed text-[#0a0d0b]">
+                  <div className="min-w-0 max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-[#c8ff52] px-3 py-2 text-sm leading-relaxed text-[#0a0d0b]">
                     {text}
                   </div>
                 ) : (
-                  <div className="max-w-[92%] rounded-2xl rounded-bl-md bg-white/[0.06] px-3 py-2 text-sm text-white/85">
+                  <div className="min-w-0 max-w-[92%] break-words rounded-2xl rounded-bl-md bg-white/[0.06] px-3 py-2 text-sm text-white/85">
                     <ChatMarkdown markdown={text} />
                   </div>
                 )}
@@ -190,6 +281,11 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
             );
           })}
         </div>
+        {buildingRoute || (busy && messages.length > 0) ? (
+          <p className="mt-3 text-xs text-white/45">
+            {buildingRoute ? "Building a route…" : "Thinking…"}
+          </p>
+        ) : null}
         {error ? (
           <p className="mt-3 text-xs text-[#ffad91]">
             {error.message || "Chat could not reply. Try again."}
@@ -202,22 +298,34 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
         onSubmit={(event) => {
           event.preventDefault();
           const text = input.trim();
-          if (!text || !modelId || busy) return;
-          void sendMessage({ text }, { body: { modelId } });
+          if (!text || busy) return;
+          if (isRouteBuildRequest(text, historyText)) {
+            setInput("");
+            void buildRouteFromChat(text);
+            return;
+          }
+          if (!modelId) return;
+          void sendMessage({ text }, { body: { modelId, context: contextRef.current } });
           setInput("");
         }}
       >
-        <div className="flex gap-2">
-          <input
+        <div className="flex items-end gap-2">
+          <textarea
             value={input}
+            rows={2}
             onChange={(event) => setInput(event.target.value)}
-            disabled={!modelId || busy}
-            placeholder="How can I help?"
-            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35"
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+              event.preventDefault();
+              event.currentTarget.form?.requestSubmit();
+            }}
+            disabled={busy || (!modelId && !draftIsRoute)}
+            placeholder="Make a 5 km loop around me"
+            className="max-h-32 min-h-[3.25rem] min-w-0 flex-1 resize-none overflow-y-auto rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm leading-5 text-white outline-none placeholder:text-white/35"
           />
           <button
             type="submit"
-            disabled={!modelId || busy || !input.trim()}
+            disabled={busy || !input.trim() || (!modelId && !draftIsRoute)}
             className="rounded-xl bg-[#c8ff52] px-3 py-2 text-xs font-medium text-[#0a0d0b] disabled:opacity-40"
           >
             Send

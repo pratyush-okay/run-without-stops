@@ -2,6 +2,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import {
   convertToModelMessages,
   createUIMessageStreamResponse,
+  stepCountIs,
   streamText,
   toUIMessageStream,
   type UIMessage,
@@ -9,7 +10,9 @@ import {
 import { NextResponse } from "next/server";
 import { canUseAgentChat } from "@/lib/agent/admin";
 import { AGENT_CHAT_SYSTEM_PROMPT } from "@/lib/agent/catalog";
+import { combinedUserText, isRouteBuildRequest, lastUserText } from "@/lib/agent/chat-ui";
 import { createAgentModel, hasOpenRouterKey } from "@/lib/agent/openrouter";
+import { streamBuiltRoute } from "@/lib/agent/route-reply";
 import { getResolvedAgentSettings } from "@/lib/agent/runtime";
 import {
   agentChatErrorMessage,
@@ -17,11 +20,12 @@ import {
   modelSystemPrompt,
   runtimeModelId,
 } from "@/lib/agent/settings";
+import { chatInstructions, createAgentTools, executePlanRun } from "@/lib/agent/tools";
 import { reportError } from "@/lib/observability/report-error";
 import { agentChatRequestSchema } from "@/lib/schemas/agent";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
 
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 export async function POST(request: Request) {
   const user = await currentUser();
@@ -36,16 +40,32 @@ export async function POST(request: Request) {
     });
   }
 
-  if (!hasOpenRouterKey()) {
-    return NextResponse.json(apiErrorSchema.parse({ error: "Chat is not configured" }), {
-      status: 503,
-    });
-  }
-
   const parsed = agentChatRequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(apiErrorSchema.parse({ error: "Send a message" }), {
       status: 400,
+    });
+  }
+
+  const context = parsed.data.context ?? {};
+  const userText = lastUserText(parsed.data.messages);
+  const combined = combinedUserText(parsed.data.messages);
+
+  if (isRouteBuildRequest(userText, combined)) {
+    try {
+      const proposal = await executePlanRun({}, context, { userText: combined });
+      return streamBuiltRoute(proposal);
+    } catch (error) {
+      reportError(error, { route: "/api/agent/chat" });
+      return NextResponse.json(apiErrorSchema.parse({ error: agentChatErrorMessage(error) }), {
+        status: 500,
+      });
+    }
+  }
+
+  if (!hasOpenRouterKey()) {
+    return NextResponse.json(apiErrorSchema.parse({ error: "Chat is not configured" }), {
+      status: 503,
     });
   }
 
@@ -68,8 +88,13 @@ export async function POST(request: Request) {
 
     const result = streamText({
       model,
-      instructions: modelSystemPrompt(modelId) ?? AGENT_CHAT_SYSTEM_PROMPT,
+      instructions: chatInstructions(
+        modelSystemPrompt(modelId) ?? AGENT_CHAT_SYSTEM_PROMPT,
+        context,
+      ),
       messages: await convertToModelMessages(parsed.data.messages as UIMessage[]),
+      tools: createAgentTools(context, combined),
+      stopWhen: stepCountIs(6),
       maxRetries: 1,
       onError: ({ error }) => {
         reportError(error, { route: "/api/agent/chat" });

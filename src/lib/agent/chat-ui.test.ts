@@ -1,4 +1,14 @@
-import { chatGreetingName, clampChatWidth, messageText } from "@/lib/agent/chat-ui";
+import {
+  chatGreetingName,
+  clampChatWidth,
+  combinedUserText,
+  isPlanRunInFlight,
+  isRouteBuildRequest,
+  lastUserText,
+  messageText,
+  planRunProposalsFromParts,
+  routeReplyText,
+} from "@/lib/agent/chat-ui";
 
 describe("clampChatWidth", () => {
   it("keeps the pane between the min and the viewport cap", () => {
@@ -27,5 +37,58 @@ describe("messageText", () => {
         { type: "text", text: "there" },
       ]),
     ).toBe("Hello there");
+  });
+});
+
+describe("route request detection", () => {
+  it("treats around-me distance asks as route builds", () => {
+    expect(isRouteBuildRequest("Make a 6k loop around me")).toBe(true);
+    expect(isRouteBuildRequest("I want to include a park as well")).toBe(true);
+    expect(isRouteBuildRequest("hi")).toBe(false);
+    expect(isRouteBuildRequest("try again", "Make a 6k loop around me")).toBe(true);
+    expect(
+      lastUserText([
+        { role: "assistant", parts: [{ type: "text", text: "Hi" }] },
+        { role: "user", parts: [{ type: "text", text: "Make a 6k loop around me" }] },
+      ]),
+    ).toBe("Make a 6k loop around me");
+    expect(
+      combinedUserText([
+        { role: "user", parts: [{ type: "text", text: "Make a 6k loop around me" }] },
+        { role: "assistant", parts: [{ type: "text", text: "Sorry" }] },
+        { role: "user", parts: [{ type: "text", text: "I want to include a park as well" }] },
+      ]),
+    ).toBe("Make a 6k loop around me\nI want to include a park as well");
+  });
+});
+
+describe("planRun tool parts", () => {
+  const proposal = {
+    ok: true as const,
+    points: [
+      { lat: -33.86, lng: 151.21 },
+      { lat: -33.87, lng: 151.22 },
+      { lat: -33.86, lng: 151.21 },
+    ],
+    knownLabels: { "-33.86000,151.21000": "Start" },
+    mode: "low_stops" as const,
+    avoidElevation: false,
+    targetMeters: 5_000,
+    summary: "About a 5.0 km loop.",
+    included: [],
+  };
+
+  it("extracts a finished planRun proposal and ignores in-flight calls", () => {
+    expect(
+      isPlanRunInFlight([{ type: "tool-planRun", toolCallId: "t1", state: "input-available" }]),
+    ).toBe(true);
+
+    expect(
+      planRunProposalsFromParts([
+        { type: "tool-planRun", toolCallId: "t1", state: "input-available", output: proposal },
+        { type: "tool-planRun", toolCallId: "t2", state: "output-available", output: proposal },
+      ]),
+    ).toEqual([{ toolCallId: "t2", proposal }]);
+    expect(routeReplyText(proposal)).toBe("About a 5.0 km loop. It's on the map.");
   });
 });

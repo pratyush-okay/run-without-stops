@@ -5,6 +5,7 @@ import {
   FEATURES_VIEWPORT_MAX_METERS,
   featureIsCrossedOnRoute,
   featuresNearRoute,
+  offsetPoint,
   quantizeBoundingBox,
   signalAvoidancePolygons,
   viewportCenter,
@@ -36,6 +37,12 @@ const features: RunnerFeature[] = [
 ];
 
 describe("geo helpers", () => {
+  it("offsets a point north by a known distance", () => {
+    const north = offsetPoint({ lat: 0, lng: 0 }, 1_000, 0);
+    expect(north.lat).toBeCloseTo(0.009, 3);
+    expect(north.lng).toBeCloseTo(0, 5);
+  });
+
   it("validates and quantizes viewports of any city", () => {
     const bounds = {
       south: -33.89,

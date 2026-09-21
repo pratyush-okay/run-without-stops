@@ -21,6 +21,37 @@ vi.mock("@/lib/agent/runtime", () => ({
   getResolvedAgentSettings: vi.fn(),
 }));
 
+vi.mock("@/lib/osm/scenic", () => ({
+  findScenicPlaces: vi.fn(async () => []),
+}));
+
+vi.mock("@/lib/maps/stadia", () => ({
+  searchPlaces: vi.fn(async () => []),
+}));
+
+vi.mock("@/lib/osm/walkable", () => ({
+  snapLoopPoints: vi.fn(async (points: unknown) => points),
+}));
+
+vi.mock("@/lib/routing", () => ({
+  fetchBestRoute: vi.fn(async () => ({
+    coordinates: [
+      [151.2093, -33.8688],
+      [151.215, -33.873],
+      [151.2093, -33.8688],
+    ],
+    metrics: {
+      distanceMeters: 6_000,
+      durationSeconds: 1_980,
+      trafficSignals: 0,
+      crossings: 0,
+      majorRoadMeters: 0,
+    },
+    provider: "graphhopper",
+    warnings: [],
+  })),
+}));
+
 const chatBody = {
   modelId: "openai/gpt-4.1-mini",
   messages: [
@@ -97,5 +128,30 @@ describe("POST /api/agent/chat", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "Send a message" });
+  });
+
+  it("builds a 6k loop without calling the LLM", async () => {
+    vi.mocked(currentUser).mockResolvedValue({ id: "user_123" } as never);
+    vi.mocked(canUseAgentChat).mockReturnValue(true);
+    vi.mocked(hasOpenRouterKey).mockReturnValue(false);
+
+    const response = await POST(
+      chatRequest({
+        messages: [
+          {
+            id: "m1",
+            role: "user",
+            parts: [{ type: "text", text: "Make a 6k loop around me" }],
+          },
+        ],
+        context: { mapCenter: { lat: -33.8688, lng: 151.2093 }, unit: "metric" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(createAgentModel).not.toHaveBeenCalled();
+    const body = await response.text();
+    expect(body).toMatch(/6\.00 km loop/);
+    expect(body).toMatch(/It's on the map/);
   });
 });

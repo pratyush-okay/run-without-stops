@@ -25,6 +25,35 @@ export function distanceMeters(a: GeoPoint, b: GeoPoint) {
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(value));
 }
 
+function toDegrees(value: number) {
+  return (value * 180) / Math.PI;
+}
+
+export function offsetPoint(origin: GeoPoint, meters: number, bearingDegrees: number): GeoPoint {
+  const angular = meters / EARTH_RADIUS_METERS;
+  const bearing = toRadians(bearingDegrees);
+  const lat1 = toRadians(origin.lat);
+  const lng1 = toRadians(origin.lng);
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(angular) + Math.cos(lat1) * Math.sin(angular) * Math.cos(bearing),
+  );
+  const lng2 =
+    lng1 +
+    Math.atan2(
+      Math.sin(bearing) * Math.sin(angular) * Math.cos(lat1),
+      Math.cos(angular) - Math.sin(lat1) * Math.sin(lat2),
+    );
+  return { lat: toDegrees(lat2), lng: toDegrees(lng2) };
+}
+
+export function boxAround(origin: GeoPoint, radiusMeters: number): BoundingBox {
+  const north = offsetPoint(origin, radiusMeters, 0);
+  const east = offsetPoint(origin, radiusMeters, 90);
+  const south = offsetPoint(origin, radiusMeters, 180);
+  const west = offsetPoint(origin, radiusMeters, 270);
+  return { south: south.lat, west: west.lng, north: north.lat, east: east.lng };
+}
+
 export function boundingBoxDiagonalMeters(box: BoundingBox) {
   return distanceMeters({ lat: box.south, lng: box.west }, { lat: box.north, lng: box.east });
 }

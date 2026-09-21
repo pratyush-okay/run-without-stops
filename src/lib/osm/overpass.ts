@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
 import { env } from "@/env";
-import type { BoundingBox, RunnerFeature } from "@/lib/schemas/features";
+import type { BoundingBox, GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 
 const overpassElementSchema = z.object({
   type: z.enum(["node", "way", "relation"]),
@@ -15,6 +15,8 @@ const overpassElementSchema = z.object({
 const overpassResponseSchema = z.object({
   elements: z.array(overpassElementSchema),
 });
+
+export type OverpassElement = z.infer<typeof overpassElementSchema>;
 
 function queryFor(box: BoundingBox) {
   const bounds = `${box.south},${box.west},${box.north},${box.east}`;
@@ -32,14 +34,26 @@ type RunnerFeaturesResult = {
   partial: boolean;
 };
 
+function overpassEndpoints() {
+  if (env.TRACESTRACK_API_KEY) {
+    return [
+      `${env.TRACESTRACK_OVERPASS_URL}/${encodeURIComponent(env.TRACESTRACK_API_KEY)}/interpreter`,
+    ];
+  }
+  return [...new Set([env.OVERPASS_API_URL, "https://overpass.kumi.systems/api/interpreter"])];
+}
+
+export function overpassPoint(element: OverpassElement): GeoPoint | undefined {
+  if (element.lat !== undefined && element.lon !== undefined) {
+    return { lat: element.lat, lng: element.lon };
+  }
+  if (element.center) return { lat: element.center.lat, lng: element.center.lon };
+  return undefined;
+}
+
 export function normalizeOverpassElement(input: unknown): RunnerFeature | undefined {
   const element = overpassElementSchema.parse(input);
-  const point =
-    element.lat !== undefined && element.lon !== undefined
-      ? { lat: element.lat, lng: element.lon }
-      : element.center
-        ? { lat: element.center.lat, lng: element.center.lon }
-        : undefined;
+  const point = overpassPoint(element);
 
   if (!point) return undefined;
   const tags = element.tags ?? {};
@@ -78,22 +92,33 @@ export function normalizeOverpassElement(input: unknown): RunnerFeature | undefi
   return undefined;
 }
 
-async function requestEndpoint(endpoint: string, box: BoundingBox): Promise<RunnerFeature[]> {
+async function postOverpass(endpoint: string, query: string, timeoutMs: number) {
   const response = await fetch(endpoint, {
     method: "POST",
-    body: new URLSearchParams({ data: queryFor(box) }),
+    body: new URLSearchParams({ data: query }),
     headers: {
       "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
       "User-Agent": "RunWithoutStops/0.1 (https://runwithoutstops.app)",
     },
-    signal: AbortSignal.timeout(22_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
+  if (!response.ok) throw new Error(`Overpass request failed with ${response.status}`);
+  return overpassResponseSchema.parse(await response.json());
+}
 
-  if (!response.ok) {
-    throw new Error(`Overpass request failed with ${response.status}`);
+export async function queryOverpass(query: string): Promise<OverpassElement[]> {
+  for (const endpoint of overpassEndpoints()) {
+    try {
+      return (await postOverpass(endpoint, query, 16_000)).elements;
+    } catch {
+      // Public Overpass instances can throttle independently; try the next mirror.
+    }
   }
+  return [];
+}
 
-  const payload = overpassResponseSchema.parse(await response.json());
+async function requestEndpoint(endpoint: string, box: BoundingBox): Promise<RunnerFeature[]> {
+  const payload = await postOverpass(endpoint, queryFor(box), 22_000);
   const features = payload.elements
     .map(normalizeOverpassElement)
     .filter((feature): feature is RunnerFeature => feature !== undefined);
@@ -107,11 +132,7 @@ async function requestEndpoint(endpoint: string, box: BoundingBox): Promise<Runn
 }
 
 async function requestRunnerFeatures(box: BoundingBox): Promise<RunnerFeaturesResult> {
-  const endpoints = env.TRACESTRACK_API_KEY
-    ? [`${env.TRACESTRACK_OVERPASS_URL}/${encodeURIComponent(env.TRACESTRACK_API_KEY)}/interpreter`]
-    : [...new Set([env.OVERPASS_API_URL, "https://overpass.kumi.systems/api/interpreter"])];
-
-  for (const endpoint of endpoints) {
+  for (const endpoint of overpassEndpoints()) {
     try {
       return { features: await requestEndpoint(endpoint, box), partial: false };
     } catch {
