@@ -6,6 +6,8 @@ export const SITE_TITLE = "Run Planner | Run Without Stops";
 export const SITE_DESCRIPTION =
   "Free running route planner. Click the map or search a place anywhere, then skip traffic lights, highways, and busy roads. Optional save and share.";
 export const SSO_DISALLOW_PATHS = ["/sso-callback", "/sso-continue"] as const;
+export const ADMIN_DISALLOW_PATHS = ["/admin"] as const;
+export const PRIVATE_DISALLOW_PATHS = [...SSO_DISALLOW_PATHS, ...ADMIN_DISALLOW_PATHS] as const;
 export const OG_IMAGE_PATH = "/opengraph-image";
 export const OG_IMAGE_ALT = "Run Without Stops — quieter running routes";
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;

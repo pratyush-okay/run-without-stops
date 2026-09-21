@@ -3,6 +3,8 @@
 import { useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ChatPanel } from "@/components/agent/chat-panel";
+import { ChatToggle } from "@/components/agent/chat-toggle";
 import { AuthControls } from "@/components/auth/auth-controls";
 import { type AuthIntent, AuthModal } from "@/components/auth/auth-modal";
 import { AppLogo, BrandMark } from "@/components/brand/app-logo";
@@ -77,6 +79,8 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
   const [shareCopied, setShareCopied] = useState(false);
   const [shareError, setShareError] = useState<string>();
   const [metricsExpanded, setMetricsExpanded] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [canUseAgentChat, setCanUseAgentChat] = useState(false);
   const pendingAuthRef = useRef<AuthIntent | undefined>(undefined);
   const featureState = useRunnerFeatures();
   const planner = useRoutePlanner(
@@ -124,10 +128,16 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
     if (!isSignedIn) {
       setMapStyleId(DEFAULT_MAP_STYLE_ID);
       setStylePickerOpen(false);
+      setIsChatOpen(false);
+      setCanUseAgentChat(false);
       return;
     }
     setMapStyleId(readStoredMapStyle());
     void fetch("/api/me", { method: "POST", headers: analyticsHeaders() });
+    void fetch("/api/agent/models").then((response) => {
+      setCanUseAgentChat(response.ok);
+      if (!response.ok) setIsChatOpen(false);
+    });
     setIsAuthOpen(false);
     const pending = pendingAuthRef.current;
     pendingAuthRef.current = undefined;
@@ -419,6 +429,18 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
             onLockedClick={() => openAuth("style")}
             onChange={changeMapStyle}
           />
+          {canUseAgentChat ? (
+            <ChatToggle
+              open={isChatOpen}
+              onToggle={() => {
+                setIsChatOpen((current) => {
+                  const next = !current;
+                  if (next) captureEvent(analyticsEvents.agentChatOpened);
+                  return next;
+                });
+              }}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -520,6 +542,9 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
           onClose={() => setIsSaveOpen(false)}
           onSubmit={(name) => void saveRoute(name)}
         />
+      ) : null}
+      {canUseAgentChat ? (
+        <ChatPanel open={isChatOpen} onClose={() => setIsChatOpen(false)} />
       ) : null}
       {isRoutesOpen ? (
         <SavedRoutesPanel

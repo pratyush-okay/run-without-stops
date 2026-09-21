@@ -21,6 +21,7 @@ export const analyticsEvents = {
   savedRouteLoaded: "saved_route_loaded",
   savedRouteDeleted: "saved_route_deleted",
   savedRouteRenamed: "saved_route_renamed",
+  agentChatOpened: "agent_chat_opened",
   signInOpened: "sign_in_opened",
   userSignedIn: "user_signed_in",
   userSignedOut: "user_signed_out",

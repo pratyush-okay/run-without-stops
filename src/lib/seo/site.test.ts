@@ -1,8 +1,10 @@
 import {
+  ADMIN_DISALLOW_PATHS,
   absoluteUrl,
   defaultSocialImages,
   OG_IMAGE_ALT,
   OG_IMAGE_PATH,
+  PRIVATE_DISALLOW_PATHS,
   PRODUCTION_SITE_ORIGIN,
   PUBLIC_PAGE_ROBOTS,
   resolveSiteOrigin,
@@ -43,10 +45,16 @@ describe("public URL lists", () => {
     ]);
     expect(paths.some((path) => path.startsWith("/sso-"))).toBe(false);
     expect(paths.some((path) => path.startsWith("/r/"))).toBe(false);
+    expect(paths).not.toContain("/admin");
   });
 
   it("keeps Clerk callbacks off the public inventory", () => {
     expect([...SSO_DISALLOW_PATHS]).toEqual(["/sso-callback", "/sso-continue"]);
+  });
+
+  it("keeps the admin portal off search indexes", () => {
+    expect([...ADMIN_DISALLOW_PATHS]).toEqual(["/admin"]);
+    expect([...PRIVATE_DISALLOW_PATHS]).toEqual(["/sso-callback", "/sso-continue", "/admin"]);
   });
 
   it("joins origin and path without a double slash", () => {

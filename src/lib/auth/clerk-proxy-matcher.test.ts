@@ -8,6 +8,8 @@ describe("clerk proxy matcher", () => {
     expect(isClerkProxyPath("/sso-callback")).toBe(true);
     expect(isClerkProxyPath("/sso-continue")).toBe(true);
     expect(isClerkProxyPath("/api/route")).toBe(true);
+    expect(isClerkProxyPath("/api/agent/chat")).toBe(true);
+    expect(isClerkProxyPath("/admin")).toBe(true);
     expect(isClerkProxyPath("/r/some-share")).toBe(true);
   });
 

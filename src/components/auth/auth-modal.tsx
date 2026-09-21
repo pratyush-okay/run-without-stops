@@ -10,7 +10,7 @@ import { SSO_CALLBACK_PATH, SSO_COMPLETE_PATH, ssoErrorMessage } from "@/lib/aut
 import { usernameSchema } from "@/lib/schemas/profile";
 
 type AuthMode = "sign-in" | "sign-up";
-export type AuthIntent = "save" | "share" | "style";
+export type AuthIntent = "save" | "share" | "style" | "chat";
 
 type AuthModalProps = {
   onClose: () => void;

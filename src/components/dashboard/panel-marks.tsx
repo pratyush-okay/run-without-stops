@@ -236,3 +236,12 @@ export function MapLookGlyph({ className = "size-4" }: { className?: string }) {
     </Glyph>
   );
 }
+
+export function ChatGlyph({ className = "size-4" }: { className?: string }) {
+  return (
+    <Glyph className={className} color="#c8ff52">
+      <path d="M3.2 3.4h9.6v7.1H7.6L4.4 12.8V10.5H3.2V3.4Z" />
+      <path d="M5.5 6h5.1M5.5 8.1h3.4" />
+    </Glyph>
+  );
+}
