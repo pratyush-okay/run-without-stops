@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { analyticsEvents } from "@/lib/analytics/events";
-import { captureRequestEvent } from "@/lib/analytics/server";
+import { captureRequestEventAfterResponse } from "@/lib/analytics/server";
 import { reportError } from "@/lib/observability/report-error";
 import { fetchBestRoute } from "@/lib/routing";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
   try {
     const route = routeResponseSchema.parse(await fetchBestRoute(parsed.data));
-    await captureRequestEvent(request, analyticsEvents.routeComputed, {
+    captureRequestEventAfterResponse(request, analyticsEvents.routeComputed, {
       mode: parsed.data.mode,
       point_count: parsed.data.points.length,
       provider: route.provider,
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json(route);
   } catch (error) {
     reportError(error, { route: "/api/route" });
-    await captureRequestEvent(request, analyticsEvents.routeComputeFailed, {
+    captureRequestEventAfterResponse(request, analyticsEvents.routeComputeFailed, {
       mode: parsed.data.mode,
       point_count: parsed.data.points.length,
     });

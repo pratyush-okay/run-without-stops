@@ -10,13 +10,31 @@ const heightResponseSchema = z.object({
   height: z.array(z.number()).min(2),
 });
 
+export const HEIGHT_LOOKUP_BUDGET_MS = 400;
+
 export async function fetchHeightsAlongRoute(
   coordinates: [number, number][],
 ): Promise<ElevatedPoint[] | undefined> {
   const sampled = subsampleCoordinates(coordinates);
-  const heights = await requestHeights(sampled);
+  const heights = await withBudget(requestHeights(sampled), HEIGHT_LOOKUP_BUDGET_MS);
   if (!heights) return undefined;
   return pointsFromHeightLookup(sampled, heights);
+}
+
+function withBudget<T>(work: Promise<T | undefined>, budgetMs: number) {
+  return new Promise<T | undefined>((resolve) => {
+    const timer = setTimeout(() => resolve(undefined), budgetMs);
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(undefined);
+      },
+    );
+  });
 }
 
 async function requestHeights(coordinates: [number, number][]) {

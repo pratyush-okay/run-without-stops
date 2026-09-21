@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { analyticsEvents } from "@/lib/analytics/events";
-import { captureRequestEvent } from "@/lib/analytics/server";
+import { captureRequestEventAfterResponse } from "@/lib/analytics/server";
 import { canLoadRunnerFeatures, quantizeBoundingBox } from "@/lib/geo";
 import { reportError } from "@/lib/observability/report-error";
 import { fetchRunnerFeatures } from "@/lib/osm/overpass";
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       attribution: "© OpenStreetMap contributors",
       partial: result.partial,
     });
-    await captureRequestEvent(request, analyticsEvents.featuresLoaded, {
+    captureRequestEventAfterResponse(request, analyticsEvents.featuresLoaded, {
       feature_count: body.features.length,
       partial: body.partial,
     });

@@ -14,8 +14,45 @@ import {
   removeRoutePoint,
   reverseRoutePoints,
 } from "@/lib/routing/points";
+import { readRouteCache, routeRequestKey, writeRouteCache } from "@/lib/routing/route-cache";
 import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import { type RouteMode, type RouteResponse, routeResponseSchema } from "@/lib/schemas/route";
+
+function routingFeatures(features: RunnerFeature[]) {
+  return [
+    ...features.filter((feature) => feature.kind === "traffic_signal").slice(0, 60),
+    ...features.filter((feature) => feature.kind === "crossing").slice(0, 40),
+  ];
+}
+
+async function postRoute(
+  body: {
+    points: GeoPoint[];
+    mode: RouteMode;
+    avoidElevation: boolean;
+    features: RunnerFeature[];
+  },
+  signal: AbortSignal,
+) {
+  if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+  const key = routeRequestKey(body);
+  const cached = readRouteCache(key);
+  if (cached) return cached;
+
+  const response = await fetch("/api/route", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...analyticsHeaders() },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!response.ok) {
+    const payload = (await response.json()) as { error?: string };
+    throw new Error(payload.error ?? "Route could not be calculated");
+  }
+  const computed = routeResponseSchema.parse(await response.json());
+  writeRouteCache(key, computed);
+  return computed;
+}
 
 export type RouteSeed = {
   points: GeoPoint[];
@@ -160,47 +197,65 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
       return;
     }
 
+    const routedFeatures = routingFeatures(hasSignalData ? featuresRef.current : []);
+    const avoid = mode === "low_stops" && avoidElevation;
+    const cached = readRouteCache(
+      routeRequestKey({ points, mode, avoidElevation: avoid, features: routedFeatures }),
+    );
+    if (cached) {
+      setRoute(cached);
+      setError(undefined);
+      setIsRouting(false);
+      return;
+    }
+
     const controller = new AbortController();
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
+      let finalized = false;
       setIsRouting(true);
-      try {
-        const latestFeatures = hasSignalData ? featuresRef.current : [];
-        const response = await fetch("/api/route", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...analyticsHeaders() },
-          body: JSON.stringify({
-            points,
-            mode,
-            avoidElevation: mode === "low_stops" && avoidElevation,
-            features: [
-              ...latestFeatures.filter((feature) => feature.kind === "traffic_signal").slice(0, 60),
-              ...latestFeatures.filter((feature) => feature.kind === "crossing").slice(0, 40),
-            ],
-          }),
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          const payload = (await response.json()) as { error?: string };
-          throw new Error(payload.error ?? "Route could not be calculated");
-        }
-        const computed = routeResponseSchema.parse(await response.json());
-        setRoute(computed);
-        setError(undefined);
-        captureEvent(analyticsEvents.routeComputed, {
-          mode,
-          point_count: points.length,
-          provider: computed.provider,
-          distance_meters: computed.metrics.distanceMeters,
-          traffic_signals: computed.metrics.trafficSignals,
-          crossings: computed.metrics.crossings,
-        });
-      } catch (caught) {
-        if (caught instanceof DOMException && caught.name === "AbortError") return;
-        setError(caught instanceof Error ? caught.message : "Route could not be calculated");
-        captureEvent(analyticsEvents.routeComputeFailed, { mode, point_count: points.length });
-      } finally {
-        if (!controller.signal.aborted) setIsRouting(false);
+      if (mode === "low_stops") {
+        void postRoute(
+          { points, mode: "direct", avoidElevation: false, features: routedFeatures },
+          controller.signal,
+        )
+          .then((quick) => {
+            if (controller.signal.aborted || finalized) return;
+            setRoute((current) => current ?? quick);
+            setError(undefined);
+          })
+          .catch((caught) => {
+            if (caught instanceof DOMException && caught.name === "AbortError") return;
+          });
       }
+
+      void postRoute(
+        { points, mode, avoidElevation: avoid, features: routedFeatures },
+        controller.signal,
+      )
+        .then((computed) => {
+          if (controller.signal.aborted) return;
+          finalized = true;
+          setRoute(computed);
+          setError(undefined);
+          captureEvent(analyticsEvents.routeComputed, {
+            mode,
+            point_count: points.length,
+            provider: computed.provider,
+            distance_meters: computed.metrics.distanceMeters,
+            traffic_signals: computed.metrics.trafficSignals,
+            crossings: computed.metrics.crossings,
+          });
+        })
+        .catch((caught) => {
+          if (caught instanceof DOMException && caught.name === "AbortError") return;
+          if (controller.signal.aborted) return;
+          finalized = true;
+          setError(caught instanceof Error ? caught.message : "Route could not be calculated");
+          captureEvent(analyticsEvents.routeComputeFailed, { mode, point_count: points.length });
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setIsRouting(false);
+        });
     }, 80);
 
     return () => {

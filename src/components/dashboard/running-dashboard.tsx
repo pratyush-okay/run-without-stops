@@ -301,14 +301,12 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
             accessToken={mapboxToken}
             points={planner.points}
             routeCoordinates={
-              planner.route && !planner.isRouting
-                ? planner.route.coordinates
-                : linePreviewCoordinates(planner.points)
+              planner.route ? planner.route.coordinates : linePreviewCoordinates(planner.points)
             }
-            isRoutePreview={!planner.route || planner.isRouting}
+            isRoutePreview={!planner.route}
             elevationMarks={planner.route?.elevation?.marks ?? []}
             elevationSamples={planner.route?.elevation?.samples ?? []}
-            scrub={planner.route && !planner.isRouting ? scrub : undefined}
+            scrub={planner.route ? scrub : undefined}
             onScrubChange={updateScrub}
             unit={unit}
             features={featureState.features}

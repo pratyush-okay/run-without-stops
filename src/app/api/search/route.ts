@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { analyticsEvents } from "@/lib/analytics/events";
-import { captureRequestEvent } from "@/lib/analytics/server";
+import { captureRequestEventAfterResponse } from "@/lib/analytics/server";
 import { SYDNEY_CENTER } from "@/lib/geo";
 import { searchPlaces } from "@/lib/maps/stadia";
 import { reportError } from "@/lib/observability/report-error";
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     const body = searchResponseSchema.parse({
       results: await searchPlaces(query, focus.success ? focus.data : SYDNEY_CENTER),
     });
-    await captureRequestEvent(request, analyticsEvents.placeSearched, {
+    captureRequestEventAfterResponse(request, analyticsEvents.placeSearched, {
       query_length: query.length,
       result_count: body.results.length,
     });

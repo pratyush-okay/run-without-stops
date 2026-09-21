@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { PostHog } from "posthog-node";
 import { env } from "@/env";
 import type { AnalyticsEvent } from "@/lib/analytics/events";
@@ -64,4 +65,20 @@ export async function captureRequestEvent(
       ...(sessionId ? { $session_id: sessionId } : {}),
     },
   });
+}
+
+export function captureRequestEventAfterResponse(
+  request: Request,
+  event: AnalyticsEvent,
+  properties?: Record<string, unknown>,
+  userId?: string,
+) {
+  const task = () => captureRequestEvent(request, event, properties, userId);
+  try {
+    after(() => {
+      void task();
+    });
+  } catch {
+    void task();
+  }
 }
