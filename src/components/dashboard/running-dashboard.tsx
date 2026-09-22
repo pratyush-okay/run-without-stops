@@ -417,7 +417,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
           </div>
         </div>
 
-        <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] right-[max(0.75rem,env(safe-area-inset-right))] z-[5] md:top-[4.6rem] md:right-4">
+        <div className="pointer-events-none absolute top-[calc(3.85rem+env(safe-area-inset-top))] right-[max(0.75rem,env(safe-area-inset-right))] z-[5] md:top-[4.6rem]">
           <div className="pointer-events-auto flex flex-col items-end gap-2">
             <AuthControls
               menuPlacement="down"

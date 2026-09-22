@@ -5,7 +5,7 @@ const BUY_ME_A_COFFEE_URL = "https://buymeacoffee.com/pratyushpao";
 
 function CoffeeCup() {
   return (
-    <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+    <svg viewBox="0 0 16 16" className="size-4" aria-hidden>
       <path
         fill="#FFDD00"
         d="M3.2 4.2h7.1v5.1a2.6 2.6 0 0 1-2.6 2.6H5.8a2.6 2.6 0 0 1-2.6-2.6V4.2Z"
@@ -116,13 +116,14 @@ export function HomeIntro() {
           </div>
         </details>
         <a
-          className="rws-panel pointer-events-auto inline-flex h-8 items-center gap-1.5 px-2.5 text-[11px] font-medium text-white/85 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52]"
+          className="rws-panel pointer-events-auto grid size-9 place-items-center text-white/85 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52]"
           href={BUY_ME_A_COFFEE_URL}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label="Buy me a coffee"
+          title="Buy me a coffee"
         >
           <CoffeeCup />
-          Buy me a coffee
         </a>
       </div>
     </section>

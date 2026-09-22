@@ -58,32 +58,30 @@ export function MapStyleControls({
   }
 
   return (
-    <section
-      ref={rootRef}
-      className="rws-panel flex flex-col items-end p-1.5 md:flex-row-reverse md:items-center"
-      aria-label="Map look"
-    >
-      <button
-        type="button"
-        className="grid size-11 shrink-0 place-items-center rounded-lg text-[#c8ff52] transition hover:bg-white/[0.06] hover:text-[#d6ff7a]"
-        onClick={() => {
-          if (locked) {
-            onLockedClick?.();
-            return;
-          }
-          setOpen(!open);
-        }}
-        aria-expanded={open}
-        aria-controls={locked ? undefined : listId}
-        aria-label={locked ? "Map look" : open ? "Hide map looks" : "Show map looks"}
-        title="Map look"
-      >
-        <MapLookGlyph />
-      </button>
+    <section ref={rootRef} className="relative" aria-label="Map look">
+      <div className="rws-panel p-1.5">
+        <button
+          type="button"
+          className="grid size-11 shrink-0 place-items-center rounded-lg text-[#c8ff52] transition hover:bg-white/[0.06] hover:text-[#d6ff7a] md:size-10"
+          onClick={() => {
+            if (locked) {
+              onLockedClick?.();
+              return;
+            }
+            setOpen(!open);
+          }}
+          aria-expanded={open}
+          aria-controls={locked ? undefined : listId}
+          aria-label={locked ? "Map look" : open ? "Hide map looks" : "Show map looks"}
+          title="Map look"
+        >
+          <MapLookGlyph />
+        </button>
+      </div>
       <div
         id={listId}
         className={
-          open ? "mt-1 flex flex-col gap-0.5 md:mt-0 md:mr-1 md:flex-row md:items-center" : "hidden"
+          open ? "rws-panel absolute top-0 right-full z-10 mr-2 flex w-max gap-0.5 p-1.5" : "hidden"
         }
       >
         {MAP_STYLES.map((style) => (
