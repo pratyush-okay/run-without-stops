@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { canUseAgentChat } from "@/lib/agent/admin";
 import { AGENT_CHAT_SYSTEM_PROMPT } from "@/lib/agent/catalog";
 import { combinedUserText, isRouteBuildRequest, lastUserText } from "@/lib/agent/chat-ui";
+import { evaluateRouteDraw } from "@/lib/agent/jev";
 import { createAgentModel, hasOpenRouterKey } from "@/lib/agent/openrouter";
 import { streamBuiltRoute } from "@/lib/agent/route-reply";
 import { getResolvedAgentSettings } from "@/lib/agent/runtime";
@@ -20,12 +21,33 @@ import {
   modelSystemPrompt,
   runtimeModelId,
 } from "@/lib/agent/settings";
-import { chatInstructions, createAgentTools, executePlanRun } from "@/lib/agent/tools";
+import {
+  chatInstructions,
+  createAgentTools,
+  executePlanRun,
+  type PlanRunInput,
+} from "@/lib/agent/tools";
 import { reportError } from "@/lib/observability/report-error";
-import { agentChatRequestSchema } from "@/lib/schemas/agent";
+import { type AgentChatContext, agentChatRequestSchema } from "@/lib/schemas/agent";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
 
 export const maxDuration = 120;
+
+async function builtRouteResponse(
+  input: PlanRunInput,
+  context: AgentChatContext,
+  userText: string,
+) {
+  try {
+    const proposal = await executePlanRun(input, context, { userText });
+    return streamBuiltRoute(proposal);
+  } catch (error) {
+    reportError(error, { route: "/api/agent/chat" });
+    return NextResponse.json(apiErrorSchema.parse({ error: agentChatErrorMessage(error) }), {
+      status: 500,
+    });
+  }
+}
 
 export async function POST(request: Request) {
   const user = await currentUser();
@@ -52,16 +74,11 @@ export async function POST(request: Request) {
   const combined = combinedUserText(parsed.data.messages);
 
   if (isRouteBuildRequest(userText, combined)) {
-    try {
-      const proposal = await executePlanRun({}, context, { userText: combined });
-      return streamBuiltRoute(proposal);
-    } catch (error) {
-      reportError(error, { route: "/api/agent/chat" });
-      return NextResponse.json(apiErrorSchema.parse({ error: agentChatErrorMessage(error) }), {
-        status: 500,
-      });
-    }
+    return builtRouteResponse({}, context, combined);
   }
+
+  const draw = await evaluateRouteDraw(combined);
+  if (draw) return builtRouteResponse(draw, context, combined);
 
   if (!hasOpenRouterKey()) {
     return NextResponse.json(apiErrorSchema.parse({ error: "Chat is not configured" }), {

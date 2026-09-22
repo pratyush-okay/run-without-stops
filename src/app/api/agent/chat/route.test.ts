@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { canUseAgentChat } from "@/lib/agent/admin";
+import { evaluateRouteDraw } from "@/lib/agent/jev";
 import { createAgentModel, hasOpenRouterKey } from "@/lib/agent/openrouter";
 import { getResolvedAgentSettings } from "@/lib/agent/runtime";
 import { POST } from "./route";
@@ -10,6 +11,10 @@ vi.mock("@clerk/nextjs/server", () => ({
 
 vi.mock("@/lib/agent/admin", () => ({
   canUseAgentChat: vi.fn(),
+}));
+
+vi.mock("@/lib/agent/jev", () => ({
+  evaluateRouteDraw: vi.fn(async () => null),
 }));
 
 vi.mock("@/lib/agent/openrouter", () => ({
@@ -150,8 +155,63 @@ describe("POST /api/agent/chat", () => {
 
     expect(response.status).toBe(200);
     expect(createAgentModel).not.toHaveBeenCalled();
+    expect(evaluateRouteDraw).not.toHaveBeenCalled();
     const body = await response.text();
     expect(body).toMatch(/6\.00 km loop/);
     expect(body).toMatch(/It's on the map/);
+  });
+
+  it("draws from a confident Jev decision without calling OpenRouter", async () => {
+    vi.mocked(currentUser).mockResolvedValue({ id: "user_123" } as never);
+    vi.mocked(canUseAgentChat).mockReturnValue(true);
+    vi.mocked(hasOpenRouterKey).mockReturnValue(false);
+    vi.mocked(evaluateRouteDraw).mockResolvedValue({ mode: "low_stops", avoidElevation: true });
+
+    const response = await POST(
+      chatRequest({
+        messages: [
+          {
+            id: "m1",
+            role: "user",
+            parts: [{ type: "text", text: "Make the line flatter and quieter from here" }],
+          },
+        ],
+        context: { mapCenter: { lat: -33.8688, lng: 151.2093 }, unit: "metric" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(evaluateRouteDraw).toHaveBeenCalledOnce();
+    expect(createAgentModel).not.toHaveBeenCalled();
+    const body = await response.text();
+    expect(body).toMatch(/It's on the map/);
+  });
+
+  it("keeps a low-confidence decision on OpenRouter", async () => {
+    vi.mocked(currentUser).mockResolvedValue({ id: "user_123" } as never);
+    vi.mocked(canUseAgentChat).mockReturnValue(true);
+    vi.mocked(hasOpenRouterKey).mockReturnValue(true);
+    vi.mocked(evaluateRouteDraw).mockResolvedValue(null);
+    vi.mocked(getResolvedAgentSettings).mockResolvedValue({
+      models: [],
+      enabledModels: [
+        {
+          id: "openai/gpt-4.1-mini",
+          label: "GPT",
+          appId: "chat",
+          enabledByDefault: true,
+          systemPrompt: "",
+        },
+      ],
+      defaultModelId: "openai/gpt-4.1-mini",
+    } as never);
+    vi.mocked(createAgentModel).mockReturnValue({} as never);
+
+    const response = await POST(chatRequest());
+
+    expect(evaluateRouteDraw).toHaveBeenCalledOnce();
+    expect(createAgentModel).toHaveBeenCalledOnce();
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({ error: "Chat could not reply." });
   });
 });
