@@ -48,6 +48,11 @@ export function mapStyleUrl(id: MapStyleId): string {
   return mapStyleById(id).url;
 }
 
+export function nextMapStyle(id: MapStyleId): MapStyleId {
+  const index = MAP_STYLE_IDS.indexOf(id);
+  return MAP_STYLE_IDS[(index + 1) % MAP_STYLE_IDS.length] ?? DEFAULT_MAP_STYLE_ID;
+}
+
 export function readStoredMapStyle(): MapStyleId {
   if (typeof window === "undefined") return DEFAULT_MAP_STYLE_ID;
   try {

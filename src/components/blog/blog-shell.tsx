@@ -17,6 +17,10 @@ export function BlogShell({ children }: { children: ReactNode }) {
             Notes on quieter routes
           </Link>
           <span className="text-white/25"> · </span>
+          <Link className="text-sm text-white/70 hover:text-white" href="/help">
+            Help
+          </Link>
+          <span className="text-white/25"> · </span>
           <Link className="text-sm text-white/70 hover:text-white" href="/terms">
             Terms
           </Link>

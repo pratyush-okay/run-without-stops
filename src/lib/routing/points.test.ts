@@ -2,6 +2,7 @@ import { distanceMeters } from "@/lib/geo";
 import {
   addRoutePoint,
   closeRouteLoop,
+  insertRoutePoint,
   isRouteLoop,
   LOOP_SNAP_METERS,
   MAX_ROUTE_STOPS,
@@ -22,6 +23,14 @@ describe("route point edits", () => {
     const withStart = addRoutePoint([], start);
     expect(addRoutePoint(withStart, start)).toEqual(withStart);
     expect(addRoutePoint(withStart, finish)).toEqual([start, finish]);
+  });
+
+  it("inserts a waypoint on the gap that was dragged", () => {
+    const loop = [start, via, finish, start];
+    const inserted = insertRoutePoint(loop, 1, { lat: -33.871, lng: 151.216 });
+    expect(inserted).toEqual([start, via, { lat: -33.871, lng: 151.216 }, finish, start]);
+    expect(isRouteLoop(inserted)).toBe(true);
+    expect(insertRoutePoint([start, finish], 0, start)).toEqual([start, finish]);
   });
 
   it("removes, reverses, and closes a loop back to start", () => {

@@ -26,6 +26,7 @@ describe("clerk proxy matcher", () => {
     expect(isClerkProxyPath("/robots.txt")).toBe(false);
     expect(isClerkProxyPath("/llms.txt")).toBe(false);
     expect(isClerkProxyPath("/terms")).toBe(false);
+    expect(isClerkProxyPath("/help")).toBe(false);
     expect(isClerkProxyPath("/.well-known/okf/index.md")).toBe(false);
   });
 

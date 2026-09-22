@@ -28,11 +28,18 @@ function ElevationIcon() {
   );
 }
 
+export function formatGrade(gradePercent: number) {
+  const rounded = Math.round(gradePercent * 10) / 10;
+  const text = rounded.toFixed(1);
+  return `${rounded > 0 ? "+" : ""}${text}%`;
+}
+
 export function scrubTipParts(scrub: RouteScrub, unit: MetricUnit) {
   const elevation = elevationParts(scrub.elevationMeters, unit);
   return {
     distance: formatDistance(scrub.distanceMeters, unit),
     elevation: `${elevation.amount} ${elevation.unit}`,
+    grade: scrub.gradePercent === undefined ? undefined : formatGrade(scrub.gradePercent),
   };
 }
 
@@ -58,11 +65,17 @@ export function ScrubTip({
         <ElevationIcon />
         {parts.elevation}
       </span>
+      {parts.grade ? (
+        <span className="inline-flex items-center gap-1 text-[#d6ff7a]">{parts.grade}</span>
+      ) : null}
     </div>
   );
 }
 
 export function scrubTipHtml(scrub: RouteScrub, unit: MetricUnit) {
   const parts = scrubTipParts(scrub, unit);
-  return `<span class="rws-scrubber-metric"><svg viewBox="0 0 16 16" width="10" height="10" fill="none" aria-hidden="true"><circle cx="3.3" cy="8" r="1.55" fill="${DISTANCE_COLOR}"/><circle cx="12.7" cy="8" r="1.55" fill="${DISTANCE_COLOR}"/><path d="M5.1 8h5.8" stroke="${DISTANCE_COLOR}" stroke-width="1.6" stroke-linecap="round"/></svg>${parts.distance}</span><span class="rws-scrubber-metric"><svg viewBox="0 0 16 16" width="10" height="10" fill="none" aria-hidden="true"><path d="M2.4 12.2 8 4.4l5.6 7.8" stroke="${ELEVATION_COLOR}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${parts.elevation}</span>`;
+  const grade = parts.grade
+    ? `<span class="rws-scrubber-metric" style="color:#d6ff7a">${parts.grade}</span>`
+    : "";
+  return `<span class="rws-scrubber-metric"><svg viewBox="0 0 16 16" width="10" height="10" fill="none" aria-hidden="true"><circle cx="3.3" cy="8" r="1.55" fill="${DISTANCE_COLOR}"/><circle cx="12.7" cy="8" r="1.55" fill="${DISTANCE_COLOR}"/><path d="M5.1 8h5.8" stroke="${DISTANCE_COLOR}" stroke-width="1.6" stroke-linecap="round"/></svg>${parts.distance}</span><span class="rws-scrubber-metric"><svg viewBox="0 0 16 16" width="10" height="10" fill="none" aria-hidden="true"><path d="M2.4 12.2 8 4.4l5.6 7.8" stroke="${ELEVATION_COLOR}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${parts.elevation}</span>${grade}`;
 }

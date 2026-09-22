@@ -1,4 +1,9 @@
-import { nearestScrubOnRoute, routePrefix, scrubAtDistance } from "@/lib/routing/route-scrub";
+import {
+  gradeAtDistance,
+  nearestScrubOnRoute,
+  routePrefix,
+  scrubAtDistance,
+} from "@/lib/routing/route-scrub";
 
 const line: [number, number][] = [
   [151.2, -33.87],
@@ -28,6 +33,14 @@ describe("route scrub", () => {
     const scrub = scrubAtDistance(line, samples, 900);
     expect(scrub?.point.lng).toBeCloseTo(151.21, 3);
     expect(scrub?.elevationMeters).toBeCloseTo(40, 0);
+  });
+
+  it("reads grade from the neighboring elevation samples", () => {
+    expect(gradeAtDistance(samples, 450)).toBeCloseTo((30 / 900) * 100, 5);
+    expect(scrubAtDistance(line, samples, 1350)?.gradePercent).toBeCloseTo((-18 / 900) * 100, 5);
+    expect(
+      nearestScrubOnRoute(line, samples, { lat: -33.87005, lng: 151.205 })?.gradePercent,
+    ).toBeCloseTo((30 / 900) * 100, 1);
   });
 
   it("returns the prefix of the route up to a distance", () => {

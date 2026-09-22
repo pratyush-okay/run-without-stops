@@ -42,6 +42,7 @@ describe("public URL lists", () => {
       "/",
       "/blog",
       "/terms",
+      "/help",
       "/blog/the-complete-guide-to-building-a-run-without-stops",
     ]);
     expect(paths.some((path) => path.startsWith("/sso-"))).toBe(false);

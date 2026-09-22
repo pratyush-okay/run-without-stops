@@ -2,7 +2,7 @@
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import mapboxgl from "mapbox-gl";
-import { useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { scrubTipHtml } from "@/components/dashboard/scrub-tip";
 import { featuresNearRoute, WORLD_BOUNDS } from "@/lib/geo";
 import {
@@ -37,13 +37,19 @@ import {
   MAP_MIN_ZOOM,
 } from "@/lib/maps/view";
 import type { MetricUnit } from "@/lib/routing/format";
-import { addRoutePoint, moveRoutePoint } from "@/lib/routing/points";
+import { addRoutePoint, insertRoutePoint, moveRoutePoint } from "@/lib/routing/points";
+import { gapIndexOnRoute } from "@/lib/routing/route-gap";
 import { nearestScrubOnRoute, type RouteScrub, routePrefix } from "@/lib/routing/route-scrub";
 import { linePreviewCoordinates, visibleWaypoints } from "@/lib/routing/waypoints";
 import type { BoundingBox, GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import type { ElevationMark, RouteElevation } from "@/lib/schemas/route";
 
 export type { MapLayerVisibility };
+
+export type RunningMapControls = {
+  panBy: (x: number, y: number) => void;
+  center: () => GeoPoint | undefined;
+};
 
 type RunningMapProps = {
   accessToken: string | undefined;
@@ -61,9 +67,11 @@ type RunningMapProps = {
   focusPoint: GeoPoint | undefined;
   userLocation: GeoPoint | undefined;
   onAddPoint: (point: GeoPoint, label?: string) => void;
+  onInsertPoint: (gapIndex: number, point: GeoPoint) => void;
   onMovePoint: (index: number, point: GeoPoint) => void;
   onRemovePoint: (index: number) => void;
   onBoundsChange: (bounds: BoundingBox) => void;
+  controlsRef?: RefObject<RunningMapControls | null> | undefined;
 };
 
 const LABEL_FONT = ["DIN Offc Pro Medium", "Arial Unicode MS Regular"];
@@ -597,14 +605,17 @@ export function RunningMap({
   focusPoint,
   userLocation,
   onAddPoint,
+  onInsertPoint,
   onMovePoint,
   onRemovePoint,
   onBoundsChange,
+  controlsRef,
 }: RunningMapProps) {
   const [mapReady, setMapReady] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const addPointRef = useRef(onAddPoint);
+  const insertPointRef = useRef(onInsertPoint);
   const movePointRef = useRef(onMovePoint);
   const removePointRef = useRef(onRemovePoint);
   const boundsChangeRef = useRef(onBoundsChange);
@@ -618,6 +629,13 @@ export function RunningMap({
   const styleUrlRef = useRef(styleUrl);
   const userLocationRef = useRef(userLocation);
   const pointerRef = useRef<{ index: number; x: number; y: number } | null>(null);
+  const strokePointerRef = useRef<{
+    gap: number;
+    x: number;
+    y: number;
+    origin: GeoPoint[];
+  } | null>(null);
+  const controlsRefProp = useRef(controlsRef);
   const didDragRef = useRef(false);
   const draggingRef = useRef(false);
   const waypointPopupRef = useRef<mapboxgl.Popup | null>(null);
@@ -627,7 +645,9 @@ export function RunningMap({
   const onScrubChangeRef = useRef(onScrubChange);
 
   addPointRef.current = onAddPoint;
+  insertPointRef.current = onInsertPoint;
   movePointRef.current = onMovePoint;
+  controlsRefProp.current = controlsRef;
   removePointRef.current = onRemovePoint;
   boundsChangeRef.current = onBoundsChange;
   if (!draggingRef.current) {
@@ -669,6 +689,18 @@ export function RunningMap({
     });
     mapRef.current = map;
     appliedStyleRef.current = initialStyleUrl;
+    const controls = controlsRefProp.current;
+    if (controls) {
+      controls.current = {
+        panBy(x, y) {
+          map.panBy([x, y], { duration: 160 });
+        },
+        center() {
+          const center = map.getCenter();
+          return { lat: center.lat, lng: center.lng };
+        },
+      };
+    }
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-right");
     map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
     const resizeObserver = new ResizeObserver(() => {
@@ -863,7 +895,66 @@ export function RunningMap({
       map.on("mousedown", layerId, onWaypointPointerDown);
     }
 
+    const onStrokePointerDown = (event: mapboxgl.MapMouseEvent) => {
+      const waypointLayers = WAYPOINT_POINTER_LAYER_IDS.filter((id) => map.getLayer(id));
+      if (
+        waypointLayers.length > 0 &&
+        map.queryRenderedFeatures(event.point, { layers: waypointLayers }).length > 0
+      ) {
+        return;
+      }
+      const snapped = nearestScrubOnRoute(
+        routeCoordinatesRef.current,
+        elevationSamplesRef.current,
+        { lat: event.lngLat.lat, lng: event.lngLat.lng },
+        20_000,
+      );
+      if (!snapped) return;
+      const gap = gapIndexOnRoute(
+        pointsRef.current,
+        routeCoordinatesRef.current,
+        snapped.distanceMeters,
+      );
+      if (gap === undefined) return;
+      strokePointerRef.current = {
+        gap,
+        x: event.point.x,
+        y: event.point.y,
+        origin: pointsRef.current,
+      };
+      didDragRef.current = false;
+      map.dragPan.disable();
+      map.getCanvas().style.cursor = "grab";
+      event.preventDefault();
+    };
+    for (const layerId of ["runner-route-hit", "runner-route"]) {
+      map.on("mousedown", layerId, onStrokePointerDown);
+    }
+
     const onMouseMove = (event: mapboxgl.MapMouseEvent) => {
+      const stroke = strokePointerRef.current;
+      if (stroke && !pointerRef.current) {
+        const moved = Math.hypot(event.point.x - stroke.x, event.point.y - stroke.y);
+        if (!didDragRef.current && moved < 6) return;
+        didDragRef.current = true;
+        draggingRef.current = true;
+        closeMapPopups();
+        map.getCanvas().style.cursor = "grabbing";
+        const point = { lat: event.lngLat.lat, lng: event.lngLat.lng };
+        const nextPoints = insertRoutePoint(stroke.origin, stroke.gap, point);
+        pointsRef.current = nextPoints;
+        syncOverlayMarkers(
+          map,
+          nextPoints,
+          featuresRef.current,
+          layersRef.current,
+          routeCoordinatesRef.current,
+        );
+        if (nextPoints.length >= 2) {
+          updateRouteSource(map, linePreviewCoordinates(nextPoints), true);
+        }
+        return;
+      }
       const pointer = pointerRef.current;
       if (!pointer) return;
       const moved = Math.hypot(event.point.x - pointer.x, event.point.y - pointer.y);
@@ -915,6 +1006,10 @@ export function RunningMap({
         return;
       }
       if (!event) return;
+      if (event.originalEvent.shiftKey) {
+        removePointRef.current(pointer.index);
+        return;
+      }
       const hits = map.queryRenderedFeatures(event.point, {
         layers: WAYPOINT_POINTER_LAYER_IDS.filter((id) => map.getLayer(id)),
       });
@@ -922,11 +1017,45 @@ export function RunningMap({
       const title = String(feature?.properties?.title ?? "Stop");
       showWaypointPopup(event.lngLat, pointer.index, title);
     };
+    const finishStroke = (event?: mapboxgl.MapMouseEvent) => {
+      const stroke = strokePointerRef.current;
+      if (!stroke) return;
+      strokePointerRef.current = null;
+      map.dragPan.enable();
+      map.getCanvas().style.cursor = "";
+      if (!didDragRef.current || !event) {
+        draggingRef.current = false;
+        pointsRef.current = stroke.origin;
+        return;
+      }
+      draggingRef.current = false;
+      const point = { lat: event.lngLat.lat, lng: event.lngLat.lng };
+      const nextPoints = insertRoutePoint(stroke.origin, stroke.gap, point);
+      pointsRef.current = nextPoints;
+      syncOverlayMarkers(
+        map,
+        nextPoints,
+        featuresRef.current,
+        layersRef.current,
+        routeCoordinatesRef.current,
+      );
+      if (nextPoints.length >= 2) {
+        updateRouteSource(map, linePreviewCoordinates(nextPoints), true);
+      }
+      insertPointRef.current(stroke.gap, point);
+    };
     map.on("mousemove", onMouseMove);
-    map.on("mouseup", finishPointer);
-    map.getCanvas().addEventListener("mouseleave", () => finishPointer());
+    map.on("mouseup", (event: mapboxgl.MapMouseEvent) => {
+      if (strokePointerRef.current) finishStroke(event);
+      else finishPointer(event);
+    });
+    map.getCanvas().addEventListener("mouseleave", () => {
+      if (strokePointerRef.current) finishStroke();
+      else finishPointer();
+    });
 
     return () => {
+      if (controlsRefProp.current) controlsRefProp.current.current = null;
       resizeObserver.disconnect();
       closeMapPopups();
       scrubberRef.current?.remove();
@@ -966,6 +1095,7 @@ export function RunningMap({
     const onRouteMove = (event: mapboxgl.MapMouseEvent) => {
       if (
         pointerRef.current ||
+        strokePointerRef.current ||
         isRoutePreviewRef.current ||
         elevationSamplesRef.current.length < 2
       ) {

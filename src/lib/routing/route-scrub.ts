@@ -5,6 +5,7 @@ import type { RouteElevation } from "@/lib/schemas/route";
 export type RouteScrub = {
   distanceMeters: number;
   elevationMeters: number;
+  gradePercent: number | undefined;
   point: GeoPoint;
 };
 
@@ -79,6 +80,36 @@ export function elevationAtDistance(
   return last.elevationMeters;
 }
 
+export function gradeAtDistance(
+  samples: RouteElevation["samples"],
+  distanceMetersValue: number,
+): number | undefined {
+  if (samples.length < 2) return undefined;
+  const first = samples[0];
+  const last = samples.at(-1);
+  if (!first || !last) return undefined;
+
+  let previous = first;
+  let current = samples[1] ?? last;
+  if (distanceMetersValue > first.distanceMeters && distanceMetersValue < last.distanceMeters) {
+    for (let index = 1; index < samples.length; index += 1) {
+      const earlier = samples[index - 1];
+      const later = samples[index];
+      if (!earlier || !later) continue;
+      previous = earlier;
+      current = later;
+      if (distanceMetersValue <= later.distanceMeters) break;
+    }
+  } else if (distanceMetersValue >= last.distanceMeters) {
+    previous = samples.at(-2) ?? first;
+    current = last;
+  }
+
+  const span = current.distanceMeters - previous.distanceMeters;
+  if (span <= 0) return 0;
+  return ((current.elevationMeters - previous.elevationMeters) / span) * 100;
+}
+
 export function pointAtDistance(
   coordinates: [number, number][],
   targetMeters: number,
@@ -140,6 +171,7 @@ export function nearestScrubOnRoute(
   return {
     distanceMeters: best.distanceMeters,
     elevationMeters: elevationAtDistance(samples, best.distanceMeters),
+    gradePercent: gradeAtDistance(samples, best.distanceMeters),
     point: best.point,
   };
 }
@@ -154,6 +186,7 @@ export function scrubAtDistance(
   return {
     distanceMeters: Math.max(0, distanceMetersValue),
     elevationMeters: elevationAtDistance(samples, distanceMetersValue),
+    gradePercent: gradeAtDistance(samples, distanceMetersValue),
     point,
   };
 }

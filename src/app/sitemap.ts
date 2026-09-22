@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/": "2026-09-18",
     "/blog": "2026-09-18",
     "/terms": "2026-09-19",
+    "/help": "2026-09-22",
   };
 
   return sitemapPaths(posts.map((post) => post.slug)).map((path) => {

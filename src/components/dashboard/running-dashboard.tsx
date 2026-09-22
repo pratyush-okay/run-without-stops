@@ -15,8 +15,11 @@ import { PlaceSearch } from "@/components/dashboard/place-search";
 import { RouteEditActions } from "@/components/dashboard/route-actions";
 import { RouteComposer } from "@/components/dashboard/route-composer";
 import { RouteSummary } from "@/components/dashboard/route-summary";
+import type { RunningMapControls } from "@/components/dashboard/running-map";
 import { SaveRouteDialog } from "@/components/dashboard/save-route-dialog";
 import { SavedRoutesPanel } from "@/components/dashboard/saved-routes-panel";
+import { ShortcutSheet } from "@/components/dashboard/shortcut-sheet";
+import { useMapShortcuts } from "@/hooks/use-map-shortcuts";
 import { useRoutePlanner } from "@/hooks/use-route-planner";
 import { useRouteScrub } from "@/hooks/use-route-scrub";
 import { useRunEffort } from "@/hooks/use-run-effort";
@@ -27,10 +30,12 @@ import { analyticsEvents } from "@/lib/analytics/events";
 import { SYDNEY_CENTER, viewportCenter } from "@/lib/geo";
 import type { MapLayerVisibility } from "@/lib/maps/layers";
 import { displayedRouteFeatureCounts } from "@/lib/maps/route-feature-counts";
+import type { MapShortcut } from "@/lib/maps/shortcuts";
 import {
   DEFAULT_MAP_STYLE_ID,
   type MapStyleId,
   mapStyleUrl,
+  nextMapStyle,
   readStoredMapStyle,
   writeStoredMapStyle,
 } from "@/lib/maps/styles";
@@ -84,6 +89,9 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [canUseAgentChat, setCanUseAgentChat] = useState(false);
   const pendingAuthRef = useRef<AuthIntent | undefined>(undefined);
+  const mapControlsRef = useRef<RunningMapControls | null>(null);
+  const shortcutHandlerRef = useRef<(shortcut: MapShortcut) => void>(() => undefined);
+  const { shortcutsOpen, setShortcutsOpen } = useMapShortcuts(shortcutHandlerRef);
   const featureState = useRunnerFeatures();
   const planner = useRoutePlanner(
     featureState.features,
@@ -297,6 +305,38 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
     }
   }
 
+  shortcutHandlerRef.current = (shortcut) => {
+    if (shortcut === "undo") planner.undo();
+    if (shortcut === "redo") planner.redo();
+    if (shortcut === "mode") {
+      planner.setMode(planner.mode === "direct" ? "low_stops" : "direct");
+    }
+    if (shortcut === "unit") {
+      const next = unit === "metric" ? "imperial" : "metric";
+      setUnit(next);
+      captureEvent(analyticsEvents.metricUnitChanged, { unit: next });
+    }
+    if (shortcut === "style") {
+      if (!isSignedIn) {
+        openAuth("style");
+        return;
+      }
+      changeMapStyle(nextMapStyle(mapStyleId));
+    }
+    if (shortcut === "elevation") setMetricsExpanded((current) => !current);
+    if (shortcut === "pan-left") mapControlsRef.current?.panBy(-160, 0);
+    if (shortcut === "pan-right") mapControlsRef.current?.panBy(160, 0);
+    if (shortcut === "pan-up") mapControlsRef.current?.panBy(0, -160);
+    if (shortcut === "pan-down") mapControlsRef.current?.panBy(0, 160);
+    if (shortcut === "center-point") {
+      const center = mapControlsRef.current?.center();
+      if (center) planner.addPoint(center);
+    }
+    if (shortcut === "delete-last" && planner.points.length > 0) {
+      planner.removePoint(planner.points.length - 1);
+    }
+  };
+
   function toggleChat() {
     setIsChatOpen((current) => {
       const next = !current;
@@ -315,6 +355,7 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
     >
       <div className="relative min-w-0 flex-1 overflow-hidden [container-type:inline-size]">
         {children}
+        <ShortcutSheet open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
         <div className="absolute inset-0">
           <RunningMap
             accessToken={mapboxToken}
@@ -334,7 +375,9 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
             focusPoint={focusPoint}
             userLocation={userLocation}
             onAddPoint={planner.addPoint}
+            onInsertPoint={planner.insertPoint}
             onMovePoint={planner.movePoint}
+            controlsRef={mapControlsRef}
             onRemovePoint={planner.removePoint}
             onBoundsChange={(bounds) => {
               setSearchFocus(viewportCenter(bounds));

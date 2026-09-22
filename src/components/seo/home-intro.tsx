@@ -2,6 +2,31 @@ import Link from "next/link";
 import { BrandMark } from "@/components/brand/app-logo";
 
 const BUY_ME_A_COFFEE_URL = "https://buymeacoffee.com/pratyushpao";
+const FEEDBACK_EMAIL = "p.pratyush@outlook.com";
+const FEEDBACK_MAILTO = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent("Run Without Stops")}`;
+
+const PLANNER_NOTES = [
+  {
+    href: "/blog/why-the-next-click-should-feel-instant",
+    label: "why the next click should feel instant",
+  },
+  {
+    href: "/blog/keyboard-shortcuts-for-the-planner",
+    label: "keyboard shortcuts",
+  },
+  {
+    href: "/blog/how-to-read-the-elevation-chart",
+    label: "how to read the elevation chart",
+  },
+  {
+    href: "/blog/shortest-path-versus-fewer-lights",
+    label: "shortest path versus fewer lights",
+  },
+  {
+    href: "/blog/edit-a-line-without-starting-over",
+    label: "editing a line without starting over",
+  },
+] as const;
 
 function CoffeeCup() {
   return (
@@ -83,7 +108,23 @@ export function HomeIntro() {
                 <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/terms">
                   terms
                 </Link>{" "}
-                page.
+                page.{" "}
+                <Link className="text-[#c8ff52] underline-offset-2 hover:underline" href="/help">
+                  Help
+                </Link>{" "}
+                covers the clicks, and these notes go further:{" "}
+                {PLANNER_NOTES.map((note, index) => (
+                  <span key={note.href}>
+                    {index > 0 ? ", " : null}
+                    <Link
+                      className="text-[#c8ff52] underline-offset-2 hover:underline"
+                      href={note.href}
+                    >
+                      {note.label}
+                    </Link>
+                  </span>
+                ))}
+                .
               </p>
               <p className="mt-2 text-xs leading-5 text-white/70">
                 Street data is{" "}
@@ -115,16 +156,30 @@ export function HomeIntro() {
             </div>
           </div>
         </details>
-        <a
-          className="rws-panel pointer-events-auto grid size-9 place-items-center text-white/85 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52]"
-          href={BUY_ME_A_COFFEE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Buy me a coffee"
-          title="Buy me a coffee"
-        >
-          <CoffeeCup />
-        </a>
+        <div className="pointer-events-auto flex items-center gap-2">
+          <Link
+            className="rws-panel grid h-9 place-items-center px-2.5 text-xs text-white/85 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52]"
+            href="/help"
+          >
+            Help
+          </Link>
+          <a
+            className="rws-panel grid h-9 place-items-center px-2.5 text-xs text-white/85 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52]"
+            href={FEEDBACK_MAILTO}
+          >
+            Send feedback
+          </a>
+          <a
+            className="rws-panel grid size-9 place-items-center text-white/85 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#c8ff52]"
+            href={BUY_ME_A_COFFEE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Buy me a coffee"
+            title="Buy me a coffee"
+          >
+            <CoffeeCup />
+          </a>
+        </div>
       </div>
     </section>
   );

@@ -28,6 +28,17 @@ export function addRoutePoint(points: GeoPoint[], point: GeoPoint, maxStops = MA
   return isRouteLoop(points) ? closeRouteLoop(next, maxStops) : next;
 }
 
+export function insertRoutePoint(points: GeoPoint[], gapIndex: number, point: GeoPoint) {
+  if (gapIndex < 0 || gapIndex >= points.length - 1) return points;
+  const stops = uniqueStops(points);
+  if (stops.length >= MAX_ROUTE_STOPS) return points;
+  const duplicate = points.some(
+    (current) => distanceMeters(current, point) < MINIMUM_STOP_SPACING_METERS,
+  );
+  if (duplicate) return points;
+  return [...points.slice(0, gapIndex + 1), point, ...points.slice(gapIndex + 1)];
+}
+
 export function removeRoutePoint(points: GeoPoint[], index: number) {
   if (index < 0 || index >= points.length) return points;
   if (isRouteLoop(points)) {

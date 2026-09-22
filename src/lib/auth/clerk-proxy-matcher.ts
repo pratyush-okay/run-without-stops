@@ -1,6 +1,6 @@
 /** Paths Clerk middleware should not run on (crawler files, blog, and terms). */
 export const CLERK_PROXY_EXCLUSION =
-  "ingest|_next|blog(?:/.*)?|terms|sitemap\\.xml|robots\\.txt|llms\\.txt|\\.well-known(?:/.*)?|opengraph-image|apple-icon\\.png|icon\\.svg|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)";
+  "ingest|_next|blog(?:/.*)?|terms|help|sitemap\\.xml|robots\\.txt|llms\\.txt|\\.well-known(?:/.*)?|opengraph-image|apple-icon\\.png|icon\\.svg|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)";
 
 export const CLERK_PROXY_MATCHER = [
   `/((?!${CLERK_PROXY_EXCLUSION}).*)`,
@@ -11,6 +11,7 @@ export const APEX_HOST_REDIRECT_MATCHER = [
   "/blog",
   "/blog/:path*",
   "/terms",
+  "/help",
   "/sitemap.xml",
   "/robots.txt",
   "/llms.txt",

@@ -15,6 +15,7 @@ export function GET() {
     `- [${SITE_TITLE}](${absoluteUrl("/")})`,
     `- [Blog](${absoluteUrl("/blog")})`,
     `- [Terms and credits](${absoluteUrl("/terms")})`,
+    `- [Help](${absoluteUrl("/help")})`,
     ...posts.map((post) => `- [${post.title}](${absoluteUrl(`/blog/${post.slug}`)})`),
     "",
   ];

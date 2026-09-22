@@ -6,6 +6,8 @@ import {
 import {
   BLOG_INDEX_DESCRIPTION,
   BLOG_INDEX_TITLE,
+  HELP_DESCRIPTION,
+  HELP_TITLE,
   TERMS_DESCRIPTION,
   TERMS_TITLE,
 } from "@/lib/seo/public-copy";
@@ -16,12 +18,14 @@ describe("search snippet lengths", () => {
     expect(isDocumentTitleLength(SITE_TITLE)).toBe(true);
     expect(isDocumentTitleLength(withBrandTitle(BLOG_INDEX_TITLE))).toBe(true);
     expect(isDocumentTitleLength(withBrandTitle(TERMS_TITLE))).toBe(true);
+    expect(isDocumentTitleLength(withBrandTitle(HELP_TITLE))).toBe(true);
   });
 
   it("keeps public meta descriptions in the 150-160 character window", () => {
     expect(isMetaDescriptionLength(SITE_DESCRIPTION)).toBe(true);
     expect(isMetaDescriptionLength(BLOG_INDEX_DESCRIPTION)).toBe(true);
     expect(isMetaDescriptionLength(TERMS_DESCRIPTION)).toBe(true);
+    expect(isMetaDescriptionLength(HELP_DESCRIPTION)).toBe(true);
   });
 
   it("rejects titles that are still too short for search snippets", () => {

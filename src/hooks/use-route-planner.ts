@@ -6,8 +6,18 @@ import { analyticsHeaders, captureEvent } from "@/lib/analytics/client";
 import { analyticsEvents } from "@/lib/analytics/events";
 import { routeDraftKey } from "@/lib/routes/draft";
 import {
+  joinReadyPrefix,
+  joinRouteLegs,
+  legKey,
+  matchStoredLegs,
+  missingLegIndexes,
+  routeGapRequests,
+  type StoredLeg,
+} from "@/lib/routing/join-route-legs";
+import {
   addRoutePoint,
   closeRouteLoop,
+  insertRoutePoint,
   isRouteLoop,
   MAX_ROUTE_STOPS,
   moveRoutePoint,
@@ -79,6 +89,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
       ? routeDraftKey(seed.points, seed.mode ?? "low_stops")
       : undefined,
   );
+  const legsRef = useRef<StoredLeg[]>([]);
 
   const rememberLabel = useCallback((point: GeoPoint, label?: string) => {
     if (!label) return;
@@ -97,6 +108,14 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
       setPoints((current) => addRoutePoint(current, point));
     },
     [rememberLabel, resetRedo],
+  );
+
+  const insertPoint = useCallback(
+    (gapIndex: number, point: GeoPoint) => {
+      resetRedo();
+      setPoints((current) => insertRoutePoint(current, gapIndex, point));
+    },
+    [resetRedo],
   );
 
   const movePoint = useCallback(
@@ -147,6 +166,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
 
   const clear = useCallback(() => {
     frozenDraftKeyRef.current = undefined;
+    legsRef.current = [];
     resetRedo();
     setPoints([]);
     setKnownLabels({});
@@ -167,6 +187,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
               nextMode === "low_stops" && (next.avoidElevation ?? false),
             )
           : undefined;
+      legsRef.current = [];
       resetRedo();
       setPoints(next.points);
       setKnownLabels(next.knownLabels ?? {});
@@ -192,6 +213,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     frozenDraftKeyRef.current = undefined;
 
     if (points.length < 2) {
+      legsRef.current = [];
       setRoute(undefined);
       setError(undefined);
       return;
@@ -199,11 +221,23 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
 
     const routedFeatures = routingFeatures(hasSignalData ? featuresRef.current : []);
     const avoid = mode === "low_stops" && avoidElevation;
-    const cached = readRouteCache(
-      routeRequestKey({ points, mode, avoidElevation: avoid, features: routedFeatures }),
+    const requests = routeGapRequests(points, mode, avoid, routedFeatures);
+    const keys = requests.map(legKey);
+    const ready = matchStoredLegs(legsRef.current, keys).map(
+      (leg, index) => leg ?? readRouteCache(keys[index] ?? ""),
     );
-    if (cached) {
-      setRoute(cached);
+    const missing = missingLegIndexes(ready);
+    if (missing.length === 0) {
+      const joined = joinRouteLegs(ready.filter((leg): leg is RouteResponse => Boolean(leg)));
+      legsRef.current = keys.flatMap((key, index) => {
+        const routeLeg = ready[index];
+        return routeLeg ? [{ key, route: routeLeg }] : [];
+      });
+      writeRouteCache(
+        routeRequestKey({ points, mode, avoidElevation: avoid, features: routedFeatures }),
+        joined,
+      );
+      setRoute(joined);
       setError(undefined);
       setIsRouting(false);
       return;
@@ -213,14 +247,32 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     const timer = setTimeout(() => {
       let finalized = false;
       setIsRouting(true);
+      const prefix = joinReadyPrefix(ready);
+      if (prefix) {
+        setRoute(prefix);
+        setError(undefined);
+      }
+
       if (mode === "low_stops") {
-        void postRoute(
-          { points, mode: "direct", avoidElevation: false, features: routedFeatures },
-          controller.signal,
+        const directRequests = routeGapRequests(points, "direct", false, routedFeatures);
+        void Promise.all(
+          missing.map((index) => {
+            const request = directRequests[index];
+            if (!request) return Promise.reject(new Error("Route could not be calculated"));
+            return postRoute(request, controller.signal);
+          }),
         )
-          .then((quick) => {
+          .then((previewLegs) => {
             if (controller.signal.aborted || finalized) return;
-            setRoute((current) => current ?? quick);
+            const mixed = [...ready];
+            missing.forEach((index, fetchedIndex) => {
+              mixed[index] = mixed[index] ?? previewLegs[fetchedIndex];
+            });
+            const preview = mixed.every((leg) => leg)
+              ? joinRouteLegs(mixed.filter((leg): leg is RouteResponse => Boolean(leg)))
+              : joinReadyPrefix(mixed);
+            if (!preview) return;
+            setRoute(preview);
             setError(undefined);
           })
           .catch((caught) => {
@@ -228,22 +280,40 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
           });
       }
 
-      void postRoute(
-        { points, mode, avoidElevation: avoid, features: routedFeatures },
-        controller.signal,
+      void Promise.all(
+        missing.map((index) => {
+          const request = requests[index];
+          if (!request) return Promise.reject(new Error("Route could not be calculated"));
+          return postRoute(request, controller.signal);
+        }),
       )
-        .then((computed) => {
+        .then((fetched) => {
           if (controller.signal.aborted) return;
+          const legs = [...ready];
+          missing.forEach((index, fetchedIndex) => {
+            legs[index] = fetched[fetchedIndex];
+          });
+          if (legs.some((leg) => !leg)) return;
+          const complete = legs.filter((leg): leg is RouteResponse => Boolean(leg));
+          const joined = joinRouteLegs(complete);
           finalized = true;
-          setRoute(computed);
+          legsRef.current = keys.flatMap((key, index) => {
+            const routeLeg = complete[index];
+            return routeLeg ? [{ key, route: routeLeg }] : [];
+          });
+          writeRouteCache(
+            routeRequestKey({ points, mode, avoidElevation: avoid, features: routedFeatures }),
+            joined,
+          );
+          setRoute(joined);
           setError(undefined);
           captureEvent(analyticsEvents.routeComputed, {
             mode,
             point_count: points.length,
-            provider: computed.provider,
-            distance_meters: computed.metrics.distanceMeters,
-            traffic_signals: computed.metrics.trafficSignals,
-            crossings: computed.metrics.crossings,
+            provider: joined.provider,
+            distance_meters: joined.metrics.distanceMeters,
+            traffic_signals: joined.metrics.trafficSignals,
+            crossings: joined.metrics.crossings,
           });
         })
         .catch((caught) => {
@@ -280,6 +350,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
     canCloseLoop: points.length >= 2 && !isRouteLoop(points) && points.length <= MAX_ROUTE_STOPS,
     canRedo,
     addPoint,
+    insertPoint,
     movePoint,
     removePoint,
     reversePoints,
