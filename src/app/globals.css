@@ -534,3 +534,24 @@ html .blog-prose a:hover {
   padding: 0.3rem 0.45rem;
   text-align: left;
 }
+
+.rws-chat-md.rws-chat-md-reply h1,
+.rws-chat-md.rws-chat-md-reply h2,
+.rws-chat-md.rws-chat-md-reply h3,
+.rws-chat-md.rws-chat-md-reply strong {
+  color: #0a0d0b;
+}
+
+.rws-chat-md.rws-chat-md-reply code,
+.rws-chat-md.rws-chat-md-reply pre {
+  background: rgb(0 0 0 / 12%);
+}
+
+.rws-chat-md.rws-chat-md-reply pre code {
+  background: transparent;
+}
+
+.rws-chat-md.rws-chat-md-reply th,
+.rws-chat-md.rws-chat-md-reply td {
+  border-color: rgb(0 0 0 / 16%);
+}

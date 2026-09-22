@@ -599,6 +599,17 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
             paceSecondsPerKm: effort.secondsPerKm,
             currentDistanceMeters: planner.route?.metrics.distanceMeters,
           }}
+          onMapAction={(action) => {
+            if (action === "clear") {
+              planner.clear();
+              setCurrentSaved(undefined);
+              return;
+            }
+            if (action === "undo") planner.undo();
+            if (action === "redo") planner.redo();
+            if (action === "reverse") planner.reversePoints();
+            if (action === "closeLoop") planner.closeLoop();
+          }}
           onApplyRoute={(proposal) => {
             planner.loadRoute({
               points: proposal.points,

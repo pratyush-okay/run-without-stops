@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { mapActions } from "@/lib/agent/chat-ui";
 import { inferLoopHints, normalizeDistanceKm, planRunLoop } from "@/lib/agent/plan-run";
 import { type RealizeRouteDeps, realizeLoopRoute } from "@/lib/agent/realize-route";
 import { SYDNEY_CENTER } from "@/lib/geo";
@@ -146,6 +147,14 @@ export function createAgentTools(context: AgentChatContext, userText = "") {
           places: kinds?.length ? places.filter((place) => kinds.includes(place.kind)) : places,
         };
       },
+    }),
+    mapAction: tool({
+      description:
+        "Edit the route already on the map. clear removes the stops and the line. undo and redo step through edits. reverse flips the stop order. closeLoop joins the end back to the start. Never use this to draw a new loop.",
+      inputSchema: z.object({
+        action: z.enum(mapActions),
+      }),
+      execute: async ({ action }) => ({ action, applied: true }),
     }),
     planRun: tool({
       description:

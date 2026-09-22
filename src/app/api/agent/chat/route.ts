@@ -10,7 +10,12 @@ import {
 import { NextResponse } from "next/server";
 import { canUseAgentChat } from "@/lib/agent/admin";
 import { AGENT_CHAT_SYSTEM_PROMPT } from "@/lib/agent/catalog";
-import { combinedUserText, isRouteBuildRequest, lastUserText } from "@/lib/agent/chat-ui";
+import {
+  asksTheModel,
+  combinedUserText,
+  isRouteBuildRequest,
+  lastUserText,
+} from "@/lib/agent/chat-ui";
 import { evaluateRouteDraw } from "@/lib/agent/jev";
 import { createAgentModel, hasOpenRouterKey } from "@/lib/agent/openrouter";
 import { streamBuiltRoute } from "@/lib/agent/route-reply";
@@ -40,7 +45,7 @@ async function builtRouteResponse(
 ) {
   try {
     const proposal = await executePlanRun(input, context, { userText });
-    return streamBuiltRoute(proposal);
+    return streamBuiltRoute(proposal, userText);
   } catch (error) {
     reportError(error, { route: "/api/agent/chat" });
     return NextResponse.json(apiErrorSchema.parse({ error: agentChatErrorMessage(error) }), {
@@ -73,12 +78,15 @@ export async function POST(request: Request) {
   const userText = lastUserText(parsed.data.messages);
   const combined = combinedUserText(parsed.data.messages);
 
-  if (isRouteBuildRequest(userText, combined)) {
+  const modelDecides = asksTheModel(userText);
+  if (!modelDecides && isRouteBuildRequest(userText, combined)) {
     return builtRouteResponse({}, context, combined);
   }
 
-  const draw = await evaluateRouteDraw(combined);
-  if (draw) return builtRouteResponse(draw, context, combined);
+  if (!modelDecides) {
+    const draw = await evaluateRouteDraw(combined);
+    if (draw) return builtRouteResponse(draw, context, combined);
+  }
 
   if (!hasOpenRouterKey()) {
     return NextResponse.json(apiErrorSchema.parse({ error: "Chat is not configured" }), {

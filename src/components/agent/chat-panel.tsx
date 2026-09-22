@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { ChatMarkdown } from "@/components/agent/chat-markdown";
-import { ChatToolUse } from "@/components/agent/chat-tool-use";
+import { ChatPlanLive, ChatToolUse } from "@/components/agent/chat-tool-use";
 import {
   type ChatToolPart,
   chatGreetingName,
@@ -22,6 +22,9 @@ import {
   isPlanRunInFlight,
   isRouteBuildRequest,
   isToolPart,
+  lastUserText,
+  type MapAction,
+  mapActionsFromParts,
   messageText,
   planRunProposalsFromParts,
   readStoredChatWidth,
@@ -41,9 +44,10 @@ type ChatPanelProps = {
   onClose: () => void;
   context?: AgentChatContext;
   onApplyRoute?: (proposal: AgentRouteProposal) => void;
+  onMapAction?: (action: MapAction) => void;
 };
 
-export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelProps) {
+export function ChatPanel({ open, onClose, context, onApplyRoute, onMapAction }: ChatPanelProps) {
   const { user } = useUser();
   const greetingName = chatGreetingName(user);
   const [catalog, setCatalog] = useState<AgentPublicModelsResponse>();
@@ -57,6 +61,7 @@ export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelPro
   const widthRef = useRef(width);
   const contextRef = useRef(context);
   const appliedToolIds = useRef(new Set<string>());
+  const transcriptRef = useRef<HTMLDivElement>(null);
   modelIdRef.current = modelId;
   widthRef.current = width;
   contextRef.current = context;
@@ -123,6 +128,23 @@ export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelPro
       }
     }
   }, [messages, onApplyRoute]);
+
+  useEffect(() => {
+    if (!onMapAction) return;
+    for (const message of messages) {
+      for (const found of mapActionsFromParts(message.parts)) {
+        if (appliedToolIds.current.has(found.toolCallId)) continue;
+        appliedToolIds.current.add(found.toolCallId);
+        onMapAction(found.action);
+      }
+    }
+  }, [messages, onMapAction]);
+
+  useEffect(() => {
+    const node = transcriptRef.current;
+    if (!node || (messages.length === 0 && !planning)) return;
+    node.scrollTop = node.scrollHeight;
+  }, [messages, planning]);
 
   useEffect(() => {
     if (!open) return;
@@ -193,7 +215,7 @@ export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelPro
               type: "tool-planRun",
               toolCallId,
               state: "output-available",
-              input: {},
+              input: { requestText: text },
               output: proposal,
             },
             { type: "text", text: routeReplyText(proposal) },
@@ -269,7 +291,7 @@ export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelPro
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        <div ref={transcriptRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loadError ? <p className="text-xs text-[#ffad91]">{loadError}</p> : null}
           {!loadError && catalog && catalog.models.length === 0 ? (
             <p className="text-xs text-white/55">No models are active yet.</p>
@@ -288,7 +310,7 @@ export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelPro
                 const text = messageText(message.parts);
                 return (
                   <div key={message.id} className="flex min-w-0 justify-end">
-                    <div className="min-w-0 max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-[#c8ff52] px-3 py-2 text-sm leading-relaxed text-[#0a0d0b]">
+                    <div className="min-w-0 max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-black px-3 py-2 text-sm leading-relaxed text-[#f4f7f5]">
                       {text}
                     </div>
                   </div>
@@ -312,9 +334,9 @@ export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelPro
                     return (
                       <div
                         key={text}
-                        className="min-w-0 max-w-[92%] break-words rounded-2xl rounded-bl-md bg-white/[0.06] px-3 py-2 text-sm text-white/85"
+                        className="min-w-0 max-w-[92%] break-words rounded-2xl rounded-bl-md bg-[#c8ff52] px-3 py-2 text-sm leading-relaxed text-[#0a0d0b]"
                       >
-                        <ChatMarkdown markdown={text} />
+                        <ChatMarkdown markdown={text} tone="reply" />
                       </div>
                     );
                   })}
@@ -322,10 +344,12 @@ export function ChatPanel({ open, onClose, context, onApplyRoute }: ChatPanelPro
               );
             })}
           </div>
-          {buildingRoute || (busy && messages.length > 0) ? (
-            <p className="mt-3 text-xs text-white/45">
-              {buildingRoute ? "Building a route…" : "Thinking…"}
-            </p>
+          {planning ? (
+            <div className="mt-3">
+              <ChatPlanLive requestText={lastUserText(messages)} />
+            </div>
+          ) : busy && messages.length > 0 && !buildingRoute ? (
+            <p className="mt-3 text-xs text-white/45">Thinking…</p>
           ) : null}
           {error ? (
             <p className="mt-3 text-xs text-[#ffad91]">

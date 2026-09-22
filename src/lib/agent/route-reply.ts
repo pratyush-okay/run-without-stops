@@ -4,7 +4,7 @@ import type { AgentRouteProposal } from "@/lib/schemas/agent";
 
 export { routeReplyText };
 
-export function streamBuiltRoute(proposal: AgentRouteProposal) {
+export function streamBuiltRoute(proposal: AgentRouteProposal, requestText = "") {
   const toolCallId = generateId();
   const textId = generateId();
   const reply = routeReplyText(proposal);
@@ -18,7 +18,7 @@ export function streamBuiltRoute(proposal: AgentRouteProposal) {
           type: "tool-input-available",
           toolCallId,
           toolName: "planRun",
-          input: {},
+          input: requestText ? { requestText } : {},
         });
         writer.write({
           type: "tool-output-available",
