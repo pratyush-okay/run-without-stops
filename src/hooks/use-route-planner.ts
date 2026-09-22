@@ -14,6 +14,7 @@ import {
   routeGapRequests,
   type StoredLeg,
 } from "@/lib/routing/join-route-legs";
+import { mapWithConcurrency } from "@/lib/routing/map-pool";
 import {
   addRoutePoint,
   closeRouteLoop,
@@ -28,11 +29,26 @@ import { readRouteCache, routeRequestKey, writeRouteCache } from "@/lib/routing/
 import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import { type RouteMode, type RouteResponse, routeResponseSchema } from "@/lib/schemas/route";
 
-function routingFeatures(features: RunnerFeature[]) {
-  return [
-    ...features.filter((feature) => feature.kind === "traffic_signal").slice(0, 60),
-    ...features.filter((feature) => feature.kind === "crossing").slice(0, 40),
-  ];
+const QUIET_LEG_FALLBACK =
+  "One stretch uses the shortest path because the quieter line could not be calculated.";
+
+function isAbort(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function wait(ms: number, signal: AbortSignal) {
+  if (signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 async function postRoute(
@@ -62,6 +78,24 @@ async function postRoute(
   const computed = routeResponseSchema.parse(await response.json());
   writeRouteCache(key, computed);
   return computed;
+}
+
+async function postRouteRetry(
+  body: {
+    points: GeoPoint[];
+    mode: RouteMode;
+    avoidElevation: boolean;
+    features: RunnerFeature[];
+  },
+  signal: AbortSignal,
+) {
+  try {
+    return await postRoute(body, signal);
+  } catch (error) {
+    if (isAbort(error) || signal.aborted) throw error;
+    await wait(400, signal);
+    return postRoute(body, signal);
+  }
 }
 
 export type RouteSeed = {
@@ -219,9 +253,10 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
       return;
     }
 
-    const routedFeatures = routingFeatures(hasSignalData ? featuresRef.current : []);
+    const mapFeatures = hasSignalData ? featuresRef.current : [];
     const avoid = mode === "low_stops" && avoidElevation;
-    const requests = routeGapRequests(points, mode, avoid, routedFeatures);
+    const requests = routeGapRequests(points, mode, avoid, mapFeatures);
+    const routedFeatures = requests.flatMap((request) => request.features);
     const keys = requests.map(legKey);
     const ready = matchStoredLegs(legsRef.current, keys).map(
       (leg, index) => leg ?? readRouteCache(keys[index] ?? ""),
@@ -253,46 +288,56 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
         setError(undefined);
       }
 
-      if (mode === "low_stops") {
-        const directRequests = routeGapRequests(points, "direct", false, routedFeatures);
-        void Promise.all(
-          missing.map((index) => {
-            const request = directRequests[index];
-            if (!request) return Promise.reject(new Error("Route could not be calculated"));
-            return postRoute(request, controller.signal);
-          }),
-        )
-          .then((previewLegs) => {
-            if (controller.signal.aborted || finalized) return;
-            const mixed = [...ready];
-            missing.forEach((index, fetchedIndex) => {
-              mixed[index] = mixed[index] ?? previewLegs[fetchedIndex];
-            });
-            const preview = mixed.every((leg) => leg)
-              ? joinRouteLegs(mixed.filter((leg): leg is RouteResponse => Boolean(leg)))
-              : joinReadyPrefix(mixed);
-            if (!preview) return;
-            setRoute(preview);
-            setError(undefined);
-          })
-          .catch((caught) => {
-            if (caught instanceof DOMException && caught.name === "AbortError") return;
-          });
-      }
+      const directRequests =
+        mode === "low_stops" ? routeGapRequests(points, "direct", false, mapFeatures) : [];
+      const legs = [...ready];
 
-      void Promise.all(
-        missing.map((index) => {
-          const request = requests[index];
-          if (!request) return Promise.reject(new Error("Route could not be calculated"));
-          return postRoute(request, controller.signal);
-        }),
-      )
-        .then((fetched) => {
+      const paint = () => {
+        if (controller.signal.aborted || finalized) return;
+        const preview = legs.every((leg) => leg)
+          ? joinRouteLegs(legs.filter((leg): leg is RouteResponse => Boolean(leg)))
+          : joinReadyPrefix(legs);
+        if (!preview) return;
+        setRoute(preview);
+        setError(undefined);
+      };
+
+      void mapWithConcurrency(missing, 1, async (index) => {
+        const request = requests[index];
+        if (!request) throw new Error("Route could not be calculated");
+        const direct = directRequests[index];
+
+        if (direct && request.mode === "low_stops") {
+          try {
+            const preview = await postRouteRetry(direct, controller.signal);
+            if (!legs[index]) {
+              legs[index] = preview;
+              paint();
+            }
+          } catch (error) {
+            if (isAbort(error)) throw error;
+          }
+        }
+
+        try {
+          const computed = await postRouteRetry(request, controller.signal);
+          legs[index] = computed;
+          paint();
+          return computed;
+        } catch (error) {
+          if (isAbort(error) || !direct || request.mode === "direct") throw error;
+          const fallback = await postRouteRetry(direct, controller.signal);
+          const quiet = {
+            ...fallback,
+            warnings: [...fallback.warnings, QUIET_LEG_FALLBACK].slice(0, 20),
+          };
+          legs[index] = quiet;
+          paint();
+          return quiet;
+        }
+      })
+        .then(() => {
           if (controller.signal.aborted) return;
-          const legs = [...ready];
-          missing.forEach((index, fetchedIndex) => {
-            legs[index] = fetched[fetchedIndex];
-          });
           if (legs.some((leg) => !leg)) return;
           const complete = legs.filter((leg): leg is RouteResponse => Boolean(leg));
           const joined = joinRouteLegs(complete);
@@ -317,8 +362,7 @@ export function useRoutePlanner(features: RunnerFeature[], seed?: RouteSeed) {
           });
         })
         .catch((caught) => {
-          if (caught instanceof DOMException && caught.name === "AbortError") return;
-          if (controller.signal.aborted) return;
+          if (isAbort(caught) || controller.signal.aborted) return;
           finalized = true;
           setError(caught instanceof Error ? caught.message : "Route could not be calculated");
           captureEvent(analyticsEvents.routeComputeFailed, { mode, point_count: points.length });

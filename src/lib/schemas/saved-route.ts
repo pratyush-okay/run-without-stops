@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { MAX_ROUTE_POINTS } from "@/lib/routing/points";
+import { MAX_ROUTE_POINTS, MAX_ROUTE_STOPS } from "@/lib/routing/points";
 import { geoPointSchema } from "@/lib/schemas/features";
 import { routeModeSchema, routeResponseSchema } from "@/lib/schemas/route";
 
-export const MAX_SAVED_ROUTE_COORDINATES = 4_000;
+export const MAX_SAVED_ROUTE_COORDINATES = 16_000;
 
 export const savedRouteNameSchema = z
   .string()
@@ -18,7 +18,7 @@ export const shareSlugSchema = z
 
 const knownLabelsSchema = z
   .record(z.string().max(80), z.string().max(160))
-  .refine((value) => Object.keys(value).length <= 12, "Too many place labels");
+  .refine((value) => Object.keys(value).length <= MAX_ROUTE_STOPS, "Too many place labels");
 
 const persistableRouteSchema = routeResponseSchema.extend({
   coordinates: z

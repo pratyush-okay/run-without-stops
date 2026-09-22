@@ -1,7 +1,7 @@
 import type { RouteRequest, RouteResponse } from "@/lib/schemas/route";
 
 const TTL_MS = 5 * 60 * 1000;
-const MAX_ENTRIES = 48;
+const MAX_ENTRIES = 160;
 
 const entries = new Map<string, { at: number; route: RouteResponse }>();
 

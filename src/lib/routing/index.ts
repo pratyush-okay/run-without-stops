@@ -1,5 +1,7 @@
 import { env } from "@/env";
+import { fetchJoinedLegs } from "@/lib/routing/fetch-joined-legs";
 import { fetchRoute } from "@/lib/routing/graphhopper";
+import { fitRouteResponse } from "@/lib/routing/join-route-legs";
 import { readRouteCache, routeRequestKey, writeRouteCache } from "@/lib/routing/route-cache";
 import { fetchValhallaRoute } from "@/lib/routing/valhalla";
 import type { RouteRequest, RouteResponse } from "@/lib/schemas/route";
@@ -10,7 +12,12 @@ export async function fetchBestRoute(input: RouteRequest): Promise<RouteResponse
   const key = routeRequestKey(input);
   const cached = readRouteCache(key);
   if (cached) return cached;
-  const route = await computeBestRoute(input);
+
+  const route =
+    input.points.length <= 2
+      ? fitRouteResponse(await computeBestRoute(input))
+      : await fetchJoinedLegs(input, (gap) => fetchBestRoute(gap));
+
   writeRouteCache(key, route);
   return route;
 }

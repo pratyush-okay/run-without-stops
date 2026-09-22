@@ -1,5 +1,9 @@
 import { currentUser } from "@clerk/nextjs/server";
-import type { SavedRoute, SavedRouteSummary } from "@/lib/schemas/saved-route";
+import {
+  MAX_SAVED_ROUTE_COORDINATES,
+  type SavedRoute,
+  type SavedRouteSummary,
+} from "@/lib/schemas/saved-route";
 import { createSavedRoute, listSavedRoutes } from "@/lib/supabase/saved-routes";
 import { GET, POST } from "./route";
 
@@ -154,7 +158,10 @@ describe("POST /api/routes", () => {
           ...routeBody,
           route: {
             ...routeBody.route,
-            coordinates: Array.from({ length: 4001 }, (_, index) => [151.2, -33.86 - index / 1e6]),
+            coordinates: Array.from({ length: MAX_SAVED_ROUTE_COORDINATES + 1 }, (_, index) => [
+              151.2,
+              -33.86 - index / 1e6,
+            ]),
           },
         }),
       }),

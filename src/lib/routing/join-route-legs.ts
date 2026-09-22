@@ -1,6 +1,10 @@
+import { featuresForGap } from "@/lib/geo";
 import { routeRequestKey } from "@/lib/routing/route-cache";
 import type { GeoPoint, RunnerFeature } from "@/lib/schemas/features";
 import type { RouteMode, RouteResponse } from "@/lib/schemas/route";
+
+const MAX_ELEVATION_SAMPLES = 240;
+const MAX_ELEVATION_MARKS = 40;
 
 export type StoredLeg = {
   key: string;
@@ -29,7 +33,7 @@ export function routeGapRequests(
       points: [from, to],
       mode,
       avoidElevation,
-      features,
+      features: featuresForGap(features, from, to),
     });
   }
   return gaps;
@@ -79,7 +83,7 @@ export function joinRouteLegs(legs: readonly RouteResponse[]): RouteResponse {
   const drinkingWater = sumOptional(legs, (leg) => leg.metrics.drinkingWater);
   const elevation = joinElevation(legs);
 
-  return {
+  return fitRouteResponse({
     coordinates,
     metrics: {
       distanceMeters,
@@ -95,8 +99,8 @@ export function joinRouteLegs(legs: readonly RouteResponse[]): RouteResponse {
     },
     ...(elevation ? { elevation } : {}),
     provider: legs.every((leg) => leg.provider === first.provider) ? first.provider : "graphhopper",
-    warnings: [...new Set(legs.flatMap((leg) => leg.warnings))],
-  };
+    warnings: [...new Set(legs.flatMap((leg) => leg.warnings))].slice(0, 20),
+  });
 }
 
 export function legKey(request: LegRequest) {
@@ -146,4 +150,34 @@ function maxOptional(
   const values = legs.map(read).filter((value): value is number => value !== undefined);
   if (values.length === 0) return undefined;
   return Math.max(...values);
+}
+
+export function fitRouteResponse(route: RouteResponse): RouteResponse {
+  const elevation = route.elevation;
+  if (!elevation) return route;
+  if (
+    elevation.samples.length <= MAX_ELEVATION_SAMPLES &&
+    elevation.marks.length <= MAX_ELEVATION_MARKS
+  ) {
+    return route;
+  }
+  return {
+    ...route,
+    elevation: {
+      samples: downsample(elevation.samples, MAX_ELEVATION_SAMPLES),
+      marks: elevation.marks.slice(0, MAX_ELEVATION_MARKS),
+    },
+  };
+}
+
+function downsample<T>(items: readonly T[], max: number) {
+  if (items.length <= max) return [...items];
+  const last = items.length - 1;
+  const picked: T[] = [];
+  for (let index = 0; index < max; index += 1) {
+    const source = Math.round((index * last) / (max - 1));
+    const item = items[source];
+    if (item !== undefined) picked.push(item);
+  }
+  return picked;
 }

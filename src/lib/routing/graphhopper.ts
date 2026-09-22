@@ -176,7 +176,58 @@ async function requestGraphHopperPath(input: RouteRequest) {
   throw lastError ?? new Error("GraphHopper request failed");
 }
 
+const MIN_GRAPHHOPPER_GAP_MS = 1_100;
+const RATE_LIMIT_ATTEMPTS = 5;
+
+let graphHopperChain: Promise<void> = Promise.resolve();
+let graphHopperNotBefore = 0;
+
+export function rateLimitDelayMs(attempt: number) {
+  return Math.min(20_000, 15_000 + attempt * 5_000);
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function paceGraphHopper() {
+  let release: () => void = () => undefined;
+  const previous = graphHopperChain;
+  graphHopperChain = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  try {
+    await previous;
+    const wait = Math.max(0, graphHopperNotBefore - Date.now());
+    if (wait > 0) await sleep(wait);
+    graphHopperNotBefore = Date.now() + MIN_GRAPHHOPPER_GAP_MS;
+  } finally {
+    release();
+  }
+}
+
+function holdGraphHopper(ms: number) {
+  graphHopperNotBefore = Math.max(graphHopperNotBefore, Date.now() + ms);
+}
+
 async function postGraphHopper(input: RouteRequest) {
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt < RATE_LIMIT_ATTEMPTS; attempt += 1) {
+    await paceGraphHopper();
+    try {
+      return await requestGraphHopperOnce(input);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("GraphHopper request failed");
+      if (!isGraphHopperRateLimit(lastError) || attempt === RATE_LIMIT_ATTEMPTS - 1) {
+        throw lastError;
+      }
+      holdGraphHopper(rateLimitDelayMs(attempt));
+    }
+  }
+  throw lastError ?? new Error("GraphHopper request failed");
+}
+
+async function requestGraphHopperOnce(input: RouteRequest) {
   const response = await fetch(
     `${env.GRAPHHOPPER_API_URL}/route?key=${encodeURIComponent(env.GRAPHHOPPER_API_KEY ?? "")}`,
     {
@@ -198,6 +249,10 @@ async function postGraphHopper(input: RouteRequest) {
   }
 
   return graphHopperResponseSchema.parse(await response.json());
+}
+
+function isGraphHopperRateLimit(error: Error) {
+  return error.message.includes("429") || /minutely api limit/i.test(error.message);
 }
 
 function isMissingSlopeModel(error: Error) {

@@ -226,6 +226,19 @@ export function pointToRouteDistanceMeters(point: GeoPoint, route: GeoPoint[]) {
   return closestPointOnRoute(point, route).distance;
 }
 
+const GAP_FEATURE_METERS = 120;
+const GAP_FEATURE_LIMIT = 40;
+
+export function featuresForGap(features: RunnerFeature[], from: GeoPoint, to: GeoPoint) {
+  const segment = [from, to];
+  return features
+    .filter((feature) => {
+      if (feature.kind !== "traffic_signal" && feature.kind !== "crossing") return false;
+      return pointToRouteDistanceMeters(feature.point, segment) <= GAP_FEATURE_METERS;
+    })
+    .slice(0, GAP_FEATURE_LIMIT);
+}
+
 export const ROUTE_FEATURE_THRESHOLDS: Record<RunnerFeature["kind"], number> = {
   traffic_signal: 16,
   crossing: 14,

@@ -1,4 +1,5 @@
 import {
+  fitRouteResponse,
   joinRouteLegs,
   legKey,
   matchStoredLegs,
@@ -143,5 +144,57 @@ describe("stored legs", () => {
 
     expect(missingLegIndexes(ready)).toEqual([0, 1]);
     expect(direct).toHaveLength(2);
+  });
+
+  it("keeps signals beside a gap and ignores signals far from it", () => {
+    const near = {
+      id: "near",
+      kind: "traffic_signal" as const,
+      point: { lat: -33.865, lng: 151.205 },
+    };
+    const far = {
+      id: "far",
+      kind: "traffic_signal" as const,
+      point: { lat: -33.95, lng: 151.3 },
+    };
+    const withBoth = routeGapRequests([start, middle], "direct", false, [near, far]);
+    const withFar = routeGapRequests([start, middle], "direct", false, [far]);
+    const empty = routeGapRequests([start, middle], "direct", false, []);
+    const nearRequest = withBoth[0];
+    const farRequest = withFar[0];
+    const emptyRequest = empty[0];
+    if (!nearRequest || !farRequest || !emptyRequest) throw new Error("expected a gap");
+
+    expect(nearRequest.features.map((feature) => feature.id)).toEqual(["near"]);
+    expect(legKey(farRequest)).toBe(legKey(emptyRequest));
+  });
+});
+
+describe("fitRouteResponse", () => {
+  it("downsamples a long elevation profile to the response cap", () => {
+    const samples = Array.from({ length: 300 }, (_, index) => ({
+      distanceMeters: index * 10,
+      elevationMeters: 20 + index,
+    }));
+    const marks = Array.from({ length: 50 }, () => ({
+      kind: "climb" as const,
+      point: start,
+      elevationMeters: 18,
+    }));
+    const fitted = fitRouteResponse(
+      leg(
+        [
+          [151.2, -33.86],
+          [151.21, -33.87],
+        ],
+        2990,
+        { elevation: { samples, marks } },
+      ),
+    );
+
+    expect(fitted.elevation?.samples).toHaveLength(240);
+    expect(fitted.elevation?.samples[0]?.distanceMeters).toBe(0);
+    expect(fitted.elevation?.samples.at(-1)?.distanceMeters).toBe(2990);
+    expect(fitted.elevation?.marks).toHaveLength(40);
   });
 });

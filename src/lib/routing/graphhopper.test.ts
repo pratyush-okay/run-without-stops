@@ -1,4 +1,4 @@
-import { buildGraphHopperRequest } from "@/lib/routing/graphhopper";
+import { buildGraphHopperRequest, rateLimitDelayMs } from "@/lib/routing/graphhopper";
 import type { RouteRequest } from "@/lib/schemas/route";
 
 const baseRequest: RouteRequest = {
@@ -59,5 +59,12 @@ describe("GraphHopper custom model", () => {
         expect.objectContaining({ if: "max_slope >= 15", multiply_by: 0.08 }),
       ]),
     );
+  });
+});
+
+describe("rateLimitDelayMs", () => {
+  it("waits long enough for a minutely limit to clear", () => {
+    expect(rateLimitDelayMs(0)).toBe(15_000);
+    expect(rateLimitDelayMs(2)).toBe(20_000);
   });
 });

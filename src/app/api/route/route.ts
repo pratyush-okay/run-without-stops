@@ -6,6 +6,8 @@ import { fetchBestRoute } from "@/lib/routing";
 import { apiErrorSchema } from "@/lib/schemas/api-error";
 import { routeRequestSchema, routeResponseSchema } from "@/lib/schemas/route";
 
+export const maxDuration = 120;
+
 export async function POST(request: Request) {
   const parsed = routeRequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
