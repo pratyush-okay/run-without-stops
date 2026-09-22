@@ -3,18 +3,27 @@
 import { ChatGlyph } from "@/components/dashboard/panel-marks";
 
 type ChatToggleProps = {
+  compact?: boolean;
   locked?: boolean;
   open: boolean;
   onToggle: () => void;
   onLockedClick?: () => void;
 };
 
-export function ChatToggle({ locked = false, open, onToggle, onLockedClick }: ChatToggleProps) {
+export function ChatToggle({
+  compact = false,
+  locked = false,
+  open,
+  onToggle,
+  onLockedClick,
+}: ChatToggleProps) {
   return (
-    <div className="rws-panel p-1.5">
+    <div className={compact ? "rws-panel" : "rws-panel p-1.5"}>
       <button
         type="button"
-        className="grid size-11 shrink-0 place-items-center rounded-lg text-[#c8ff52] transition hover:bg-white/[0.06] hover:text-[#d6ff7a] md:size-10"
+        className={`grid shrink-0 place-items-center text-[#c8ff52] transition hover:bg-white/[0.06] hover:text-[#d6ff7a] ${
+          compact ? "size-9 rounded-[1rem]" : "size-11 rounded-lg md:size-10"
+        }`}
         onClick={() => {
           if (locked) {
             onLockedClick?.();

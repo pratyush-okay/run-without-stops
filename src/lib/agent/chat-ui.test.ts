@@ -8,6 +8,7 @@ import {
   messageText,
   planRunProposalsFromParts,
   routeReplyText,
+  routeToolSteps,
 } from "@/lib/agent/chat-ui";
 
 describe("clampChatWidth", () => {
@@ -90,5 +91,35 @@ describe("planRun tool parts", () => {
       ]),
     ).toEqual([{ toolCallId: "t2", proposal }]);
     expect(routeReplyText(proposal)).toBe("About a 5.0 km loop. It's on the map.");
+    expect(routeToolSteps(proposal)).toEqual([
+      "Aimed for 5.00 km.",
+      "Chose Low stops, preferring fewer lights.",
+      "Placed the stops on the map. A street line did not come back.",
+    ]);
+  });
+
+  it("lists the places and the street line beside the short reply", () => {
+    const planned = {
+      ...proposal,
+      summary: "About a 5.00 km loop via Phillip Park.",
+      included: [{ name: "Phillip Park" }],
+      route: {
+        metrics: {
+          distanceMeters: 5_120,
+          durationSeconds: 28 * 60,
+          trafficSignals: 14,
+          crossings: 6,
+          ascentMeters: 12,
+          majorRoadMeters: 240,
+        },
+      },
+    };
+    expect(routeReplyText(planned)).toBe("About a 5.00 km loop via Phillip Park. It's on the map.");
+    expect(routeToolSteps(planned)).toEqual([
+      "Aimed for 5.00 km.",
+      "Sent the loop through Phillip Park.",
+      "Chose Low stops, preferring fewer lights.",
+      "Drew a 5.12 km street line, about 28 min, with 14 traffic lights, 6 crossings, 12 m up, 240 m on major roads.",
+    ]);
   });
 });

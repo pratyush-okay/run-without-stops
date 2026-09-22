@@ -297,6 +297,14 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
     }
   }
 
+  function toggleChat() {
+    setIsChatOpen((current) => {
+      const next = !current;
+      if (next) captureEvent(analyticsEvents.agentChatOpened);
+      return next;
+    });
+  }
+
   return (
     <main
       className={`flex h-dvh min-h-dvh overflow-hidden bg-[#0a0d0b] text-white [--rws-chrome-clearance:11.5rem] md:[--rws-chrome-clearance:6.25rem] ${
@@ -441,19 +449,20 @@ export function RunningDashboard({ mapboxToken, sharedRoute, children }: Running
               onChange={changeMapStyle}
             />
             {canUseAgentChat ? (
-              <ChatToggle
-                open={isChatOpen}
-                onToggle={() => {
-                  setIsChatOpen((current) => {
-                    const next = !current;
-                    if (next) captureEvent(analyticsEvents.agentChatOpened);
-                    return next;
-                  });
-                }}
-              />
+              <div className="max-md:hidden">
+                <ChatToggle open={isChatOpen} onToggle={toggleChat} />
+              </div>
             ) : null}
           </div>
         </div>
+
+        {canUseAgentChat ? (
+          <div className="pointer-events-none absolute right-[max(0.75rem,env(safe-area-inset-right))] bottom-[calc(var(--rws-chrome-clearance)+var(--rws-intro-clearance)+8rem+env(safe-area-inset-bottom))] z-20 md:hidden">
+            <div className="pointer-events-auto">
+              <ChatToggle compact open={isChatOpen} onToggle={toggleChat} />
+            </div>
+          </div>
+        ) : null}
 
         <div className="pointer-events-none absolute bottom-[max(0.5rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] z-[6] hidden md:block">
           <div className="pointer-events-auto">

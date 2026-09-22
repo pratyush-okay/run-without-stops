@@ -1,3 +1,9 @@
+import {
+  formatDistance,
+  formatDuration,
+  formatElevation,
+  type MetricUnit,
+} from "@/lib/routing/format";
 import { type AgentRouteProposal, agentRouteProposalSchema } from "@/lib/schemas/agent";
 
 export const DEFAULT_CHAT_WIDTH = 352;
@@ -97,8 +103,98 @@ export function isRouteBuildRequest(text: string, history = "") {
   return /\b(try again|do it again)\b/i.test(text) && hasRouteIntent(history);
 }
 
+type RouteReplyProposal = {
+  summary: string;
+  targetMeters?: number | undefined;
+  mode?: "direct" | "low_stops" | undefined;
+  avoidElevation?: boolean | undefined;
+  included?: readonly { name: string }[] | undefined;
+  route?:
+    | {
+        metrics: {
+          distanceMeters: number;
+          durationSeconds: number;
+          trafficSignals: number;
+          crossings: number;
+          ascentMeters?: number | undefined;
+          drinkingWater?: number | undefined;
+          majorRoadMeters?: number | undefined;
+        };
+      }
+    | undefined;
+};
+
+function countLabel(count: number, singular: string, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function throughStep(names: readonly string[]) {
+  if (names.length === 0) return undefined;
+  if (names.length === 1) return `Sent the loop through ${names[0]}.`;
+  const last = names[names.length - 1];
+  return `Sent the loop through ${names.slice(0, -1).join(", ")} and ${last}.`;
+}
+
+function modeStep(mode: RouteReplyProposal["mode"], avoidElevation: boolean | undefined) {
+  const style =
+    mode === "direct"
+      ? "Chose Direct, following the stops in order"
+      : mode === "low_stops"
+        ? "Chose Low stops, preferring fewer lights"
+        : undefined;
+  if (style && avoidElevation) return `${style}, and kept it off the hills.`;
+  if (style) return `${style}.`;
+  if (avoidElevation) return "Kept the line off the hills.";
+  return undefined;
+}
+
+function lineStep(proposal: RouteReplyProposal, unit: MetricUnit) {
+  const metrics = proposal.route?.metrics;
+  if (!metrics) return "Placed the stops on the map. A street line did not come back.";
+  const facts = [
+    countLabel(metrics.trafficSignals, "traffic light"),
+    countLabel(metrics.crossings, "crossing"),
+  ];
+  if (metrics.ascentMeters != null && metrics.ascentMeters > 0) {
+    facts.push(`${formatElevation(metrics.ascentMeters, unit)} up`);
+  }
+  if (metrics.drinkingWater) facts.push(countLabel(metrics.drinkingWater, "water stop"));
+  if (metrics.majorRoadMeters != null && metrics.majorRoadMeters >= 100) {
+    facts.push(`${formatDistance(metrics.majorRoadMeters, unit)} on major roads`);
+  }
+  return `Drew a ${formatDistance(metrics.distanceMeters, unit)} street line, about ${formatDuration(metrics.durationSeconds)}, with ${facts.join(", ")}.`;
+}
+
 export function routeReplyText(proposal: { summary: string }) {
   return `${proposal.summary} It's on the map.`;
+}
+
+export function routeToolSteps(proposal: RouteReplyProposal, unit: MetricUnit = "metric") {
+  const names = [...new Set((proposal.included ?? []).map((place) => place.name).filter(Boolean))];
+  const hasPlan =
+    proposal.targetMeters != null ||
+    proposal.mode != null ||
+    Boolean(proposal.avoidElevation) ||
+    names.length > 0 ||
+    proposal.route != null;
+  return [
+    proposal.targetMeters != null
+      ? `Aimed for ${formatDistance(proposal.targetMeters, unit)}.`
+      : undefined,
+    throughStep(names),
+    modeStep(proposal.mode, proposal.avoidElevation),
+    hasPlan ? lineStep(proposal, unit) : undefined,
+  ].filter((step): step is string => Boolean(step));
+}
+
+export function toolNameFromPart(part: ChatToolPart) {
+  if (part.toolName) return part.toolName;
+  if (part.type.startsWith("tool-")) return part.type.slice("tool-".length);
+  return "tool";
+}
+
+export function isToolPart(part: ChatToolPart) {
+  return part.type === "dynamic-tool" || part.type.startsWith("tool-");
 }
 
 export type ChatToolPart = {
